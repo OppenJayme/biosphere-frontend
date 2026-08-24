@@ -39,14 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-.next/
-
-.env
-.env.*
-!.env.example
-
-*.log
-
-.DS_Store
-Thumbs.db
