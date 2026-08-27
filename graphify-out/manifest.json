@@ -1,0 +1,122 @@
+{
+  "eslint.config.mjs": {
+    "mtime": 1787582036.1208217,
+    "seen": 1787783293.542312,
+    "ast_hash": "6c4307ffa009658f5c97f5629094c0c2",
+    "semantic_hash": "6c4307ffa009658f5c97f5629094c0c2"
+  },
+  "next.config.ts": {
+    "mtime": 1787582036.121838,
+    "seen": 1787783293.5423174,
+    "ast_hash": "025f4fcb6024b3524d19492cf7ce54a2",
+    "semantic_hash": "025f4fcb6024b3524d19492cf7ce54a2"
+  },
+  "package.json": {
+    "mtime": 1787582036.126648,
+    "seen": 1787783293.5423195,
+    "ast_hash": "f884f9030a09d40ac073b5f7f9e631c9",
+    "semantic_hash": "f884f9030a09d40ac073b5f7f9e631c9"
+  },
+  "postcss.config.mjs": {
+    "mtime": 1787582036.126648,
+    "seen": 1787783293.5423212,
+    "ast_hash": "481fac0fdecd70e1821cc30b86030c1a",
+    "semantic_hash": "481fac0fdecd70e1821cc30b86030c1a"
+  },
+  "src/app/layout.tsx": {
+    "mtime": 1787582036.1360717,
+    "seen": 1787783293.5423222,
+    "ast_hash": "5591e79149ae01db5781b7f68a56ca62",
+    "semantic_hash": "5591e79149ae01db5781b7f68a56ca62"
+  },
+  "src/app/page.tsx": {
+    "mtime": 1787582036.1370833,
+    "seen": 1787783293.5423234,
+    "ast_hash": "66061eb439413d37bc8af024e304534e",
+    "semantic_hash": "66061eb439413d37bc8af024e304534e"
+  },
+  "src/proxy.ts": {
+    "mtime": 1787776178.1486151,
+    "seen": 1787783293.5423248,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "tsconfig.json": {
+    "mtime": 1787582036.1380842,
+    "seen": 1787783293.5423255,
+    "ast_hash": "0a2f4ed9289b65cd3feb4fb4ab3a4fcd",
+    "semantic_hash": "0a2f4ed9289b65cd3feb4fb4ab3a4fcd"
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1787583141.6300328,
+    "seen": 1787783293.5423267,
+    "ast_hash": "515f53c9101608fbf63766e2a5bd8cf9",
+    "semantic_hash": "515f53c9101608fbf63766e2a5bd8cf9"
+  },
+  "AGENTS.md": {
+    "mtime": 1787582036.1173031,
+    "seen": 1787783293.542328,
+    "ast_hash": "3ad29ed1c7e1970f724e872fcffc4909",
+    "semantic_hash": "3ad29ed1c7e1970f724e872fcffc4909"
+  },
+  "CLAUDE.md": {
+    "mtime": 1787776933.9813685,
+    "seen": 1787783293.5423288,
+    "ast_hash": "4ceca80eb036923a59cf61849d15027b",
+    "semantic_hash": "4ceca80eb036923a59cf61849d15027b"
+  },
+  "README.md": {
+    "mtime": 1787582036.119302,
+    "seen": 1787783293.5423307,
+    "ast_hash": "9162add00befbcdb432430f405c4ad8d",
+    "semantic_hash": "9162add00befbcdb432430f405c4ad8d"
+  },
+  "docs/frontend-architecture.md": {
+    "mtime": 1787776668.8889205,
+    "seen": 1787783293.5423317,
+    "ast_hash": "b10f8e553dc3ba925a81be7f73f1a593",
+    "semantic_hash": "b10f8e553dc3ba925a81be7f73f1a593"
+  },
+  "docs/BioSphere-Final-Capstone-1.pdf": {
+    "mtime": 1787775376.036261,
+    "seen": 1787783293.5423326,
+    "ast_hash": "c30c39831f02c2116b10773d61a5f0cd",
+    "semantic_hash": "c30c39831f02c2116b10773d61a5f0cd"
+  },
+  "docs/BioSphere-SRS.pdf": {
+    "mtime": 1787775380.5791655,
+    "seen": 1787783293.5423336,
+    "ast_hash": "cae922ac22f4ac3bca91dc88d24a7ed8",
+    "semantic_hash": "cae922ac22f4ac3bca91dc88d24a7ed8"
+  },
+  "public/file.svg": {
+    "mtime": 1787582036.127977,
+    "seen": 1787783293.5423348,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "public/globe.svg": {
+    "mtime": 1787582036.1295187,
+    "seen": 1787783293.5423357,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "public/next.svg": {
+    "mtime": 1787582036.1305332,
+    "seen": 1787783293.5423367,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "public/vercel.svg": {
+    "mtime": 1787582036.1315324,
+    "seen": 1787783293.542338,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "public/window.svg": {
+    "mtime": 1787582036.132532,
+    "seen": 1787783293.5423388,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
+  }
+}
