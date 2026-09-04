@@ -45,7 +45,11 @@ src/
 │   │   ├── curator-access/page.tsx
 │   │   └── ar-assets/page.tsx
 │   │
-│   └── login/page.tsx             # shared entry point for curator+developer auth
+│   └── login/                     # shared entry point for curator+developer auth
+│       ├── layout.tsx
+│       ├── page.tsx                # Curator Sign In "/login"
+│       ├── forgot-password/page.tsx
+│       └── verify/page.tsx         # OTP verification
 │
 ├── features/                      # mirrors the backend's NestJS modules, see §3
 │   ├── specimens/

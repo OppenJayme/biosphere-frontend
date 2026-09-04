@@ -12,7 +12,16 @@ const PROTECTED_PATHS = ["/dashboard", "/curator"];
 
 const LOGIN_PATH = "/login";
 
+// UI-only phase — the backend auth isn't wired up yet, so the gate below is
+// disabled and every route is reachable. Flip this back to `true` once real
+// session validation exists.
+const AUTH_GATE_ENABLED: boolean = false;
+
 export function proxy(request: NextRequest) {
+  if (!AUTH_GATE_ENABLED) {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED_PATHS.some(

@@ -2,25 +2,46 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1c2620;
+
+  /* Brand palette, extracted from the museum's Figma design. */
+  --color-forest-900: #142a1f;
+  --color-forest-800: #1a3628;
+  --color-forest-700: #1f4732;
+  --color-forest-600: #2c5c42;
+  --color-forest-100: #dfe9e0;
+
+  --color-gold-700: #8a6a1c;
+  --color-gold-600: #a9791b;
+  --color-gold-500: #c4922c;
+  --color-gold-100: #f4e9d2;
+
+  --color-sage-50: #f7f8f2;
+  --color-sage-100: #eef1e4;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-serif: var(--font-playfair);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-forest-900: var(--color-forest-900);
+  --color-forest-800: var(--color-forest-800);
+  --color-forest-700: var(--color-forest-700);
+  --color-forest-600: var(--color-forest-600);
+  --color-forest-100: var(--color-forest-100);
+
+  --color-gold-700: var(--color-gold-700);
+  --color-gold-600: var(--color-gold-600);
+  --color-gold-500: var(--color-gold-500);
+  --color-gold-100: var(--color-gold-100);
+
+  --color-sage-50: var(--color-sage-50);
+  --color-sage-100: var(--color-sage-100);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
