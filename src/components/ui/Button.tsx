@@ -10,11 +10,19 @@ const VARIANT_CLASSES: Record<Variant, string> = {
   "outline-white": "border border-white/70 text-white hover:bg-white/10",
 };
 
+type Radius = "full" | "lg";
+
+const RADIUS_CLASSES: Record<Radius, string> = {
+  full: "rounded-full px-6 py-3",
+  lg: "rounded-lg px-5 py-3",
+};
+
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-forest-700 disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-forest-700 disabled:opacity-50 disabled:pointer-events-none";
 
 type CommonProps = {
   variant?: Variant;
+  radius?: Radius;
   children: ReactNode;
   className?: string;
 };
@@ -27,12 +35,13 @@ type NativeButtonProps = CommonProps & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export function Button({
   variant = "solid-forest",
+  radius = "full",
   children,
   className = "",
   href,
   ...rest
 }: (LinkButtonProps | NativeButtonProps) & { href?: string }) {
-  const classes = `${baseClasses} ${VARIANT_CLASSES[variant]} ${className}`;
+  const classes = `${baseClasses} ${RADIUS_CLASSES[radius]} ${VARIANT_CLASSES[variant]} ${className}`;
 
   if (href) {
     return (
