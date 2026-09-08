@@ -1,0 +1,90 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
+import { ExhibitToolbar } from "./ExhibitToolbar";
+import { ExhibitTable } from "./ExhibitTable";
+import { ExhibitDetailPanel } from "./ExhibitDetailPanel";
+import { CreateExhibitModal } from "./CreateExhibitModal";
+import type { Exhibit, EXHIBIT_FILTERS } from "@/lib/dummy-data/exhibits";
+
+const PAGE_SIZES = ["5 / page", "10 / page", "25 / page"];
+const TOTAL_EXHIBITS = 128;
+const PAGE_COUNT = 26;
+
+export function ExhibitsWorkspace({
+  exhibits,
+  filters,
+}: {
+  exhibits: Exhibit[];
+  filters: typeof EXHIBIT_FILTERS;
+}) {
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(exhibits[0]?.slug ?? null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const selected = exhibits.find((e) => e.slug === selectedSlug) ?? null;
+
+  return (
+    <div className="space-y-4">
+      <ExhibitToolbar filters={filters} onAddClick={() => setModalOpen(true)} />
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
+          <ExhibitTable exhibits={exhibits} selectedSlug={selectedSlug} onSelect={setSelectedSlug} />
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
+            <p>
+              Showing 1 to {exhibits.length} of {TOTAL_EXHIBITS} exhibits
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Previous page"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
+              >
+                <ChevronLeftIcon className="h-3.5 w-3.5" />
+              </button>
+              {[1, 2, 3, 4, 5].map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
+                    page === 1 ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <span className="px-1">&hellip;</span>
+              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
+                {PAGE_COUNT}
+              </button>
+              <button
+                type="button"
+                aria-label="Next page"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
+              >
+                <ChevronRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="relative">
+              <select
+                defaultValue={PAGE_SIZES[0]}
+                className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
+              >
+                {PAGE_SIZES.map((size) => (
+                  <option key={size}>{size}</option>
+                ))}
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
+            </div>
+          </div>
+        </div>
+
+        <ExhibitDetailPanel exhibit={selected} onClear={() => setSelectedSlug(null)} />
+      </div>
+
+      <CreateExhibitModal open={modalOpen} onClose={() => setModalOpen(false)} />
+    </div>
+  );
+}

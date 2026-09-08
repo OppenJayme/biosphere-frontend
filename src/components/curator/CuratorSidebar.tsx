@@ -11,7 +11,7 @@ import {
   MapPinIcon,
   CubeIcon,
   ClipboardIcon,
-  GlobeIcon,
+  ChatIcon,
   UsersIcon,
   ChartBarIcon,
   CloseIcon,
@@ -25,8 +25,8 @@ const NAV_ITEMS: { label: string; href: string; icon: ComponentType<SVGProps<SVG
   { label: "Location", href: "/storage", icon: MapPinIcon },
   { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon },
   { label: "Audit Logs", href: "/audit-logs", icon: ClipboardIcon },
-  { label: "Public Website", href: "/", icon: GlobeIcon },
-  { label: "User", href: "/account", icon: UsersIcon },
+  { label: "Public Website", href: "/public-website", icon: ChatIcon },
+  { label: "User", href: "/users", icon: UsersIcon },
   { label: "Reports", href: "/reports", icon: ChartBarIcon },
 ];
 
