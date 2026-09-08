@@ -8,6 +8,10 @@ const SESSION_COOKIE_NAME = "biosphere_session";
 
 // Route prefixes that require an authenticated curator.
 // Adjust once it's decided whether this app is the public site or the curator PWA.
+// NOTE: the curator's QR-exhibit manager lives at the exact path "/exhibits", while
+// unlisted public exhibit pages live at "/exhibits/<slug>" (see src/app/exhibits/).
+// If "/exhibits" is added here, gate it as an EXACT match only — a prefix match would
+// also lock out the public QR pages.
 const PROTECTED_PATHS = ["/dashboard", "/curator"];
 
 const LOGIN_PATH = "/login";
