@@ -6,12 +6,24 @@ import { Field } from "@/components/ui/Field";
 import { IconInput } from "@/components/ui/IconInput";
 import { Button } from "@/components/ui/Button";
 import { MailIcon, LockIcon } from "@/components/icons";
+import { signIn } from "@/features/auth/actions";
 
 export const metadata: Metadata = {
   title: "Curator Sign In",
 };
 
-export default function LoginPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  missing_fields: "Enter your email and password.",
+  invalid_credentials: "Incorrect email or password.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; from?: string }>;
+}) {
+  const { error, from } = await searchParams;
+
   return (
     <AuthLayout
       title="Curator Sign In"
@@ -23,7 +35,15 @@ export default function LoginPage() {
         </>
       }
     >
-      <form className="space-y-5">
+      <form action={signIn} className="space-y-5">
+        {from && <input type="hidden" name="from" value={from} />}
+
+        {error && (
+          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            {ERROR_MESSAGES[error] ?? "Something went wrong. Please try again."}
+          </p>
+        )}
+
         <Field label="Email Address" htmlFor="email">
           <IconInput
             id="email"

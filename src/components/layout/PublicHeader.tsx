@@ -20,6 +20,9 @@ export function PublicHeader() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  // Unlisted QR exhibit pages ship their own compact chrome — skip the full site header.
+  if (pathname.startsWith("/exhibits/")) return null;
+
   return (
     <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6">

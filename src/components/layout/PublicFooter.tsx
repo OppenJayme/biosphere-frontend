@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogoMark } from "./LogoMark";
 import { FacebookIcon, TwitterIcon, GlobeIcon, MapPinIcon, PhoneIcon, MailIcon } from "@/components/icons";
 
@@ -15,6 +18,11 @@ const HOURS = [
 ];
 
 export function PublicFooter() {
+  const pathname = usePathname();
+
+  // Unlisted QR exhibit pages ship their own compact chrome — skip the full site footer.
+  if (pathname.startsWith("/exhibits/")) return null;
+
   return (
     <footer className="border-t border-black/10 bg-sage-50">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">

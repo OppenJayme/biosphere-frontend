@@ -1,50 +1,81 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-// TODO: replace with real session validation once auth is implemented
-// (e.g. verify a JWT/session token against the NestJS backend).
-// This only checks that a cookie is present — it does NOT verify it.
-const SESSION_COOKIE_NAME = "biosphere_session";
-
-// Route prefixes that require an authenticated curator.
-// Adjust once it's decided whether this app is the public site or the curator PWA.
-// NOTE: the curator's QR-exhibit manager lives at the exact path "/exhibits", while
-// unlisted public exhibit pages live at "/exhibits/<slug>" (see src/app/exhibits/).
-// If "/exhibits" is added here, gate it as an EXACT match only — a prefix match would
-// also lock out the public QR pages.
-const PROTECTED_PATHS = ["/dashboard", "/curator"];
+// Route prefixes that require an authenticated curator — one entry per
+// src/app/(curator)/ page. Route groups don't affect the URL, so these are
+// NOT prefixed with "/curator".
+// NOTE: the curator's QR-exhibit manager lives at the exact path "/exhibits"
+// (src/app/(curator)/exhibits/), while unlisted public exhibit pages live at
+// "/exhibits/<slug>" (src/app/(public)/exhibits/[slug]/) — same URL prefix,
+// different route group. "/exhibits" below is an EXACT match only — a prefix
+// match would also lock out the public QR pages.
+const PROTECTED_EXACT_PATHS = ["/exhibits"];
+const PROTECTED_PREFIX_PATHS = [
+  "/dashboard",
+  "/specimens",
+  "/storage",
+  "/cataloging",
+  "/audit-logs",
+  "/public-website",
+  "/reports",
+  "/users",
+];
 
 const LOGIN_PATH = "/login";
 
-// UI-only phase — the backend auth isn't wired up yet, so the gate below is
-// disabled and every route is reachable. Flip this back to `true` once real
-// session validation exists.
-const AUTH_GATE_ENABLED: boolean = false;
+// .env.local now has real Supabase credentials, so the gate is live.
+const AUTH_GATE_ENABLED: boolean = true;
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!AUTH_GATE_ENABLED) {
     return NextResponse.next();
   }
 
   const { pathname } = request.nextUrl;
 
-  const isProtected = PROTECTED_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  );
+  const isProtected =
+    PROTECTED_EXACT_PATHS.includes(pathname) ||
+    PROTECTED_PREFIX_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   if (!isProtected) {
     return NextResponse.next();
   }
 
-  const session = request.cookies.get(SESSION_COOKIE_NAME);
+  // Cheap optimistic check only — refreshes the Supabase session cookie and
+  // redirects if it's missing/expired. The real check is verifySession() in
+  // lib/session.ts, re-run inside every Server Action/data call, since this
+  // matcher can drift out of sync with the routes it's meant to protect.
+  let response = NextResponse.next({ request });
 
-  if (!session) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     const loginUrl = new URL(LOGIN_PATH, request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
