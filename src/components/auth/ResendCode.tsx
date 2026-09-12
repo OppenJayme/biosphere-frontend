@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
-export function ResendCode({ seconds: initialSeconds = 30 }: { seconds?: number }) {
+export function ResendCode({
+  action,
+  seconds: initialSeconds = 30,
+}: {
+  action: () => Promise<void>;
+  seconds?: number;
+}) {
   const [seconds, setSeconds] = useState(initialSeconds);
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -22,10 +29,16 @@ export function ResendCode({ seconds: initialSeconds = 30 }: { seconds?: number 
   return (
     <button
       type="button"
-      onClick={() => setSeconds(initialSeconds)}
-      className="font-semibold text-forest-700 hover:text-forest-800"
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          await action();
+          setSeconds(initialSeconds);
+        })
+      }
+      className="font-semibold text-forest-700 hover:text-forest-800 disabled:opacity-50"
     >
-      Resend code
+      {pending ? "Sending…" : "Resend code"}
     </button>
   );
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_COOKIE_NAME } from "@/lib/session";
 import { login, type LoginResponse } from "./api";
+import { emailSchema, otpSchema, newPasswordSchema } from "./schema";
 
 export async function signIn(formData: FormData) {
   const email = formData.get("email");
@@ -60,4 +61,85 @@ export async function signOut() {
   cookieStore.delete(ACCOUNT_COOKIE_NAME);
 
   redirect("/login");
+}
+
+export async function forgotPassword(formData: FormData) {
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) {
+    redirect("/login/forgot-password?error=invalid_email");
+  }
+  const email = parsed.data;
+
+  // Always move on to the verify step regardless of outcome — Supabase
+  // responds the same way whether or not the account exists, so this form
+  // can't be used to probe which emails are registered.
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email).catch(() => {});
+
+  redirect(`/login/verify?email=${encodeURIComponent(email)}`);
+}
+
+export async function resendResetCode(email: string) {
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email).catch(() => {});
+}
+
+export async function verifyResetCode(formData: FormData) {
+  const email = formData.get("email");
+  const parsedOtp = otpSchema.safeParse(formData.get("otp"));
+
+  if (typeof email !== "string" || !email || !parsedOtp.success) {
+    redirect(
+      `/login/verify?email=${encodeURIComponent(typeof email === "string" ? email : "")}&error=invalid_otp`
+    );
+  }
+
+  // Verifying the OTP against Supabase directly establishes a real (but
+  // recovery-scoped) session via cookies — that's what lets the next step
+  // call updateUser() without us having to invent our own reset token.
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token: parsedOtp.data,
+    type: "recovery",
+  });
+
+  if (error) {
+    redirect(`/login/verify?email=${encodeURIComponent(email)}&error=invalid_otp`);
+  }
+
+  redirect("/login/reset-password");
+}
+
+export async function resetPassword(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login/forgot-password?error=session_expired");
+  }
+
+  const password = formData.get("password");
+  const confirmPasswordValue = formData.get("confirmPassword");
+  const parsedPassword = newPasswordSchema.safeParse(password);
+
+  if (!parsedPassword.success) {
+    redirect("/login/reset-password?error=weak_password");
+  }
+  if (password !== confirmPasswordValue) {
+    redirect("/login/reset-password?error=mismatch");
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: parsedPassword.data });
+  if (error) {
+    redirect("/login/reset-password?error=failed");
+  }
+
+  // Don't leave the recovery session live longer than it needs to be —
+  // require a fresh, normal login with the new password from here.
+  await supabase.auth.signOut();
+  redirect("/login?success=password_reset");
 }
