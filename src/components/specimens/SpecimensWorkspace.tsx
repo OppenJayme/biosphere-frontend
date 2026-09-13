@@ -5,14 +5,17 @@ import { SpecimenToolbar } from "./SpecimenToolbar";
 import { SpecimenTable } from "./SpecimenTable";
 import { SpecimenDetailPanel } from "./SpecimenDetailPanel";
 import { AddSpecimenModal } from "./AddSpecimenModal";
+import { OfflineSpecimenPanel } from "@/features/offline/components/OfflineSpecimenPanel";
 import type { Specimen, SPECIMEN_FILTERS } from "@/lib/dummy-data/specimens";
 
 export function SpecimensWorkspace({
   specimens,
   filters,
+  offlineOwnerId,
 }: {
   specimens: Specimen[];
   filters: typeof SPECIMEN_FILTERS;
+  offlineOwnerId: string;
 }) {
   const [selectedAccessionNo, setSelectedAccessionNo] = useState<string | null>(
     specimens[0]?.accessionNo ?? null,
@@ -24,6 +27,8 @@ export function SpecimensWorkspace({
   return (
     <div className="space-y-4">
       <SpecimenToolbar filters={filters} onAddClick={() => setModalOpen(true)} />
+
+      <OfflineSpecimenPanel ownerId={offlineOwnerId} />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
         <div className="min-w-0 rounded-xl border border-black/10 bg-white p-5">
