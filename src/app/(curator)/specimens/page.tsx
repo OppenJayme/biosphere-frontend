@@ -3,12 +3,17 @@ import { StatCard } from "@/components/ui/StatCard";
 import { SpecimensWorkspace } from "@/components/specimens/SpecimensWorkspace";
 import { STATS } from "@/lib/dummy-data/dashboard";
 import { SPECIMENS, SPECIMEN_FILTERS } from "@/lib/dummy-data/specimens";
+import { verifySession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Specimens",
 };
 
-export default function SpecimensPage() {
+export default async function SpecimensPage() {
+  const user = await verifySession();
+  if (!user) redirect("/login?from=/specimens");
+
   return (
     <div className="space-y-5">
       <div>
@@ -22,7 +27,11 @@ export default function SpecimensPage() {
         ))}
       </div>
 
-      <SpecimensWorkspace specimens={SPECIMENS} filters={SPECIMEN_FILTERS} />
+      <SpecimensWorkspace
+        specimens={SPECIMENS}
+        filters={SPECIMEN_FILTERS}
+        offlineOwnerId={user.id}
+      />
     </div>
   );
 }
