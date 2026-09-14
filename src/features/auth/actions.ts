@@ -11,7 +11,12 @@ export async function signIn(formData: FormData) {
   const email = formData.get("email");
   const password = formData.get("password");
   const from = formData.get("from");
-  const redirectTo = typeof from === "string" && from.startsWith("/") ? from : "/dashboard";
+  // "//evil-site.com" also starts with "/" but the browser treats it as
+  // protocol-relative — reject those so `from` can't be used as an open redirect.
+  const redirectTo =
+    typeof from === "string" && from.startsWith("/") && !from.startsWith("//")
+      ? from
+      : "/dashboard";
 
   if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     redirect(`/login?error=missing_fields`);
@@ -80,19 +85,27 @@ export async function forgotPassword(formData: FormData) {
 }
 
 export async function resendResetCode(email: string) {
+  // `email` comes back from a URL query param on the client — re-validate
+  // it here rather than trusting it was never tampered with in transit.
+  const parsed = emailSchema.safeParse(email);
+  if (!parsed.success) return;
+
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email).catch(() => {});
+  await supabase.auth.resetPasswordForEmail(parsed.data).catch(() => {});
 }
 
 export async function verifyResetCode(formData: FormData) {
-  const email = formData.get("email");
+  const rawEmail = formData.get("email");
+  const parsedEmail = emailSchema.safeParse(rawEmail);
   const parsedOtp = otpSchema.safeParse(formData.get("otp"));
 
-  if (typeof email !== "string" || !email || !parsedOtp.success) {
+  if (!parsedEmail.success || !parsedOtp.success) {
     redirect(
-      `/login/verify?email=${encodeURIComponent(typeof email === "string" ? email : "")}&error=invalid_otp`
+      `/login/verify?email=${encodeURIComponent(typeof rawEmail === "string" ? rawEmail : "")}&error=invalid_otp`
     );
   }
+
+  const email = parsedEmail.data;
 
   // Verifying the OTP against Supabase directly establishes a real (but
   // recovery-scoped) session via cookies — that's what lets the next step
