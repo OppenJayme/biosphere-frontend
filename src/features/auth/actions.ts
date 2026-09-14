@@ -4,19 +4,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_COOKIE_NAME } from "@/lib/session";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 import { login, type LoginResponse } from "./api";
 import { emailSchema, otpSchema, newPasswordSchema } from "./schema";
 
 export async function signIn(formData: FormData) {
   const email = formData.get("email");
   const password = formData.get("password");
-  const from = formData.get("from");
-  // "//evil-site.com" also starts with "/" but the browser treats it as
-  // protocol-relative — reject those so `from` can't be used as an open redirect.
-  const redirectTo =
-    typeof from === "string" && from.startsWith("/") && !from.startsWith("//")
-      ? from
-      : "/dashboard";
+  const redirectTo = getSafeRedirect(formData.get("from"));
 
   if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     redirect(`/login?error=missing_fields`);
