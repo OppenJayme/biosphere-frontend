@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { PlusIcon, SearchIcon } from "@/components/icons";
+import {
+  filterCachedSpecimens,
+  getCachedSpecimenCategories,
+  type CachedSpecimenStatusFilter,
+} from "../filters";
 import type { OfflineSpecimenDraft, SpecimenDraftData } from "../types";
 import { useOfflineSpecimens } from "../use-offline-specimens";
 import { OfflineSpecimenDraftModal } from "./OfflineSpecimenDraftModal";
@@ -43,21 +48,33 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDraft, setEditingDraft] = useState<OfflineSpecimenDraft | null>(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState<CachedSpecimenStatusFilter>("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
 
-  const visibleCache = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase();
-    if (!query) return cachedSpecimens;
-    return cachedSpecimens.filter((specimen) =>
-      [
-        specimen.accessionNumber,
-        specimen.commonName,
-        specimen.scientificName,
-        specimen.specimenCategory,
-        specimen.status,
-      ].some((value) => value?.toLocaleLowerCase().includes(query)),
-    );
-  }, [cachedSpecimens, search]);
+  const categoryOptions = useMemo(
+    () => getCachedSpecimenCategories(cachedSpecimens),
+    [cachedSpecimens],
+  );
+  const visibleCache = useMemo(
+    () =>
+      filterCachedSpecimens(cachedSpecimens, {
+        search,
+        status: statusFilter,
+        category: categoryFilter,
+      }),
+    [cachedSpecimens, categoryFilter, search, statusFilter],
+  );
+
+  const filtersActive =
+    search.trim().length > 0 || statusFilter !== "ALL" || categoryFilter !== "";
+
+  function clearFilters() {
+    setSearch("");
+    setStatusFilter("ALL");
+    setCategoryFilter("");
+  }
 
   async function handleSave(data: SpecimenDraftData, clientDraftId?: string) {
     await saveDraft(data, clientDraftId);
@@ -221,11 +238,11 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
         </div>
 
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Cached server records (read-only)
             </h3>
-            <div className="relative ml-auto w-48">
+            <div className="relative ml-auto w-full sm:w-48">
               <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
               <input
                 type="search"
@@ -235,13 +252,50 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
                 className="w-full rounded-lg border border-black/15 py-1.5 pl-8 pr-2 text-xs outline-none focus:border-forest-700"
               />
             </div>
+            <select
+              aria-label="Filter cached specimens by status"
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as CachedSpecimenStatusFilter)
+              }
+              className="rounded-lg border border-black/15 bg-white px-2 py-1.5 text-xs outline-none focus:border-forest-700"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="UNCATALOGED">Uncataloged</option>
+              <option value="CATALOGED">Cataloged</option>
+            </select>
+            <select
+              aria-label="Filter cached specimens by category"
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+              className="max-w-44 rounded-lg border border-black/15 bg-white px-2 py-1.5 text-xs outline-none focus:border-forest-700"
+            >
+              <option value="">All categories</option>
+              {categoryOptions.map((category) => (
+                <option key={category.toLowerCase()} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs font-semibold text-forest-800 hover:underline"
+              >
+                Clear
+              </button>
+            )}
           </div>
+          <p className="mt-2 text-xs text-zinc-500" aria-live="polite">
+            Showing {visibleCache.length} of {cachedSpecimens.length} cached records
+          </p>
           <div className="mt-2 max-h-80 overflow-y-auto rounded-lg border border-black/10">
             {visibleCache.length === 0 ? (
               <p className="px-3 py-5 text-center text-xs text-zinc-500">
                 {cachedSpecimens.length === 0
                   ? "Connect and select Sync now to cache active specimen records."
-                  : "No cached specimens match this search."}
+                  : "No cached specimens match the current search and filters."}
               </p>
             ) : (
               <ul className="divide-y divide-black/5">

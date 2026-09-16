@@ -7,7 +7,9 @@ in BioSphere SRS Section 4.14. It mirrors the backend contract documented in
 ## Supported offline behavior
 
 - Previously synchronized specimen-core records are cached for read-only viewing
-  and searching.
+  and local searching/filtering. Cached records can be filtered by their frozen
+  specimen status and curator-extensible specimen category without a network
+  request.
 - A curator can create and retain a new text-only specimen draft on the device.
 - Every local draft receives one stable `clientDraftId` UUID. That identifier is
   reused for every retry so the backend can return the original specimen instead
@@ -78,6 +80,8 @@ publishing, reports, inquiries, visits, accounts, backups, QR, or AR operations.
 This change provides the IndexedDB data and synchronization layer. A service worker
 for offline app-shell loading is still a separate PWA task; without it, the already
 loaded page can use IndexedDB offline, but a fresh offline navigation is not yet
-guaranteed. The older specimen table still uses placeholder presentation data and
-should later be replaced with the real online catalog list rather than being
-silently mixed with cached core records.
+guaranteed. The service-worker task must preserve account isolation and clear or
+invalidate any authenticated shell during logout/account switching; it must not
+cache authenticated HTML without that boundary. The older specimen table still
+uses placeholder presentation data and should later be replaced with the real
+online catalog list rather than being silently mixed with cached core records.
