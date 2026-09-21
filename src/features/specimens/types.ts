@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const SPECIMEN_STATUSES = ["UNCATALOGED", "CATALOGED", "ARCHIVED"] as const;
+export const SPECIMEN_GENDERS = ["MALE", "FEMALE", "UNKNOWN", "NOT_APPLICABLE"] as const;
 
 export type SpecimenStatus = (typeof SPECIMEN_STATUSES)[number];
 
@@ -13,7 +14,7 @@ export const specimenSummarySchema = z.object({
   specimenCategory: z.string().nullable(),
   scientificName: z.string().nullable(),
   commonName: z.string().nullable(),
-  gender: z.enum(["MALE", "FEMALE", "UNKNOWN", "NOT_APPLICABLE"]).nullable(),
+  gender: z.enum(SPECIMEN_GENDERS).nullable(),
   classificationStatus: z.string().nullable(),
   status: z.enum(SPECIMEN_STATUSES),
   publicDisplay: z.boolean(),
@@ -33,16 +34,23 @@ export const specimenPageSchema = z.object({
   limit: z.number().int().positive(),
 });
 
+export const museumCollectionSchema = z.object({
+  id: z.uuid(),
+  collectionName: z.string().min(1),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+});
+
+export const collectionPageSchema = z.object({
+  items: z.array(museumCollectionSchema),
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  limit: z.number().int().positive().max(100),
+});
+
 export const specimenDetailSchema = z.object({
   specimen: specimenSummarySchema,
-  collection: z
-    .object({
-      id: z.uuid(),
-      collectionName: z.string().min(1),
-      createdAt: z.string().min(1),
-      updatedAt: z.string().min(1),
-    })
-    .nullable(),
+  collection: museumCollectionSchema.nullable(),
   taxonomy: z
     .object({
       specimenId: z.uuid(),
@@ -124,6 +132,7 @@ export const specimenDetailSchema = z.object({
 export type SpecimenSummary = z.infer<typeof specimenSummarySchema>;
 export type SpecimenPage = z.infer<typeof specimenPageSchema>;
 export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
+export type MuseumCollection = z.infer<typeof museumCollectionSchema>;
 
 export type SpecimenListQuery = {
   search: string;

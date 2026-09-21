@@ -10,7 +10,8 @@ export function SpecimenToolbar({ query }: { query: SpecimenListQuery }) {
   const hasFilters = query.search.length > 0 || query.status !== null;
 
   return (
-    <form action="/specimens" className="flex flex-wrap items-end gap-2.5">
+    <div className="flex flex-wrap items-end gap-2.5">
+      <form action="/specimens" className="flex min-w-0 flex-1 flex-wrap items-end gap-2.5">
       <label className="relative min-w-56 flex-1">
         <span className="sr-only">Search specimen records</span>
         <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -55,6 +56,14 @@ export function SpecimenToolbar({ query }: { query: SpecimenListQuery }) {
           Clear
         </Link>
       )}
-    </form>
+      </form>
+
+      <Link
+        href="/specimens/new"
+        className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
+      >
+        Add specimen draft
+      </Link>
+    </div>
   );
 }
