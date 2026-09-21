@@ -58,6 +58,10 @@ export default async function SpecimenDetailsPage({
       ? "The uncataloged specimen draft was created."
       : noticeParams.updated === "1"
         ? "The specimen core record was updated."
+        : noticeParams.taxonomy === "created"
+          ? "The specimen taxonomy record was created."
+          : noticeParams.taxonomy === "updated"
+            ? "The specimen taxonomy record was updated."
         : null;
 
   return (
