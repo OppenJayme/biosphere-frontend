@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CloseIcon, PawIcon } from "@/components/icons";
 import type { SpecimenSummary } from "@/features/specimens/types";
 
@@ -94,6 +95,13 @@ export function SpecimenDetailPanel({
               <p className="text-xs leading-5 text-zinc-700">{specimen.remarks}</p>
             </div>
           )}
+
+          <Link
+            href={`/specimens/${specimen.id}`}
+            className="inline-flex w-full justify-center rounded-lg bg-forest-700 px-3 py-2 text-xs font-semibold text-white hover:bg-forest-800"
+          >
+            View full specimen details
+          </Link>
         </div>
       )}
     </aside>

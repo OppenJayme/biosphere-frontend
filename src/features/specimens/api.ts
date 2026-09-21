@@ -2,6 +2,7 @@ import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import {
   SPECIMEN_PAGE_LIMIT,
+  specimenDetailSchema,
   specimenPageSchema,
   type SpecimenListQuery,
 } from "./types";
@@ -25,6 +26,20 @@ export async function searchSpecimens(query: SpecimenListQuery) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid specimen catalog response.");
+  }
+
+  return result.data;
+}
+
+export async function getSpecimenDetails(id: string) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}/details`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenDetailSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen detail response.");
   }
 
   return result.data;
