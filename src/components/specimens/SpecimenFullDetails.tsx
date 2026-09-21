@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { SpecimenDetail } from "@/features/specimens/types";
 
 function text(value: string | null | undefined) {
@@ -31,10 +32,21 @@ function DetailGrid({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5">
-      <h2 className="mb-4 font-serif text-lg font-semibold text-forest-800">{title}</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-serif text-lg font-semibold text-forest-800">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -88,7 +100,19 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         )}
       </Section>
 
-      <Section title="Taxonomy">
+      <Section
+        title="Taxonomy"
+        action={
+          specimen.status !== "ARCHIVED" ? (
+            <Link
+              href={`/specimens/${specimen.id}/taxonomy`}
+              className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+            >
+              {taxonomy ? "Edit taxonomy" : "Add taxonomy"}
+            </Link>
+          ) : undefined
+        }
+      >
         {taxonomy ? (
           <DetailGrid
             entries={[

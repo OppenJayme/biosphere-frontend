@@ -48,24 +48,24 @@ export const collectionPageSchema = z.object({
   limit: z.number().int().positive().max(100),
 });
 
+export const specimenTaxonomySchema = z.object({
+  specimenId: z.uuid(),
+  kingdom: z.string().nullable(),
+  phylum: z.string().nullable(),
+  class: z.string().nullable(),
+  orderName: z.string().nullable(),
+  family: z.string().nullable(),
+  genus: z.string().nullable(),
+  species: z.string().nullable(),
+  habitat: z.string().nullable(),
+  ecologicalRole: z.string().nullable(),
+  conservationStatus: z.string().nullable(),
+});
+
 export const specimenDetailSchema = z.object({
   specimen: specimenSummarySchema,
   collection: museumCollectionSchema.nullable(),
-  taxonomy: z
-    .object({
-      specimenId: z.uuid(),
-      kingdom: z.string().nullable(),
-      phylum: z.string().nullable(),
-      class: z.string().nullable(),
-      orderName: z.string().nullable(),
-      family: z.string().nullable(),
-      genus: z.string().nullable(),
-      species: z.string().nullable(),
-      habitat: z.string().nullable(),
-      ecologicalRole: z.string().nullable(),
-      conservationStatus: z.string().nullable(),
-    })
-    .nullable(),
+  taxonomy: specimenTaxonomySchema.nullable(),
   provenance: z
     .object({
       specimenId: z.uuid(),
@@ -133,6 +133,7 @@ export type SpecimenSummary = z.infer<typeof specimenSummarySchema>;
 export type SpecimenPage = z.infer<typeof specimenPageSchema>;
 export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 export type MuseumCollection = z.infer<typeof museumCollectionSchema>;
+export type SpecimenTaxonomy = z.infer<typeof specimenTaxonomySchema>;
 
 export type SpecimenListQuery = {
   search: string;

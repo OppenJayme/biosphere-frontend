@@ -6,10 +6,12 @@ import {
   specimenDetailSchema,
   specimenPageSchema,
   specimenSummarySchema,
+  specimenTaxonomySchema,
   type MuseumCollection,
   type SpecimenListQuery,
 } from "./types";
 import type { SpecimenMutationInput } from "./form";
+import type { TaxonomyMutationInput } from "./taxonomy-form";
 
 const COLLECTION_PAGE_LIMIT = 100;
 
@@ -103,4 +105,30 @@ export async function updateSpecimen(id: string, input: SpecimenMutationInput) {
   }
 
   return result.data;
+}
+
+async function mutateTaxonomy(
+  specimenId: string,
+  method: "POST" | "PATCH",
+  input: TaxonomyMutationInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/taxonomy`,
+    { method, body: JSON.stringify(input) },
+  );
+  const result = specimenTaxonomySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen taxonomy response.");
+  }
+
+  return result.data;
+}
+
+export function createSpecimenTaxonomy(specimenId: string, input: TaxonomyMutationInput) {
+  return mutateTaxonomy(specimenId, "POST", input);
+}
+
+export function updateSpecimenTaxonomy(specimenId: string, input: TaxonomyMutationInput) {
+  return mutateTaxonomy(specimenId, "PATCH", input);
 }
