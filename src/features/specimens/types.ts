@@ -33,8 +33,97 @@ export const specimenPageSchema = z.object({
   limit: z.number().int().positive(),
 });
 
+export const specimenDetailSchema = z.object({
+  specimen: specimenSummarySchema,
+  collection: z
+    .object({
+      id: z.uuid(),
+      collectionName: z.string().min(1),
+      createdAt: z.string().min(1),
+      updatedAt: z.string().min(1),
+    })
+    .nullable(),
+  taxonomy: z
+    .object({
+      specimenId: z.uuid(),
+      kingdom: z.string().nullable(),
+      phylum: z.string().nullable(),
+      class: z.string().nullable(),
+      orderName: z.string().nullable(),
+      family: z.string().nullable(),
+      genus: z.string().nullable(),
+      species: z.string().nullable(),
+      habitat: z.string().nullable(),
+      ecologicalRole: z.string().nullable(),
+      conservationStatus: z.string().nullable(),
+    })
+    .nullable(),
+  provenance: z
+    .object({
+      specimenId: z.uuid(),
+      collector: z.string().nullable(),
+      donor: z.string().nullable(),
+      collectionDate: z.string().nullable(),
+      collectionLocation: z.string().nullable(),
+      preservationType: z.string().nullable(),
+      preservationMethod: z.string().nullable(),
+      updatedAt: z.string().min(1),
+    })
+    .nullable(),
+  activeLots: z.array(
+    z.object({
+      id: z.uuid(),
+      specimenId: z.uuid(),
+      storageUnitId: z.uuid(),
+      conditionClass: z.string().min(1),
+      quantity: z.number().int().positive(),
+      storageNotes: z.string().nullable(),
+      isActive: z.literal(true),
+      createdBy: z.uuid(),
+      updatedBy: z.uuid().nullable(),
+      createdAt: z.string().min(1),
+      updatedAt: z.string().min(1),
+      storageUnit: z.object({
+        id: z.uuid(),
+        label: z.string().min(1),
+        unitType: z.string().min(1),
+        storageType: z.string().min(1),
+        size: z.string().nullable(),
+        parentId: z.uuid().nullable(),
+        holdsSpecimens: z.boolean(),
+        capacity: z.number().int().nullable(),
+        archivedAt: z.string().nullable(),
+        createdAt: z.string().min(1),
+        updatedAt: z.string().min(1),
+      }),
+    }),
+  ),
+  lotOverview: z.object({
+    activeLotCount: z.number().int().nonnegative(),
+    totalQuantity: z.number().int().nonnegative(),
+  }),
+  media: z.array(
+    z.object({
+      id: z.uuid(),
+      specimenId: z.uuid(),
+      storagePath: z.string().min(1),
+      displayOrder: z.number().int().nonnegative(),
+      caption: z.string().nullable(),
+      isCover: z.boolean(),
+      createdAt: z.string().min(1),
+    }),
+  ),
+  tags: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string().min(1),
+    }),
+  ),
+});
+
 export type SpecimenSummary = z.infer<typeof specimenSummarySchema>;
 export type SpecimenPage = z.infer<typeof specimenPageSchema>;
+export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 
 export type SpecimenListQuery = {
   search: string;
