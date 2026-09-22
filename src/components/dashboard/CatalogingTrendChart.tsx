@@ -1,35 +1,41 @@
-import type { CATALOGING_TREND } from "@/lib/dummy-data/dashboard";
+import type { CatalogingTrendPoint } from "@/features/dashboard/types";
 
-export function CatalogingTrendChart({
-  data,
-}: {
-  data: readonly (typeof CATALOGING_TREND)[number][];
-}) {
+function niceMax(rawMax: number): number {
+  if (rawMax <= 5) return 5;
+  const magnitude = 10 ** Math.floor(Math.log10(rawMax));
+  return Math.ceil(rawMax / magnitude) * magnitude;
+}
+
+export function CatalogingTrendChart({ data }: { data: CatalogingTrendPoint[] }) {
   const width = 560;
   const height = 200;
   const paddingLeft = 28;
   const paddingBottom = 22;
   const paddingTop = 10;
-  const max = 4;
+  const max = niceMax(Math.max(1, ...data.map((d) => d.value)));
+  const tickCount = 4;
 
   const chartWidth = width - paddingLeft;
   const chartHeight = height - paddingBottom - paddingTop;
 
   const points = data.map((d, i) => ({
-    x: paddingLeft + (i / (data.length - 1)) * chartWidth,
+    x: paddingLeft + (data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2),
     y: paddingTop + chartHeight - (d.value / max) * chartHeight,
   }));
 
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
   const baseline = paddingTop + chartHeight;
-  const areaPath = `${linePath} L${points[points.length - 1].x},${baseline} L${points[0].x},${baseline} Z`;
+  const areaPath =
+    points.length > 0
+      ? `${linePath} L${points[points.length - 1].x},${baseline} L${points[0].x},${baseline} Z`
+      : "";
 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       className="w-full"
       role="img"
-      aria-label="Records cataloged over the last 12 months"
+      aria-label="Specimens created over the last 12 months"
     >
       <defs>
         <linearGradient id="catalogingArea" x1="0" y1="0" x2="0" y2="1">
@@ -38,13 +44,14 @@ export function CatalogingTrendChart({
         </linearGradient>
       </defs>
 
-      {[0, 1, 2, 3, 4].map((tick) => {
-        const y = paddingTop + chartHeight - (tick / max) * chartHeight;
+      {Array.from({ length: tickCount + 1 }, (_, tick) => tick).map((tick) => {
+        const value = (tick / tickCount) * max;
+        const y = paddingTop + chartHeight - (tick / tickCount) * chartHeight;
         return (
           <g key={tick}>
             <line x1={paddingLeft} x2={width} y1={y} y2={y} stroke="#eceded" strokeWidth={1} />
             <text x={paddingLeft - 6} y={y + 3} textAnchor="end" fontSize="10" fill="#71717a">
-              {tick}k
+              {Math.round(value)}
             </text>
           </g>
         );

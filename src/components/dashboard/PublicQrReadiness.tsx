@@ -1,15 +1,14 @@
-import type { PUBLIC_QR_READINESS } from "@/lib/dummy-data/dashboard";
+import { QrCodeIcon } from "@/components/icons";
 
-export function PublicQrReadiness({ items }: { items: readonly (typeof PUBLIC_QR_READINESS)[number][] }) {
+// The backend has no exhibits/QR module yet (no controller, no entity) — this
+// stays an explicit "not built yet" state rather than mock counts. Revisit
+// once that module exists.
+export function PublicQrReadiness() {
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {items.map((item) => (
-        <div key={item.label} className="rounded-lg bg-sage-50 p-3.5 text-center">
-          <p className="text-lg font-semibold text-forest-900">{item.value}</p>
-          <p className="mt-0.5 text-xs font-medium text-zinc-700">{item.label}</p>
-          <p className="text-[11px] text-zinc-500">{item.note}</p>
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-sage-50 px-4 py-8 text-center">
+      <QrCodeIcon className="h-6 w-6 text-zinc-400" />
+      <p className="text-sm font-medium text-zinc-600">QR readiness isn&rsquo;t tracked yet</p>
+      <p className="text-xs text-zinc-500">The exhibits/QR module hasn&rsquo;t been built on the backend.</p>
     </div>
   );
 }

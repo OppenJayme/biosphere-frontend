@@ -4,11 +4,13 @@ import {
   collectionPageSchema,
   SPECIMEN_PAGE_LIMIT,
   specimenDetailSchema,
+  specimenListSchema,
   specimenPageSchema,
   specimenSummarySchema,
   specimenTaxonomySchema,
   type MuseumCollection,
   type SpecimenListQuery,
+  type SpecimenSummary,
 } from "./types";
 import type { SpecimenMutationInput } from "./form";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
@@ -39,6 +41,23 @@ export async function listCollections(): Promise<MuseumCollection[]> {
   );
 
   return [firstPage, ...remainingPages].flatMap((page) => page.items);
+}
+
+// Real backend route: GET /specimens (unfiltered, unpaginated — see
+// SpecimensController.findAll). Distinct from searchSpecimens() below, which
+// targets a paginated /specimens/search route the backend doesn't expose yet.
+export async function listSpecimens(): Promise<SpecimenSummary[]> {
+  const response = await apiFetch<unknown>("/specimens", {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenListSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen list response.");
+  }
+
+  return result.data;
 }
 
 export async function searchSpecimens(query: SpecimenListQuery) {

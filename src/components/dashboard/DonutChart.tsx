@@ -1,10 +1,10 @@
-import type { COLLECTION_BY_TYPE } from "@/lib/dummy-data/dashboard";
+import type { CollectionTypeSegment } from "@/features/dashboard/types";
 
 export function DonutChart({
   data,
   total,
 }: {
-  data: readonly (typeof COLLECTION_BY_TYPE)[number][];
+  data: CollectionTypeSegment[];
   total: number;
 }) {
   const size = 168;

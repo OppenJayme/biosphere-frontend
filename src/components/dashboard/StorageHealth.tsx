@@ -1,7 +1,7 @@
 import { ArchiveIcon } from "@/components/icons";
-import type { STORAGE_HEALTH } from "@/lib/dummy-data/dashboard";
+import type { StorageHealthItem } from "@/features/dashboard/types";
 
-export function StorageHealth({ items }: { items: readonly (typeof STORAGE_HEALTH)[number][] }) {
+export function StorageHealth({ items }: { items: StorageHealthItem[] }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-zinc-400">
@@ -10,25 +10,29 @@ export function StorageHealth({ items }: { items: readonly (typeof STORAGE_HEALT
       </div>
       <ul className="space-y-4">
         {items.map((item) => (
-          <li key={item.location} className="flex items-center gap-3">
+          <li key={item.id} className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
               <ArchiveIcon className="h-4.5 w-4.5" />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-xs font-medium text-zinc-900">{item.location}</p>
-                <span className="shrink-0 text-xs text-zinc-500">Capacity {item.capacityPct}%</span>
+                <span className="shrink-0 text-xs text-zinc-500">
+                  {item.capacityPct === null ? "No capacity set" : `Capacity ${item.capacityPct}%`}
+                </span>
               </div>
               <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
                 <div
                   className={`h-full rounded-full ${
-                    item.capacityPct >= 90
-                      ? "bg-red-500"
-                      : item.capacityPct >= 75
-                        ? "bg-amber-500"
-                        : "bg-forest-600"
+                    item.capacityPct === null
+                      ? "bg-zinc-300"
+                      : item.capacityPct >= 90
+                        ? "bg-red-500"
+                        : item.capacityPct >= 75
+                          ? "bg-amber-500"
+                          : "bg-forest-600"
                   }`}
-                  style={{ width: `${item.capacityPct}%` }}
+                  style={{ width: `${item.capacityPct ?? 0}%` }}
                 />
               </div>
             </div>

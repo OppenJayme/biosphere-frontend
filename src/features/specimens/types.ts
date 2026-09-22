@@ -34,6 +34,8 @@ export const specimenPageSchema = z.object({
   limit: z.number().int().positive(),
 });
 
+export const specimenListSchema = z.array(specimenSummarySchema);
+
 export const museumCollectionSchema = z.object({
   id: z.uuid(),
   collectionName: z.string().min(1),

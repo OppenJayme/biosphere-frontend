@@ -1,5 +1,7 @@
 import "server-only";
+import { apiFetch } from "@/lib/api-client";
 import { env } from "@/lib/env";
+import { currentUserProfileSchema, type CurrentUserProfile } from "./types";
 
 export type LoginResponse = {
   access_token: string;
@@ -28,4 +30,18 @@ export async function login(email: string, password: string): Promise<LoginRespo
   }
 
   return res.json();
+}
+
+export async function getCurrentAccount(): Promise<CurrentUserProfile> {
+  const response = await apiFetch<unknown>("/auth/me", {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = currentUserProfileSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid account profile response.");
+  }
+
+  return result.data;
 }
