@@ -4,24 +4,12 @@ import { Field } from "@/components/ui/Field";
 import { IconInput } from "@/components/ui/IconInput";
 import { Button } from "@/components/ui/Button";
 import { MailIcon, LockIcon } from "@/components/icons";
-import { forgotPassword } from "@/features/auth/actions";
 
 export const metadata: Metadata = {
   title: "Forgot Password",
 };
 
-const ERROR_MESSAGES: Record<string, string> = {
-  invalid_email: "Enter a valid email address.",
-  session_expired: "That reset step expired. Request a new code.",
-};
-
-export default async function ForgotPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-
+export default function ForgotPasswordPage() {
   return (
     <AuthLayout
       title="Forgot Password"
@@ -33,13 +21,7 @@ export default async function ForgotPasswordPage({
         </>
       }
     >
-      <form action={forgotPassword} className="space-y-5">
-        {error && (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {ERROR_MESSAGES[error] ?? "Something went wrong. Please try again."}
-          </p>
-        )}
-
+      <form action="/login/verify" method="get" className="space-y-5">
         <Field label="Email Address" htmlFor="email">
           <IconInput
             id="email"
