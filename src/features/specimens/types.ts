@@ -74,6 +74,30 @@ export const specimenProvenanceSchema = z.object({
   updatedAt: z.string().min(1),
 });
 
+// Runtime-check the protected backend response before any revision data reaches the UI.
+export const specimenRevisionSchema = z.object({
+  id: z.uuid(),
+  specimenId: z.uuid(),
+  changedBy: z.object({
+    id: z.uuid(),
+    fullName: z.string().min(1),
+    role: z.enum(["CURATOR", "DEVELOPER"]),
+  }),
+  fieldChanged: z.string().min(1),
+  oldValue: z.string().nullable(),
+  newValue: z.string().nullable(),
+  reason: z.string().nullable(),
+  sourceSection: z.string().min(1),
+  changedAt: z.iso.datetime({ offset: true }),
+});
+
+export const specimenRevisionPageSchema = z.object({
+  items: z.array(specimenRevisionSchema),
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  limit: z.number().int().positive().max(100),
+});
+
 export const specimenDetailSchema = z.object({
   specimen: specimenSummarySchema,
   collection: museumCollectionSchema.nullable(),
@@ -113,6 +137,8 @@ export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 export type MuseumCollection = z.infer<typeof museumCollectionSchema>;
 export type SpecimenTaxonomy = z.infer<typeof specimenTaxonomySchema>;
 export type SpecimenProvenance = z.infer<typeof specimenProvenanceSchema>;
+export type SpecimenRevision = z.infer<typeof specimenRevisionSchema>;
+export type SpecimenRevisionPage = z.infer<typeof specimenRevisionPageSchema>;
 
 export type SpecimenListQuery = {
   search: string;
