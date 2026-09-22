@@ -231,7 +231,19 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
           )}
         </Section>
 
-        <Section title="Tags">
+        <Section
+          title="Tags"
+          action={
+            specimen.status !== "ARCHIVED" ? (
+              <Link
+                href={`/specimens/${specimen.id}/tags`}
+                className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+              >
+                Manage tags
+              </Link>
+            ) : undefined
+          }
+        >
           {tags.length === 0 ? (
             <p className="text-sm text-zinc-500">No tags are attached.</p>
           ) : (
