@@ -6,6 +6,7 @@ import {
   specimenDetailSchema,
   specimenPageSchema,
   specimenProvenanceSchema,
+  specimenRevisionPageSchema,
   specimenSummarySchema,
   specimenTaxonomySchema,
   type MuseumCollection,
@@ -13,6 +14,10 @@ import {
 } from "./types";
 import type { SpecimenMutationInput } from "./form";
 import type { ProvenanceMutationInput } from "./provenance-form";
+import {
+  REVISION_PAGE_LIMIT,
+  type SpecimenRevisionQuery,
+} from "./revision-history";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
 
 const COLLECTION_PAGE_LIMIT = 100;
@@ -76,6 +81,46 @@ export async function getSpecimenDetails(id: string) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid specimen detail response.");
+  }
+
+  return result.data;
+}
+
+/** Fetch only the core record when an aggregate detail response is unnecessary. */
+export async function getSpecimen(id: string) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Read a bounded, validated page of immutable catalog revision records. */
+export async function getSpecimenRevisionHistory(
+  specimenId: string,
+  query: SpecimenRevisionQuery,
+) {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    limit: String(REVISION_PAGE_LIMIT),
+  });
+  if (query.fieldChanged) params.set("fieldChanged", query.fieldChanged);
+  if (query.sourceSection) params.set("sourceSection", query.sourceSection);
+
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/revisions?${params}`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenRevisionPageSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen revision-history response.");
   }
 
   return result.data;

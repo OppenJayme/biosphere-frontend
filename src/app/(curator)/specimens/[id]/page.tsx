@@ -89,6 +89,12 @@ export default async function SpecimenDetailsPage({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/specimens/${id}/history`}
+            className="rounded-lg border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+          >
+            Revision history
+          </Link>
           {detail.specimen.status !== "ARCHIVED" && (
             <Link
               href={`/specimens/${id}/edit`}
