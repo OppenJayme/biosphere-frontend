@@ -98,6 +98,21 @@ export const specimenRevisionPageSchema = z.object({
   limit: z.number().int().positive().max(100),
 });
 
+export const specimenTagSchema = z.object({
+  id: z.uuid(),
+  name: z.string().min(1).max(100),
+});
+
+export const attachSpecimenTagResultSchema = z.object({
+  tag: specimenTagSchema,
+  attached: z.boolean(),
+});
+
+export const detachSpecimenTagResultSchema = z.object({
+  tagId: z.uuid(),
+  detached: z.literal(true),
+});
+
 export const specimenDetailSchema = z.object({
   specimen: specimenSummarySchema,
   collection: museumCollectionSchema.nullable(),
@@ -123,12 +138,7 @@ export const specimenDetailSchema = z.object({
       createdAt: z.string().min(1),
     }),
   ),
-  tags: z.array(
-    z.object({
-      id: z.uuid(),
-      name: z.string().min(1),
-    }),
-  ),
+  tags: z.array(specimenTagSchema),
 });
 
 export type SpecimenSummary = z.infer<typeof specimenSummarySchema>;
@@ -139,6 +149,7 @@ export type SpecimenTaxonomy = z.infer<typeof specimenTaxonomySchema>;
 export type SpecimenProvenance = z.infer<typeof specimenProvenanceSchema>;
 export type SpecimenRevision = z.infer<typeof specimenRevisionSchema>;
 export type SpecimenRevisionPage = z.infer<typeof specimenRevisionPageSchema>;
+export type SpecimenTag = z.infer<typeof specimenTagSchema>;
 
 export type SpecimenListQuery = {
   search: string;

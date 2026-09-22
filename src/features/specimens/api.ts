@@ -2,6 +2,8 @@ import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import {
   collectionPageSchema,
+  attachSpecimenTagResultSchema,
+  detachSpecimenTagResultSchema,
   SPECIMEN_PAGE_LIMIT,
   specimenDetailSchema,
   specimenPageSchema,
@@ -9,6 +11,7 @@ import {
   specimenRevisionPageSchema,
   specimenSummarySchema,
   specimenTaxonomySchema,
+  specimenTagSchema,
   type MuseumCollection,
   type SpecimenListQuery,
 } from "./types";
@@ -19,6 +22,7 @@ import {
   type SpecimenRevisionQuery,
 } from "./revision-history";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
+import type { AttachSpecimenTagInput } from "./tag-form";
 
 const COLLECTION_PAGE_LIMIT = 100;
 
@@ -121,6 +125,71 @@ export async function getSpecimenRevisionHistory(
 
   if (!result.success) {
     throw new Error("The backend returned an invalid specimen revision-history response.");
+  }
+
+  return result.data;
+}
+
+/** Read the tags currently attached to one specimen. */
+export async function listSpecimenTags(specimenId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenTagSchema.array().safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen-tag response.");
+  }
+
+  return result.data;
+}
+
+/** Search the reusable vocabulary without treating its extensible values as an enum. */
+export async function searchAvailableTags(search: string) {
+  const params = new URLSearchParams({ limit: "25" });
+  if (search) params.set("search", search);
+  const response = await apiFetch<unknown>(`/tags?${params}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenTagSchema.array().safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid tag-vocabulary response.");
+  }
+
+  return result.data;
+}
+
+/** Create or reuse a vocabulary tag and attach it to the requested specimen. */
+export async function attachSpecimenTag(
+  specimenId: string,
+  input: AttachSpecimenTagInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  const result = attachSpecimenTagResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid attached-tag response.");
+  }
+
+  return result.data;
+}
+
+/** Detach one specimen relationship; the shared vocabulary tag is retained. */
+export async function detachSpecimenTag(specimenId: string, tagId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags/${encodeURIComponent(tagId)}`,
+    { method: "DELETE" },
+  );
+  const result = detachSpecimenTagResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid detached-tag response.");
   }
 
   return result.data;
