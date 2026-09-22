@@ -113,6 +113,35 @@ export const detachSpecimenTagResultSchema = z.object({
   detached: z.literal(true),
 });
 
+export const specimenMediaSchema = z.object({
+  id: z.uuid(),
+  specimenId: z.uuid(),
+  storagePath: z.string().min(1),
+  displayOrder: z.number().int().nonnegative(),
+  caption: z.string().nullable(),
+  isCover: z.boolean(),
+  createdAt: z.string().min(1),
+});
+
+export const specimenMediaSignedUrlSchema = z.object({
+  mediaId: z.uuid(),
+  signedUrl: z
+    .url()
+    .refine((value) => value.startsWith("https://"), "Media URLs must use HTTPS."),
+  expiresIn: z.number().int().positive(),
+});
+
+export const replaceSpecimenMediaResultSchema = z.object({
+  media: specimenMediaSchema,
+  previousStorageCleanupPending: z.boolean(),
+});
+
+export const removeSpecimenMediaResultSchema = z.object({
+  id: z.uuid(),
+  removed: z.literal(true),
+  storageCleanupPending: z.boolean(),
+});
+
 export const specimenDetailSchema = z.object({
   specimen: specimenSummarySchema,
   collection: museumCollectionSchema.nullable(),
@@ -127,17 +156,7 @@ export const specimenDetailSchema = z.object({
     activeLotCount: z.number().int().nonnegative(),
     totalQuantity: z.number().int().nonnegative(),
   }),
-  media: z.array(
-    z.object({
-      id: z.uuid(),
-      specimenId: z.uuid(),
-      storagePath: z.string().min(1),
-      displayOrder: z.number().int().nonnegative(),
-      caption: z.string().nullable(),
-      isCover: z.boolean(),
-      createdAt: z.string().min(1),
-    }),
-  ),
+  media: z.array(specimenMediaSchema),
   tags: z.array(specimenTagSchema),
 });
 
@@ -150,6 +169,8 @@ export type SpecimenProvenance = z.infer<typeof specimenProvenanceSchema>;
 export type SpecimenRevision = z.infer<typeof specimenRevisionSchema>;
 export type SpecimenRevisionPage = z.infer<typeof specimenRevisionPageSchema>;
 export type SpecimenTag = z.infer<typeof specimenTagSchema>;
+export type SpecimenMedia = z.infer<typeof specimenMediaSchema>;
+export type SpecimenMediaSignedUrl = z.infer<typeof specimenMediaSignedUrlSchema>;
 
 export type SpecimenListQuery = {
   search: string;

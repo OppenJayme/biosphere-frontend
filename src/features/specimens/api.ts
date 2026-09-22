@@ -4,11 +4,15 @@ import {
   collectionPageSchema,
   attachSpecimenTagResultSchema,
   detachSpecimenTagResultSchema,
+  removeSpecimenMediaResultSchema,
+  replaceSpecimenMediaResultSchema,
   SPECIMEN_PAGE_LIMIT,
   specimenDetailSchema,
   specimenPageSchema,
   specimenProvenanceSchema,
   specimenRevisionPageSchema,
+  specimenMediaSchema,
+  specimenMediaSignedUrlSchema,
   specimenSummarySchema,
   specimenTaxonomySchema,
   specimenTagSchema,
@@ -23,6 +27,7 @@ import {
 } from "./revision-history";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
 import type { AttachSpecimenTagInput } from "./tag-form";
+import type { SpecimenMediaMetadataInput } from "./media-form";
 
 const COLLECTION_PAGE_LIMIT = 100;
 
@@ -190,6 +195,116 @@ export async function detachSpecimenTag(specimenId: string, tagId: string) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid detached-tag response.");
+  }
+
+  return result.data;
+}
+
+/** Read stable media metadata without exposing a permanent public object URL. */
+export async function listSpecimenMedia(specimenId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenMediaSchema.array().safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen-media response.");
+  }
+
+  return result.data;
+}
+
+/** Request a short-lived private image URL after backend ownership checks. */
+export async function getSpecimenMediaSignedUrl(specimenId: string, mediaId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/signed-url`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenMediaSignedUrlSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen-media URL response.");
+  }
+
+  return result.data;
+}
+
+/** Forward an already validated multipart upload to the protected backend. */
+export async function createSpecimenMedia(specimenId: string, formData: FormData) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media`,
+    { method: "POST", body: formData },
+  );
+  const result = specimenMediaSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid uploaded-media response.");
+  }
+
+  return result.data;
+}
+
+export async function updateSpecimenMedia(
+  specimenId: string,
+  mediaId: string,
+  input: SpecimenMediaMetadataInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  const result = specimenMediaSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid updated-media response.");
+  }
+
+  return result.data;
+}
+
+export async function setSpecimenMediaCover(specimenId: string, mediaId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/cover`,
+    { method: "PATCH", body: JSON.stringify({}) },
+  );
+  const result = specimenMediaSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid cover-media response.");
+  }
+
+  return result.data;
+}
+
+export async function removeSpecimenMedia(specimenId: string, mediaId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}`,
+    { method: "DELETE" },
+  );
+  const result = removeSpecimenMediaResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid removed-media response.");
+  }
+
+  return result.data;
+}
+
+/** Replace only the private object while preserving its metadata relationship. */
+export async function replaceSpecimenMediaFile(
+  specimenId: string,
+  mediaId: string,
+  formData: FormData,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/file`,
+    { method: "PUT", body: formData },
+  );
+  const result = replaceSpecimenMediaResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid replacement-media response.");
   }
 
   return result.data;

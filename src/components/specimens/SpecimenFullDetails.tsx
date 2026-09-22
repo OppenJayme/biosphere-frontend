@@ -207,7 +207,17 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
       </Section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Section title="Media Metadata">
+        <Section
+          title="Media Metadata"
+          action={
+            <Link
+              href={`/specimens/${specimen.id}/media`}
+              className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+            >
+              {specimen.status === "ARCHIVED" ? "View media" : "Manage media"}
+            </Link>
+          }
+        >
           {media.length === 0 ? (
             <p className="text-sm text-zinc-500">No specimen media has been added.</p>
           ) : (
