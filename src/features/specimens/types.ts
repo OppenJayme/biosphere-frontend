@@ -62,22 +62,22 @@ export const specimenTaxonomySchema = z.object({
   conservationStatus: z.string().nullable(),
 });
 
+export const specimenProvenanceSchema = z.object({
+  specimenId: z.uuid(),
+  collector: z.string().nullable(),
+  donor: z.string().nullable(),
+  collectionDate: z.iso.date().nullable(),
+  collectionLocation: z.string().nullable(),
+  preservationType: z.string().nullable(),
+  preservationMethod: z.string().nullable(),
+  updatedAt: z.string().min(1),
+});
+
 export const specimenDetailSchema = z.object({
   specimen: specimenSummarySchema,
   collection: museumCollectionSchema.nullable(),
   taxonomy: specimenTaxonomySchema.nullable(),
-  provenance: z
-    .object({
-      specimenId: z.uuid(),
-      collector: z.string().nullable(),
-      donor: z.string().nullable(),
-      collectionDate: z.string().nullable(),
-      collectionLocation: z.string().nullable(),
-      preservationType: z.string().nullable(),
-      preservationMethod: z.string().nullable(),
-      updatedAt: z.string().min(1),
-    })
-    .nullable(),
+  provenance: specimenProvenanceSchema.nullable(),
   activeLots: z.array(
     z.object({
       id: z.uuid(),
@@ -134,6 +134,7 @@ export type SpecimenPage = z.infer<typeof specimenPageSchema>;
 export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 export type MuseumCollection = z.infer<typeof museumCollectionSchema>;
 export type SpecimenTaxonomy = z.infer<typeof specimenTaxonomySchema>;
+export type SpecimenProvenance = z.infer<typeof specimenProvenanceSchema>;
 
 export type SpecimenListQuery = {
   search: string;

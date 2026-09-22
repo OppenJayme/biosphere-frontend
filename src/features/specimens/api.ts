@@ -5,12 +5,14 @@ import {
   SPECIMEN_PAGE_LIMIT,
   specimenDetailSchema,
   specimenPageSchema,
+  specimenProvenanceSchema,
   specimenSummarySchema,
   specimenTaxonomySchema,
   type MuseumCollection,
   type SpecimenListQuery,
 } from "./types";
 import type { SpecimenMutationInput } from "./form";
+import type { ProvenanceMutationInput } from "./provenance-form";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
 
 const COLLECTION_PAGE_LIMIT = 100;
@@ -131,4 +133,36 @@ export function createSpecimenTaxonomy(specimenId: string, input: TaxonomyMutati
 
 export function updateSpecimenTaxonomy(specimenId: string, input: TaxonomyMutationInput) {
   return mutateTaxonomy(specimenId, "PATCH", input);
+}
+
+async function mutateProvenance(
+  specimenId: string,
+  method: "POST" | "PATCH",
+  input: ProvenanceMutationInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/provenance`,
+    { method, body: JSON.stringify(input) },
+  );
+  const result = specimenProvenanceSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen provenance response.");
+  }
+
+  return result.data;
+}
+
+export function createSpecimenProvenance(
+  specimenId: string,
+  input: ProvenanceMutationInput,
+) {
+  return mutateProvenance(specimenId, "POST", input);
+}
+
+export function updateSpecimenProvenance(
+  specimenId: string,
+  input: ProvenanceMutationInput,
+) {
+  return mutateProvenance(specimenId, "PATCH", input);
 }
