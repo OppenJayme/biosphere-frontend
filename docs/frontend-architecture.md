@@ -166,9 +166,7 @@ Once the backend has real endpoints, generate `types/api.ts` from its Swagger/Op
 
 ## Open items / not yet decided
 
-- Offline specimen drafts now use the Dexie schema and conflict rules documented
-  in `docs/offline-specimen-drafts.md`. Service-worker app-shell caching and other
-  PWA asset strategies remain to be implemented.
+- Exact Dexie schema and sync-conflict handling for `features/offline/`.
 - Whether report exports (DOCX/PDF/CSV) are generated client-side or requested from the backend.
 - OpenAPI-based type generation isn't wired up yet — `types/api.ts` is hand-written until the
   backend has stable endpoints to generate from.
