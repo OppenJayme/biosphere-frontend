@@ -60,9 +60,13 @@ export default async function SpecimenDetailsPage({
         ? "The specimen core record was updated."
         : noticeParams.taxonomy === "created"
           ? "The specimen taxonomy record was created."
-          : noticeParams.taxonomy === "updated"
-            ? "The specimen taxonomy record was updated."
-        : null;
+        : noticeParams.taxonomy === "updated"
+          ? "The specimen taxonomy record was updated."
+          : noticeParams.provenance === "created"
+            ? "The specimen provenance record was created."
+            : noticeParams.provenance === "updated"
+              ? "The specimen provenance record was updated."
+              : null;
 
   return (
     <div className="space-y-5">
