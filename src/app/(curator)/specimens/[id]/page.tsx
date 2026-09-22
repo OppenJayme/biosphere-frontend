@@ -66,6 +66,8 @@ export default async function SpecimenDetailsPage({
             ? "The specimen provenance record was created."
             : noticeParams.provenance === "updated"
               ? "The specimen provenance record was updated."
+              : noticeParams.lot === "created"
+                ? "The specimen lot and its initial quantity history were created."
               : null;
 
   return (

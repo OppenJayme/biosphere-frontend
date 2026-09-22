@@ -162,7 +162,19 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         )}
       </Section>
 
-      <Section title="Active Lots and Storage">
+      <Section
+        title="Active Lots and Storage"
+        action={
+          specimen.status !== "ARCHIVED" ? (
+            <Link
+              href={`/specimens/${specimen.id}/lots/new`}
+              className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+            >
+              Add lot
+            </Link>
+          ) : undefined
+        }
+      >
         {activeLots.length === 0 ? (
           <p className="text-sm text-zinc-500">No active specimen lots are assigned.</p>
         ) : (
