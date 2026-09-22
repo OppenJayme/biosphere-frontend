@@ -17,12 +17,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "Incorrect email or password.",
 };
 
+const SUCCESS_MESSAGES: Record<string, string> = {
+  password_reset: "Your password has been reset. Sign in with your new password.",
+  invite_accepted: "Your account is active. Sign in with your new password.",
+};
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; from?: string }>;
+  searchParams: Promise<{ error?: string; from?: string; success?: string }>;
 }) {
-  const { error, from } = await searchParams;
+  const { error, from, success } = await searchParams;
 
   return (
     <AuthLayout
@@ -41,6 +46,12 @@ export default async function LoginPage({
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             {ERROR_MESSAGES[error] ?? "Something went wrong. Please try again."}
+          </p>
+        )}
+
+        {success && SUCCESS_MESSAGES[success] && (
+          <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            {SUCCESS_MESSAGES[success]}
           </p>
         )}
 
