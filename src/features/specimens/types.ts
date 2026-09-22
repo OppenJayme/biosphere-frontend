@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { activeSpecimenLotSchema, storageUnitSchema } from "../specimen-lots/types";
 
 export const SPECIMEN_STATUSES = ["UNCATALOGED", "CATALOGED", "ARCHIVED"] as const;
 export const SPECIMEN_GENDERS = ["MALE", "FEMALE", "UNKNOWN", "NOT_APPLICABLE"] as const;
@@ -79,31 +80,8 @@ export const specimenDetailSchema = z.object({
   taxonomy: specimenTaxonomySchema.nullable(),
   provenance: specimenProvenanceSchema.nullable(),
   activeLots: z.array(
-    z.object({
-      id: z.uuid(),
-      specimenId: z.uuid(),
-      storageUnitId: z.uuid(),
-      conditionClass: z.string().min(1),
-      quantity: z.number().int().positive(),
-      storageNotes: z.string().nullable(),
-      isActive: z.literal(true),
-      createdBy: z.uuid(),
-      updatedBy: z.uuid().nullable(),
-      createdAt: z.string().min(1),
-      updatedAt: z.string().min(1),
-      storageUnit: z.object({
-        id: z.uuid(),
-        label: z.string().min(1),
-        unitType: z.string().min(1),
-        storageType: z.string().min(1),
-        size: z.string().nullable(),
-        parentId: z.uuid().nullable(),
-        holdsSpecimens: z.boolean(),
-        capacity: z.number().int().nullable(),
-        archivedAt: z.string().nullable(),
-        createdAt: z.string().min(1),
-        updatedAt: z.string().min(1),
-      }),
+    activeSpecimenLotSchema.extend({
+      storageUnit: storageUnitSchema,
     }),
   ),
   lotOverview: z.object({
