@@ -1,3 +1,8 @@
+/**
+ * Read-only Cataloging UI for a validated page of specimen revisions.
+ * Mutations, inventory operations, and storage management do not belong here.
+ */
+
 import Link from "next/link";
 import {
   revisionFieldLabel,

@@ -1,3 +1,8 @@
+/**
+ * Protected server-rendered page for reviewing one specimen's catalog changes.
+ * It coordinates authenticated reads and delegates rendering to the history component.
+ */
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";

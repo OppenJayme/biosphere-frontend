@@ -1,3 +1,9 @@
+/**
+ * Cataloging revision-history URL helpers.
+ * This file validates user-controlled filters and builds stable history links;
+ * it never changes specimen data or decides catalog completeness.
+ */
+
 export const REVISION_PAGE_LIMIT = 25;
 
 export type SpecimenRevisionQuery = {

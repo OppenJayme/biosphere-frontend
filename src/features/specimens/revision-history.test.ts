@@ -1,3 +1,8 @@
+/**
+ * Contract tests for revision-history URL handling and protected API responses.
+ * These tests prevent unsafe query forwarding and accidental response-shape drift.
+ */
+
 import { describe, expect, it } from "vitest";
 import {
   parseSpecimenRevisionQuery,
