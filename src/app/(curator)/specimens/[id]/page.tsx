@@ -60,9 +60,15 @@ export default async function SpecimenDetailsPage({
         ? "The specimen core record was updated."
         : noticeParams.taxonomy === "created"
           ? "The specimen taxonomy record was created."
-          : noticeParams.taxonomy === "updated"
-            ? "The specimen taxonomy record was updated."
-        : null;
+        : noticeParams.taxonomy === "updated"
+          ? "The specimen taxonomy record was updated."
+          : noticeParams.provenance === "created"
+            ? "The specimen provenance record was created."
+            : noticeParams.provenance === "updated"
+              ? "The specimen provenance record was updated."
+              : noticeParams.lot === "created"
+                ? "The specimen lot and its initial quantity history were created."
+              : null;
 
   return (
     <div className="space-y-5">
@@ -83,6 +89,12 @@ export default async function SpecimenDetailsPage({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/specimens/${id}/history`}
+            className="rounded-lg border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+          >
+            Revision history
+          </Link>
           {detail.specimen.status !== "ARCHIVED" && (
             <Link
               href={`/specimens/${id}/edit`}

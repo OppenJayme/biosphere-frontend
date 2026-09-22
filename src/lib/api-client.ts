@@ -18,14 +18,17 @@ export class ApiError extends Error {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAccessToken();
+  const headers = new Headers(init?.headers);
+
+  // Let fetch generate the multipart boundary; forcing JSON here corrupts file uploads.
+  if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...init?.headers,
-    },
+    headers,
   });
 
   if (!res.ok) {
