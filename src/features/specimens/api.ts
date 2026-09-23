@@ -86,6 +86,14 @@ export async function searchSpecimens(query: SpecimenListQuery) {
 
   if (query.search) params.set("search", query.search);
   if (query.status) params.set("status", query.status);
+  if (query.collectionId) params.set("collectionId", query.collectionId);
+  if (query.specimenCategory) params.set("specimenCategory", query.specimenCategory);
+  if (query.gender) params.set("gender", query.gender);
+  if (query.publicDisplay !== null) {
+    params.set("publicDisplay", String(query.publicDisplay));
+  }
+  params.set("sortBy", query.sortBy);
+  params.set("sortDirection", query.sortDirection);
 
   const response = await apiFetch<unknown>(`/specimens/search?${params}`, {
     method: "GET",

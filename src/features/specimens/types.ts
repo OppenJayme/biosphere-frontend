@@ -3,8 +3,20 @@ import { activeSpecimenLotSchema, storageUnitSchema } from "../specimen-lots/typ
 
 export const SPECIMEN_STATUSES = ["UNCATALOGED", "CATALOGED", "ARCHIVED"] as const;
 export const SPECIMEN_GENDERS = ["MALE", "FEMALE", "UNKNOWN", "NOT_APPLICABLE"] as const;
+export const SPECIMEN_SORT_FIELDS = [
+  "updatedAt",
+  "createdAt",
+  "accessionNumber",
+  "scientificName",
+  "commonName",
+  "status",
+] as const;
+export const SORT_DIRECTIONS = ["asc", "desc"] as const;
 
 export type SpecimenStatus = (typeof SPECIMEN_STATUSES)[number];
+export type SpecimenGender = (typeof SPECIMEN_GENDERS)[number];
+export type SpecimenSortField = (typeof SPECIMEN_SORT_FIELDS)[number];
+export type SortDirection = (typeof SORT_DIRECTIONS)[number];
 
 export const SPECIMEN_PAGE_LIMIT = 25;
 
@@ -177,6 +189,12 @@ export type SpecimenMediaSignedUrl = z.infer<typeof specimenMediaSignedUrlSchema
 export type SpecimenListQuery = {
   search: string;
   status: SpecimenStatus | null;
+  collectionId: string | null;
+  specimenCategory: string;
+  gender: SpecimenGender | null;
+  publicDisplay: boolean | null;
+  sortBy: SpecimenSortField;
+  sortDirection: SortDirection;
   page: number;
 };
 
@@ -200,10 +218,38 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
   const status = SPECIMEN_STATUSES.includes(rawStatus as SpecimenStatus)
     ? (rawStatus as SpecimenStatus)
     : null;
+  const rawCollectionId = firstValue(searchParams.collectionId);
+  const collectionId = z.uuid().safeParse(rawCollectionId).success
+    ? (rawCollectionId ?? null)
+    : null;
+  const specimenCategory = (firstValue(searchParams.specimenCategory) ?? "")
+    .trim()
+    .slice(0, 100);
+  const rawGender = firstValue(searchParams.gender);
+  const gender = SPECIMEN_GENDERS.includes(rawGender as SpecimenGender)
+    ? (rawGender as SpecimenGender)
+    : null;
+  const rawPublicDisplay = firstValue(searchParams.publicDisplay);
+  const publicDisplay =
+    rawPublicDisplay === "true" ? true : rawPublicDisplay === "false" ? false : null;
+  const rawSortBy = firstValue(searchParams.sortBy);
+  const sortBy = SPECIMEN_SORT_FIELDS.includes(rawSortBy as SpecimenSortField)
+    ? (rawSortBy as SpecimenSortField)
+    : "updatedAt";
+  const rawSortDirection = firstValue(searchParams.sortDirection);
+  const sortDirection = SORT_DIRECTIONS.includes(rawSortDirection as SortDirection)
+    ? (rawSortDirection as SortDirection)
+    : "desc";
 
   return {
     search,
     status,
+    collectionId,
+    specimenCategory,
+    gender,
+    publicDisplay,
+    sortBy,
+    sortDirection,
     page: parsePage(firstValue(searchParams.page)),
   };
 }
@@ -212,6 +258,14 @@ export function specimenListHref(query: SpecimenListQuery, page = query.page) {
   const params = new URLSearchParams();
   if (query.search) params.set("search", query.search);
   if (query.status) params.set("status", query.status);
+  if (query.collectionId) params.set("collectionId", query.collectionId);
+  if (query.specimenCategory) params.set("specimenCategory", query.specimenCategory);
+  if (query.gender) params.set("gender", query.gender);
+  if (query.publicDisplay !== null) {
+    params.set("publicDisplay", String(query.publicDisplay));
+  }
+  if (query.sortBy !== "updatedAt") params.set("sortBy", query.sortBy);
+  if (query.sortDirection !== "desc") params.set("sortDirection", query.sortDirection);
   if (page > 1) params.set("page", String(page));
 
   const serialized = params.toString();

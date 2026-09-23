@@ -34,7 +34,7 @@ export function SpecimenTable({
   if (specimens.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-zinc-500">
-        No active specimen records match the current search and filters.
+        No specimen records match the current search and filters.
       </p>
     );
   }
