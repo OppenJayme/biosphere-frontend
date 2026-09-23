@@ -65,12 +65,20 @@ export function SpecimenToolbar({
             All values are validated against the backend&apos;s approved query fields.
           </p>
         </div>
-        <Link
-          href="/specimens/new"
-          className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
-        >
-          Add specimen draft
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/specimens/collections"
+            className="rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50"
+          >
+            Manage collections
+          </Link>
+          <Link
+            href="/specimens/new"
+            className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
+          >
+            Add specimen draft
+          </Link>
+        </div>
       </div>
 
       <form action="/specimens" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

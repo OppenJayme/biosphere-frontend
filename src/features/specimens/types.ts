@@ -178,6 +178,7 @@ export type SpecimenSummary = z.infer<typeof specimenSummarySchema>;
 export type SpecimenPage = z.infer<typeof specimenPageSchema>;
 export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 export type MuseumCollection = z.infer<typeof museumCollectionSchema>;
+export type CollectionPage = z.infer<typeof collectionPageSchema>;
 export type SpecimenTaxonomy = z.infer<typeof specimenTaxonomySchema>;
 export type SpecimenProvenance = z.infer<typeof specimenProvenanceSchema>;
 export type SpecimenRevision = z.infer<typeof specimenRevisionSchema>;
