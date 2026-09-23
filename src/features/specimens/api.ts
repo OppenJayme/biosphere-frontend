@@ -17,6 +17,8 @@ import {
   specimenSummarySchema,
   specimenTaxonomySchema,
   specimenTagSchema,
+  museumCollectionSchema,
+  type CollectionPage,
   type MuseumCollection,
   type SpecimenListQuery,
   type SpecimenSummary,
@@ -30,12 +32,22 @@ import {
 import type { TaxonomyMutationInput } from "./taxonomy-form";
 import type { AttachSpecimenTagInput } from "./tag-form";
 import type { SpecimenMediaMetadataInput } from "./media-form";
+import type {
+  CollectionListQuery,
+  CollectionMutationInput,
+} from "./collection-management";
 
-const COLLECTION_PAGE_LIMIT = 100;
+const COLLECTION_LOOKUP_PAGE_LIMIT = 100;
 
-async function getCollectionPage(page: number) {
+async function getCollectionPage(
+  page: number,
+  limit: number,
+  search = "",
+): Promise<CollectionPage> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search) params.set("search", search);
   const response = await apiFetch<unknown>(
-    `/collections?page=${page}&limit=${COLLECTION_PAGE_LIMIT}`,
+    `/collections?${params}`,
     { method: "GET", cache: "no-store" },
   );
   const result = collectionPageSchema.safeParse(response);
@@ -48,20 +60,54 @@ async function getCollectionPage(page: number) {
 }
 
 export async function listCollections(): Promise<MuseumCollection[]> {
-  const firstPage = await getCollectionPage(1);
+  const firstPage = await getCollectionPage(1, COLLECTION_LOOKUP_PAGE_LIMIT);
   const pageCount = Math.ceil(firstPage.total / firstPage.limit);
   if (pageCount <= 1) return firstPage.items;
 
   const remainingPages = await Promise.all(
-    Array.from({ length: pageCount - 1 }, (_, index) => getCollectionPage(index + 2)),
+    Array.from({ length: pageCount - 1 }, (_, index) =>
+      getCollectionPage(index + 2, COLLECTION_LOOKUP_PAGE_LIMIT),
+    ),
   );
 
   return [firstPage, ...remainingPages].flatMap((page) => page.items);
 }
 
-// Real backend route: GET /specimens (unfiltered, unpaginated — see
-// SpecimensController.findAll). Distinct from searchSpecimens() below, which
-// targets a paginated /specimens/search route the backend doesn't expose yet.
+/** Read one bounded collection-management page without duplicating collection models. */
+export function searchCollections(query: CollectionListQuery): Promise<CollectionPage> {
+  return getCollectionPage(query.page, query.limit, query.search);
+}
+
+export async function createCollection(input: CollectionMutationInput) {
+  const response = await apiFetch<unknown>("/collections", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const result = museumCollectionSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid created collection response.");
+  }
+
+  return result.data;
+}
+
+export async function updateCollection(id: string, input: CollectionMutationInput) {
+  const response = await apiFetch<unknown>(`/collections/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  const result = museumCollectionSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid updated collection response.");
+  }
+
+  return result.data;
+}
+
+// The complete active feed supports the offline cache; interactive catalog pages use the
+// bounded /specimens/search endpoint below instead of downloading every record.
 export async function listSpecimens(): Promise<SpecimenSummary[]> {
   const response = await apiFetch<unknown>("/specimens", {
     method: "GET",
