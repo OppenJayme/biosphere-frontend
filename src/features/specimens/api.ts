@@ -357,6 +357,36 @@ export async function updateSpecimen(id: string, input: SpecimenMutationInput) {
   return result.data;
 }
 
+/** Archive a catalog record through the backend's preserve-history operation. */
+export async function archiveSpecimen(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/archive`,
+    { method: "PATCH" },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid archived specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Change public eligibility only; this does not publish an exhibit or internal record. */
+export async function setSpecimenPublicDisplay(id: string, publicDisplay: boolean) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/public-display`,
+    { method: "PATCH", body: JSON.stringify({ publicDisplay }) },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid public-display response.");
+  }
+
+  return result.data;
+}
+
 async function mutateTaxonomy(
   specimenId: string,
   method: "POST" | "PATCH",
