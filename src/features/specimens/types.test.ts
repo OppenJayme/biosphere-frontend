@@ -5,6 +5,7 @@ const SPECIMEN_ID = "10000000-0000-4000-8000-000000000001";
 const ACCOUNT_ID = "20000000-0000-4000-8000-000000000001";
 const STORAGE_ID = "30000000-0000-4000-8000-000000000001";
 const LOT_ID = "40000000-0000-4000-8000-000000000001";
+const COLLECTION_ID = "50000000-0000-4000-8000-000000000001";
 const TEST_DATE = "2026-09-21T00:00:00.000Z";
 
 function specimenDetailResponse() {
@@ -70,16 +71,28 @@ describe("specimen catalog query handling", () => {
     const query = parseSpecimenListQuery({
       search: "  Philippine eagle  ",
       status: "CATALOGED",
+      collectionId: COLLECTION_ID,
+      specimenCategory: "  Bird  ",
+      gender: "UNKNOWN",
+      publicDisplay: "true",
+      sortBy: "scientificName",
+      sortDirection: "asc",
       page: "3",
     });
 
     expect(query).toEqual({
       search: "Philippine eagle",
       status: "CATALOGED",
+      collectionId: COLLECTION_ID,
+      specimenCategory: "Bird",
+      gender: "UNKNOWN",
+      publicDisplay: true,
+      sortBy: "scientificName",
+      sortDirection: "asc",
       page: 3,
     });
     expect(specimenListHref(query)).toBe(
-      "/specimens?search=Philippine+eagle&status=CATALOGED&page=3",
+      `/specimens?search=Philippine+eagle&status=CATALOGED&collectionId=${COLLECTION_ID}&specimenCategory=Bird&gender=UNKNOWN&publicDisplay=true&sortBy=scientificName&sortDirection=asc&page=3`,
     );
   });
 
@@ -88,19 +101,35 @@ describe("specimen catalog query handling", () => {
       parseSpecimenListQuery({
         search: "x".repeat(101),
         status: "DRAFT",
+        collectionId: "not-a-uuid",
+        specimenCategory: "  ",
+        gender: "ANY",
+        publicDisplay: "yes",
+        sortBy: "quantity",
+        sortDirection: "sideways",
         page: "-4",
       }),
     ).toEqual({
       search: "x".repeat(100),
       status: null,
+      collectionId: null,
+      specimenCategory: "",
+      gender: null,
+      publicDisplay: null,
+      sortBy: "updatedAt",
+      sortDirection: "desc",
       page: 1,
     });
   });
 
   it("omits defaults from pagination links", () => {
-    expect(specimenListHref({ search: "", status: null, page: 1 })).toBe("/specimens");
+    const defaultQuery = parseSpecimenListQuery({});
+    expect(specimenListHref(defaultQuery)).toBe("/specimens");
     expect(
-      specimenListHref({ search: "frog", status: "UNCATALOGED", page: 2 }, 1),
+      specimenListHref(
+        { ...defaultQuery, search: "frog", status: "UNCATALOGED", page: 2 },
+        1,
+      ),
     ).toBe("/specimens?search=frog&status=UNCATALOGED");
   });
 });

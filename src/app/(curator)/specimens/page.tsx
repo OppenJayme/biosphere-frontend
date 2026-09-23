@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SpecimensWorkspace } from "@/components/specimens/SpecimensWorkspace";
-import { searchSpecimens } from "@/features/specimens/api";
+import { listCollections, searchSpecimens } from "@/features/specimens/api";
 import {
   parseSpecimenListQuery,
+  type MuseumCollection,
   type SpecimenPage,
 } from "@/features/specimens/types";
 import { verifySession } from "@/lib/session";
@@ -22,21 +23,22 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
   if (!user) redirect("/login?from=/specimens");
 
   const query = parseSpecimenListQuery(await searchParams);
-  let specimenPage: SpecimenPage | null = null;
-
-  try {
-    specimenPage = await searchSpecimens(query);
-  } catch {
-    // Do not fall back to sample records: an unavailable backend must be visible to curators.
-    specimenPage = null;
-  }
+  const [specimenResult, collectionResult] = await Promise.allSettled([
+    searchSpecimens(query),
+    listCollections(),
+  ]);
+  // Specimen data is essential; collection options degrade independently to preserve catalog access.
+  const specimenPage: SpecimenPage | null =
+    specimenResult.status === "fulfilled" ? specimenResult.value : null;
+  const collections: MuseumCollection[] =
+    collectionResult.status === "fulfilled" ? collectionResult.value : [];
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="font-serif text-2xl font-semibold text-forest-800">Specimens</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Browse and search active museum specimen records.
+          Browse, filter, and sort protected museum specimen records.
         </p>
       </div>
 
@@ -44,6 +46,8 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
         <SpecimensWorkspace
           specimenPage={specimenPage}
           query={query}
+          collections={collections}
+          collectionLookupAvailable={collectionResult.status === "fulfilled"}
           offlineOwnerId={user.id}
         />
       ) : (

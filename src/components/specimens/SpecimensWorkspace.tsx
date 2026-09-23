@@ -7,6 +7,7 @@ import { SpecimenTable } from "./SpecimenTable";
 import { SpecimenToolbar } from "./SpecimenToolbar";
 import {
   specimenListHref,
+  type MuseumCollection,
   type SpecimenListQuery,
   type SpecimenPage,
 } from "@/features/specimens/types";
@@ -15,10 +16,14 @@ import { OfflineSpecimenPanel } from "@/features/offline/components/OfflineSpeci
 export function SpecimensWorkspace({
   specimenPage,
   query,
+  collections,
+  collectionLookupAvailable,
   offlineOwnerId,
 }: {
   specimenPage: SpecimenPage;
   query: SpecimenListQuery;
+  collections: MuseumCollection[];
+  collectionLookupAvailable: boolean;
   offlineOwnerId: string;
 }) {
   const { items, limit, page, total } = specimenPage;
@@ -31,7 +36,11 @@ export function SpecimensWorkspace({
 
   return (
     <div className="space-y-4">
-      <SpecimenToolbar query={query} />
+      <SpecimenToolbar
+        query={query}
+        collections={collections}
+        collectionLookupAvailable={collectionLookupAvailable}
+      />
 
       <OfflineSpecimenPanel ownerId={offlineOwnerId} />
 
@@ -41,7 +50,7 @@ export function SpecimensWorkspace({
             <p className="text-sm text-zinc-600">
               {total === 0
                 ? "No records found"
-                : `Showing ${firstRecord}–${lastRecord} of ${total} active specimen records`}
+                : `Showing ${firstRecord}–${lastRecord} of ${total} specimen records`}
             </p>
             {totalPages > 1 && (
               <nav aria-label="Specimen catalog pages" className="flex items-center gap-1.5 text-sm">
