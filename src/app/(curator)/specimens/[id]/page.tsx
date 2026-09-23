@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { SpecimenFullDetails } from "@/components/specimens/SpecimenFullDetails";
+import { SpecimenLifecyclePanel } from "@/components/specimens/SpecimenLifecyclePanel";
 import { getSpecimenDetails } from "@/features/specimens/api";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
@@ -15,6 +16,27 @@ type SpecimenDetailsPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function specimenNotice(params: Record<string, string | string[] | undefined>) {
+  const lifecycle = firstValue(params.lifecycle);
+  if (lifecycle === "public-enabled") return "The specimen is now eligible for public display.";
+  if (lifecycle === "public-disabled") return "Public-display eligibility was removed.";
+  if (lifecycle === "archived") return "The specimen was archived and public eligibility was disabled.";
+  if (firstValue(params.created) === "1") return "The uncataloged specimen draft was created.";
+  if (firstValue(params.updated) === "1") return "The specimen core record was updated.";
+  if (firstValue(params.taxonomy) === "created") return "The specimen taxonomy record was created.";
+  if (firstValue(params.taxonomy) === "updated") return "The specimen taxonomy record was updated.";
+  if (firstValue(params.provenance) === "created") return "The specimen provenance record was created.";
+  if (firstValue(params.provenance) === "updated") return "The specimen provenance record was updated.";
+  if (firstValue(params.lot) === "created") {
+    return "The specimen lot and its initial quantity history were created.";
+  }
+  return null;
+}
 
 export default async function SpecimenDetailsPage({
   params,
@@ -53,22 +75,7 @@ export default async function SpecimenDetailsPage({
     detail.specimen.commonName ??
     "Unnamed specimen";
   const noticeParams = await searchParams;
-  const savedNotice =
-    noticeParams.created === "1"
-      ? "The uncataloged specimen draft was created."
-      : noticeParams.updated === "1"
-        ? "The specimen core record was updated."
-        : noticeParams.taxonomy === "created"
-          ? "The specimen taxonomy record was created."
-        : noticeParams.taxonomy === "updated"
-          ? "The specimen taxonomy record was updated."
-          : noticeParams.provenance === "created"
-            ? "The specimen provenance record was created."
-            : noticeParams.provenance === "updated"
-              ? "The specimen provenance record was updated."
-              : noticeParams.lot === "created"
-                ? "The specimen lot and its initial quantity history were created."
-              : null;
+  const savedNotice = specimenNotice(noticeParams);
 
   return (
     <div className="space-y-5">
@@ -117,6 +124,11 @@ export default async function SpecimenDetailsPage({
           {savedNotice}
         </div>
       )}
+
+      <SpecimenLifecyclePanel
+        specimen={detail.specimen}
+        activeLotCount={detail.lotOverview.activeLotCount}
+      />
 
       <SpecimenFullDetails detail={detail} />
     </div>
