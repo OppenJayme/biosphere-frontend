@@ -1,76 +1,117 @@
-import { SearchIcon, ChevronDownIcon, CalendarIcon, DownloadIcon } from "@/components/icons";
-import { LOG_CATEGORIES, type AUDIT_FILTERS, type LogCategory } from "@/lib/dummy-data/audit-logs";
+/** Server-backed audit filters; every submitted value maps to an API query. */
 
-function FilterSelect({ options }: { options: readonly string[] }) {
-  return (
-    <div className="relative">
-      <select
-        defaultValue={options[0]}
-        className="w-full appearance-none rounded-lg border border-black/15 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-    </div>
-  );
-}
+import Link from "next/link";
+import { CalendarIcon, SearchIcon } from "@/components/icons";
+import { AUDIT_PAGE_SIZES, AUDIT_RESULTS, type AuditLogListQuery } from "@/features/audit/types";
 
-export function AuditToolbar({
-  filters,
-  category,
-  onCategoryChange,
-}: {
-  filters: typeof AUDIT_FILTERS;
-  category: LogCategory;
-  onCategoryChange: (category: LogCategory) => void;
-}) {
+const inputClasses =
+  "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
+
+export function AuditToolbar({ query }: { query: AuditLogListQuery }) {
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="relative lg:col-span-1">
-          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+    <form action="/audit-logs" method="get" className="space-y-3 rounded-xl border border-black/10 bg-white p-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <label className="xl:col-span-2">
+          <span className="mb-1 block text-xs font-medium text-zinc-600">Search audit history</span>
+          <span className="relative block">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              name="search"
+              type="search"
+              defaultValue={query.search}
+              maxLength={100}
+              placeholder="Action, module, actor, record type, or UUID"
+              className={`${inputClasses} pl-9`}
+            />
+          </span>
+        </label>
+
+        <label>
+          <span className="mb-1 block text-xs font-medium text-zinc-600">Result</span>
+          <select name="result" defaultValue={query.result} className={inputClasses}>
+            <option value="">All results</option>
+            {AUDIT_RESULTS.map((result) => (
+              <option key={result} value={result}>
+                {result}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span className="mb-1 block text-xs font-medium text-zinc-600">Rows per page</span>
+          <select name="limit" defaultValue={query.limit} className={inputClasses}>
+            {AUDIT_PAGE_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size} rows
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span className="mb-1 block text-xs font-medium text-zinc-600">Module</span>
           <input
-            type="search"
-            placeholder="Search logs..."
-            className="w-full rounded-lg border border-black/15 py-2 pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+            name="module"
+            defaultValue={query.module}
+            maxLength={100}
+            placeholder="Example: specimens"
+            className={inputClasses}
           />
+        </label>
+
+        <label>
+          <span className="mb-1 block text-xs font-medium text-zinc-600">Action</span>
+          <input
+            name="action"
+            defaultValue={query.action}
+            maxLength={100}
+            placeholder="Example: UPDATE_SPECIMEN"
+            className={inputClasses}
+          />
+        </label>
+
+        <label>
+          <span className="mb-1 block text-xs font-medium text-zinc-600">Record type</span>
+          <input
+            name="affectedRecordType"
+            defaultValue={query.affectedRecordType}
+            maxLength={100}
+            placeholder="Example: specimen"
+            className={inputClasses}
+          />
+        </label>
+
+        <div className="grid grid-cols-2 gap-2">
+          <label>
+            <span className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600">
+              <CalendarIcon className="h-3.5 w-3.5" /> From
+            </span>
+            <input name="fromDate" type="date" defaultValue={query.fromDate} className={inputClasses} />
+          </label>
+          <label>
+            <span className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600">
+              <CalendarIcon className="h-3.5 w-3.5" /> To
+            </span>
+            <input name="toDate" type="date" defaultValue={query.toDate} className={inputClasses} />
+          </label>
         </div>
-        <FilterSelect options={filters.module} />
-        <FilterSelect options={filters.action} />
-        <FilterSelect options={filters.user} />
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 px-3 py-2 text-sm text-zinc-700 hover:bg-sage-100"
-        >
-          <CalendarIcon className="h-4 w-4 shrink-0 text-zinc-400" />
-          <span className="truncate">May 20 &ndash; May 22, 2025</span>
-          <ChevronDownIcon className="ml-auto h-3.5 w-3.5 shrink-0 text-zinc-400" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
-        >
-          <DownloadIcon className="h-4 w-4" />
-          Export
-        </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {LOG_CATEGORIES.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => onCategoryChange(c)}
-            className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              category === c ? "bg-forest-700 text-white" : "text-zinc-600 hover:bg-sage-100"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
+      <div className="flex flex-wrap justify-end gap-2">
+        <Link
+          href="/audit-logs"
+          className="rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
+        >
+          Clear filters
+        </Link>
+        <button
+          type="submit"
+          className="rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800"
+        >
+          Apply filters
+        </button>
       </div>
-    </div>
+    </form>
   );
 }

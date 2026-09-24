@@ -1,29 +1,22 @@
+/** Read-only view of the fields actually persisted by the audit backend. */
+
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import {
+  ArchiveIcon,
+  ClockIcon,
   CloseIcon,
   DocumentTextIcon,
-  CubeIcon,
   UsersIcon,
-  MapPinIcon,
-  ArchiveIcon,
-  MailIcon,
-  ChatIcon,
-  GlobeIcon,
-  PhoneIcon,
-  ClockIcon,
 } from "@/components/icons";
+import type { AuditLogEntry } from "@/features/audit/types";
+import { formatAuditTimestamp, summarizeAuditDetails } from "./AuditLogTable";
 import { UserAvatar, actorName } from "./UserAvatar";
-import type { AuditLog } from "@/lib/dummy-data/audit-logs";
 
-const MODULE_ICONS: Record<string, typeof DocumentTextIcon> = {
-  Cataloging: DocumentTextIcon,
-  "QR Exhibits": CubeIcon,
-  "User Management": UsersIcon,
-  Location: MapPinIcon,
-  Backup: ArchiveIcon,
-  "Visit Requests": MailIcon,
-  Inquiries: ChatIcon,
-};
+const RESULT_STYLES = {
+  SUCCESS: "bg-forest-100 text-forest-700",
+  FAILED: "bg-red-100 text-red-700",
+  DENIED: "bg-amber-100 text-amber-700",
+} as const;
 
 function InfoRow({
   icon: Icon,
@@ -40,33 +33,39 @@ function InfoRow({
         <Icon className="h-3.5 w-3.5 shrink-0" />
         {label}
       </span>
-      <span className="text-right font-medium text-zinc-800">{children}</span>
+      <span className="max-w-[190px] break-words text-right font-medium text-zinc-800">
+        {children}
+      </span>
     </div>
   );
 }
 
-export function AuditLogDetailPanel({ log, onClear }: { log: AuditLog | null; onClear: () => void }) {
+export function AuditLogDetailPanel({
+  log,
+  onClear,
+}: {
+  log: AuditLogEntry | null;
+  onClear: () => void;
+}) {
   if (!log) {
     return (
-      <div className="rounded-xl border border-black/10 bg-white p-4">
-        <h3 className="mb-3 text-sm font-semibold text-zinc-900">Selected Log</h3>
+      <aside className="rounded-xl border border-black/10 bg-white p-4">
+        <h2 className="mb-3 text-sm font-semibold text-zinc-900">Selected log</h2>
         <p className="py-6 text-center text-xs text-zinc-500">
-          Select a log entry from the table to see its details here.
+          Select an audit entry to inspect its recorded details.
         </p>
-      </div>
+      </aside>
     );
   }
 
-  const ModuleIcon = MODULE_ICONS[log.module] ?? DocumentTextIcon;
-
   return (
-    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-4">
+    <aside className="space-y-4 rounded-xl border border-black/10 bg-white p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-zinc-900">Selected Log</h3>
+        <h2 className="text-sm font-semibold text-zinc-900">Selected log</h2>
         <button
           type="button"
           onClick={onClear}
-          aria-label="Clear selection"
+          aria-label="Clear selected audit log"
           className="text-zinc-400 hover:text-zinc-600"
         >
           <CloseIcon className="h-4 w-4" />
@@ -74,76 +73,49 @@ export function AuditLogDetailPanel({ log, onClear }: { log: AuditLog | null; on
       </div>
 
       <div className="flex items-center gap-2 rounded-lg bg-sage-50 px-3 py-2">
-        <span className={`h-2 w-2 rounded-full ${log.result === "Success" ? "bg-forest-600" : "bg-red-500"}`} />
-        <span className={`text-xs font-semibold ${log.result === "Success" ? "text-forest-700" : "text-red-600"}`}>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${RESULT_STYLES[log.result]}`}>
           {log.result}
         </span>
-        <span className="ml-auto truncate text-xs text-zinc-500">Log ID: {log.id}</span>
+        <span className="ml-auto truncate text-xs text-zinc-500" title={log.id}>
+          {log.id}
+        </span>
       </div>
 
       <div className="divide-y divide-black/5">
         <InfoRow icon={ClockIcon} label="Timestamp">
-          {log.timestampFull}
+          {formatAuditTimestamp(log.createdAt)}
         </InfoRow>
-        <InfoRow icon={UsersIcon} label="User">
-          <span className="flex items-center gap-1.5">
+        <InfoRow icon={UsersIcon} label="Actor">
+          <span className="inline-flex items-center gap-1.5">
             <UserAvatar actor={log.actor} size="h-5 w-5" />
             {actorName(log.actor)}
           </span>
         </InfoRow>
         <InfoRow icon={UsersIcon} label="Role">
-          {log.role}
+          {log.actor?.role ?? "Unavailable"}
         </InfoRow>
-        <InfoRow icon={GlobeIcon} label="IP Address">
-          {log.ipAddress}
-        </InfoRow>
-        <InfoRow icon={PhoneIcon} label="Device / Browser">
-          {log.device}
-        </InfoRow>
-        <InfoRow icon={ModuleIcon} label="Module">
+        <InfoRow icon={DocumentTextIcon} label="Module">
           {log.module}
         </InfoRow>
         <InfoRow icon={DocumentTextIcon} label="Action">
           {log.action}
         </InfoRow>
-        <InfoRow icon={ArchiveIcon} label="Affected Record">
-          {log.affectedRecord}
+        <InfoRow icon={ArchiveIcon} label="Record type">
+          {log.affectedRecordType ?? "Not recorded"}
+        </InfoRow>
+        <InfoRow icon={ArchiveIcon} label="Record ID">
+          {log.affectedRecordId ?? "Not recorded"}
         </InfoRow>
       </div>
 
       <div>
-        <p className="mb-1 text-xs font-medium text-zinc-500">Details</p>
-        <p className="rounded-lg bg-sage-50 px-3 py-2.5 text-xs text-zinc-700">{log.details}</p>
+        <p className="mb-1 text-xs font-medium text-zinc-500">Structured details</p>
+        <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-sage-50 px-3 py-2.5 text-xs text-zinc-700">
+          {typeof log.details === "object" && log.details !== null
+            ? JSON.stringify(log.details, null, 2)
+            : summarizeAuditDetails(log.details)}
+        </pre>
       </div>
-
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-zinc-500">Result</span>
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-            log.result === "Success" ? "bg-forest-100 text-forest-700" : "bg-red-100 text-red-600"
-          }`}
-        >
-          {log.result}
-        </span>
-      </div>
-
-      <div>
-        <p className="mb-3 text-xs font-medium text-zinc-500">Timeline</p>
-        <ul className="space-y-3">
-          {log.timeline.map((step, i) => (
-            <li key={step.time + step.label} className="flex gap-2.5">
-              <span className="flex flex-col items-center">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-forest-600" />
-                {i < log.timeline.length - 1 && <span className="mt-0.5 h-full w-px flex-1 bg-black/10" />}
-              </span>
-              <span className="-mt-0.5 pb-1 text-xs">
-                <span className="font-medium text-zinc-800">{step.time}</span>{" "}
-                <span className="text-zinc-500">{step.label}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    </aside>
   );
 }
