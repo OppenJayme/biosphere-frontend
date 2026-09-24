@@ -1,36 +1,48 @@
+/** Server-only API client for the existing storage-location backend contract. */
+
 import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import {
-  storageOccupancySummaryListSchema,
-  storageUnitListSchema,
-  type StorageOccupancySummary,
+  storageUnitPageSchema,
+  type StorageLifecycle,
   type StorageUnit,
 } from "./types";
 
-export async function listStorageLocations(): Promise<StorageUnit[]> {
-  const response = await apiFetch<unknown>("/storage-locations", {
-    method: "GET",
-    cache: "no-store",
-  });
-  const result = storageUnitListSchema.safeParse(response);
+const PAGE_SIZE = 100;
 
-  if (!result.success) {
-    throw new Error("The backend returned an invalid storage location response.");
-  }
+export async function listStorageLocations(
+  lifecycle: StorageLifecycle = "ACTIVE",
+): Promise<StorageUnit[]> {
+  const items: StorageUnit[] = [];
+  let page = 1;
+  let total = 0;
 
-  return result.data;
-}
+  // The hierarchy needs every matching parent and child, so consume the
+  // backend's bounded search pages instead of relying on its legacy unbounded list.
+  do {
+    const query = new URLSearchParams({
+      lifecycle,
+      page: String(page),
+      limit: String(PAGE_SIZE),
+    });
+    const response = await apiFetch<unknown>(`/storage-locations/search?${query}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    const result = storageUnitPageSchema.safeParse(response);
 
-export async function getStorageOccupancySummary(): Promise<StorageOccupancySummary[]> {
-  const response = await apiFetch<unknown>("/storage-locations/occupancy-summary", {
-    method: "GET",
-    cache: "no-store",
-  });
-  const result = storageOccupancySummaryListSchema.safeParse(response);
+    if (!result.success || result.data.page !== page) {
+      throw new Error("The backend returned an invalid storage location response.");
+    }
 
-  if (!result.success) {
-    throw new Error("The backend returned an invalid storage occupancy response.");
-  }
+    total = result.data.total;
+    items.push(...result.data.items);
 
-  return result.data;
+    if (result.data.items.length === 0 && items.length < total) {
+      throw new Error("The backend returned an incomplete storage location response.");
+    }
+    page += 1;
+  } while (items.length < total);
+
+  return items;
 }

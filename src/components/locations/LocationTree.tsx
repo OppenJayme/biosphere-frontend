@@ -1,20 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDownIcon, ArchiveIcon, CubeIcon, PanelIcon, GridIcon } from "@/components/icons";
-import type { LocationNode } from "@/lib/dummy-data/locations";
-import type { UnitType } from "@/lib/dummy-data/location-rules";
-
-const UNIT_ICONS: Record<UnitType, typeof ArchiveIcon> = {
-  Room: ArchiveIcon,
-  Cabinet: CubeIcon,
-  Drawer: PanelIcon,
-  Container: ArchiveIcon,
-  "Display Table": GridIcon,
-  "Display Case": PanelIcon,
-  "Display Shelf": PanelIcon,
-  "Display Cabinet": CubeIcon,
-};
+import { ChevronDownIcon, ArchiveIcon } from "@/components/icons";
+import type { StorageTreeNode } from "@/features/storage-locations/hierarchy";
 
 function TreeNode({
   node,
@@ -22,14 +10,13 @@ function TreeNode({
   selectedId,
   onSelect,
 }: {
-  node: LocationNode;
+  node: StorageTreeNode;
   depth: number;
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(depth < 1);
   const hasChildren = node.children.length > 0;
-  const Icon = UNIT_ICONS[node.unitType];
   const selected = node.id === selectedId;
 
   return (
@@ -51,7 +38,7 @@ function TreeNode({
           onClick={() => onSelect(node.id)}
           className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left"
         >
-          <Icon className={`h-4 w-4 shrink-0 ${selected ? "text-forest-700" : "text-zinc-400"}`} />
+          <ArchiveIcon className={`h-4 w-4 shrink-0 ${selected ? "text-forest-700" : "text-zinc-400"}`} />
           <span className={`truncate text-sm ${selected ? "font-semibold text-forest-800" : "text-zinc-700"}`}>
             {node.label}
           </span>
@@ -76,7 +63,7 @@ export function LocationTree({
   selectedId,
   onSelect,
 }: {
-  nodes: LocationNode[];
+  nodes: StorageTreeNode[];
   selectedId: string;
   onSelect: (id: string) => void;
 }) {

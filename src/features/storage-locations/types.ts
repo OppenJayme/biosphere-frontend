@@ -1,3 +1,5 @@
+/** Runtime contracts for the curator-managed storage hierarchy API. */
+
 import { z } from "zod";
 
 export const storageUnitSchema = z.object({
@@ -16,15 +18,13 @@ export const storageUnitSchema = z.object({
 
 export const storageUnitListSchema = z.array(storageUnitSchema);
 
-export const storageOccupancySummarySchema = z.object({
-  id: z.uuid(),
-  label: z.string().min(1),
-  capacity: z.number().int().nullable(),
-  occupiedQuantity: z.number().int().nonnegative(),
-  alertCount: z.number().int().nonnegative(),
+export const storageUnitPageSchema = z.object({
+  items: storageUnitListSchema,
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  limit: z.number().int().positive(),
 });
 
-export const storageOccupancySummaryListSchema = z.array(storageOccupancySummarySchema);
-
 export type StorageUnit = z.infer<typeof storageUnitSchema>;
-export type StorageOccupancySummary = z.infer<typeof storageOccupancySummarySchema>;
+export type StorageUnitPage = z.infer<typeof storageUnitPageSchema>;
+export type StorageLifecycle = "ACTIVE" | "ARCHIVED" | "ALL";

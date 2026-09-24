@@ -50,11 +50,12 @@ export type RecentSpecimenRow = {
   lastUpdated: string;
 };
 
-export type StorageHealthItem = {
+export type StorageOverviewItem = {
   id: string;
   location: string;
-  capacityPct: number | null;
-  alerts: number;
+  unitType: string;
+  storageType: string;
+  capacity: number | null;
 };
 
 export type ActivityItem = {
@@ -73,6 +74,6 @@ export type DashboardData = {
   catalogingTrend: SectionResult<CatalogingTrendPoint[]>;
   catalogingQueue: SectionResult<QueueItem[]>;
   recentSpecimens: SectionResult<RecentSpecimenRow[]>;
-  storageHealth: SectionResult<StorageHealthItem[]>;
+  storageOverview: SectionResult<StorageOverviewItem[]>;
   recentActivity: SectionResult<ActivityItem[]>;
 };
