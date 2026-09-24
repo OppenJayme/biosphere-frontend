@@ -2,6 +2,7 @@
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { LocationWorkspace } from "@/components/locations/LocationWorkspace";
 import { listStorageLocations } from "@/features/storage-locations/api";
 import type { StorageUnit } from "@/features/storage-locations/types";
@@ -12,8 +13,27 @@ export const metadata: Metadata = {
   title: "Location",
 };
 
-export default async function LocationPage() {
+type LocationPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const notices: Record<string, string> = {
+  created: "The storage location was created.",
+  updated: "The storage location details were updated.",
+  moved: "The storage location was moved and its movement history was recorded.",
+  archived: "The storage location was archived.",
+};
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function LocationPage({ searchParams }: LocationPageProps) {
   if (!(await verifySession())) redirect("/login?from=/storage");
+
+  const params = await searchParams;
+  const selectedResult = z.uuid().safeParse(firstValue(params.selected));
+  const notice = notices[firstValue(params.notice) ?? ""];
 
   let units: StorageUnit[] = [];
   let errorMessage: string | undefined;
@@ -37,7 +57,18 @@ export default async function LocationPage() {
         <p className="mt-1 text-sm text-zinc-600">Browse the museum&rsquo;s live storage and display hierarchy.</p>
       </div>
 
-      <LocationWorkspace units={units} errorMessage={errorMessage} />
+      {notice && (
+        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+          {notice}
+        </div>
+      )}
+
+      <LocationWorkspace
+        key={selectedResult.success ? selectedResult.data : "default"}
+        units={units}
+        errorMessage={errorMessage}
+        initialSelectedId={selectedResult.success ? selectedResult.data : undefined}
+      />
     </div>
   );
 }

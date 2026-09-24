@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildStorageHierarchy, filterStorageUnits, storagePath } from "./hierarchy";
+import {
+  buildStorageHierarchy,
+  filterStorageUnits,
+  storageDescendantIds,
+  storagePath,
+} from "./hierarchy";
 import type { StorageUnit } from "./types";
 
 const unit = (id: string, label: string, parentId: string | null = null): StorageUnit => ({
@@ -54,5 +59,15 @@ describe("storage hierarchy helpers", () => {
       "Research Room",
       "Cabinet A",
     ]);
+  });
+
+  it("finds descendants without looping through malformed cycles", () => {
+    const root = unit("00000000-0000-4000-8000-000000000001", "Root");
+    const child = unit("00000000-0000-4000-8000-000000000002", "Child", root.id);
+    const grandchild = unit("00000000-0000-4000-8000-000000000003", "Grandchild", child.id);
+
+    expect(storageDescendantIds([root, child, grandchild], root.id)).toEqual(
+      new Set([child.id, grandchild.id]),
+    );
   });
 });
