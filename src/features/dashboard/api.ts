@@ -8,8 +8,8 @@ import { listActiveLots } from "../specimen-lots/api";
 import type { SpecimenLot } from "../specimen-lots/types";
 import { listSpecimens } from "../specimens/api";
 import type { SpecimenSummary } from "../specimens/types";
-import { getStorageOccupancySummary, listStorageLocations } from "../storage-locations/api";
-import type { StorageOccupancySummary, StorageUnit } from "../storage-locations/types";
+import { listStorageLocations } from "../storage-locations/api";
+import type { StorageUnit } from "../storage-locations/types";
 import { listVisitRequests } from "../visit-requests/api";
 import type { VisitRequest } from "../visit-requests/types";
 import type {
@@ -22,7 +22,7 @@ import type {
   RecentSpecimenRow,
   SectionResult,
   SpecimenCatalogStatus,
-  StorageHealthItem,
+  StorageOverviewItem,
 } from "./types";
 
 const CATEGORY_COLORS = [
@@ -45,13 +45,12 @@ const STORAGE_HEALTH_LIMIT = 6;
 const TREND_MONTHS = 12;
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, occupancyResult, storageUnitsResult] =
+  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, storageUnitsResult] =
     await Promise.allSettled([
       listSpecimens(),
       listInquiries(),
       listVisitRequests(),
       listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT }),
-      getStorageOccupancySummary(),
       listStorageLocations(),
     ]);
 
@@ -63,7 +62,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     inquiriesResult,
     visitRequestsResult,
     auditResult,
-    occupancyResult,
     storageUnitsResult,
   ];
   const unauthorized = settledResults.find(
@@ -88,9 +86,9 @@ export async function getDashboardData(): Promise<DashboardData> {
   const recentSpecimens: SectionResult<RecentSpecimenRow[]> = specimens
     ? { status: "ok", data: await buildRecentSpecimens(specimens, storageUnitsResult) }
     : { status: "error" };
-  const storageHealth: SectionResult<StorageHealthItem[]> =
-    occupancyResult.status === "fulfilled"
-      ? { status: "ok", data: buildStorageHealth(occupancyResult.value) }
+  const storageOverview: SectionResult<StorageOverviewItem[]> =
+    storageUnitsResult.status === "fulfilled"
+      ? { status: "ok", data: buildStorageOverview(storageUnitsResult.value) }
       : { status: "error" };
   const recentActivity: SectionResult<ActivityItem[]> =
     auditResult.status === "fulfilled"
@@ -103,7 +101,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     catalogingTrend,
     catalogingQueue,
     recentSpecimens,
-    storageHealth,
+    storageOverview,
     recentActivity,
   };
 }
@@ -279,18 +277,17 @@ function toCatalogStatusLabel(status: SpecimenSummary["status"]): SpecimenCatalo
   return "Uncataloged";
 }
 
-function buildStorageHealth(items: StorageOccupancySummary[]): StorageHealthItem[] {
+function buildStorageOverview(items: StorageUnit[]): StorageOverviewItem[] {
   return items
+    .filter((item) => item.holdsSpecimens)
     .map((item) => ({
       id: item.id,
       location: item.label,
-      capacityPct:
-        item.capacity && item.capacity > 0
-          ? Math.min(100, Math.round((item.occupiedQuantity / item.capacity) * 100))
-          : null,
-      alerts: item.alertCount,
+      unitType: item.unitType,
+      storageType: item.storageType,
+      capacity: item.capacity,
     }))
-    .sort((a, b) => (b.capacityPct ?? -1) - (a.capacityPct ?? -1))
+    .sort((a, b) => a.location.localeCompare(b.location, undefined, { sensitivity: "base" }))
     .slice(0, STORAGE_HEALTH_LIMIT);
 }
 

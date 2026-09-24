@@ -7,7 +7,7 @@ import { CatalogingTrendChart } from "@/components/dashboard/CatalogingTrendChar
 import { QueueSnapshot } from "@/components/dashboard/QueueSnapshot";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentSpecimensTable } from "@/components/dashboard/RecentSpecimensTable";
-import { StorageHealth } from "@/components/dashboard/StorageHealth";
+import { StorageOverview } from "@/components/dashboard/StorageOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { PublicQrReadiness } from "@/components/dashboard/PublicQrReadiness";
 import { DotsIcon } from "@/components/icons";
@@ -123,9 +123,9 @@ export default async function DashboardPage() {
         </Panel>
 
         <Panel title="Collection Health / Storage Overview" viewAllHref="/storage">
-          {data.storageHealth.status === "ok" ? (
-            data.storageHealth.data.length > 0 ? (
-              <StorageHealth items={data.storageHealth.data} />
+          {data.storageOverview.status === "ok" ? (
+            data.storageOverview.data.length > 0 ? (
+              <StorageOverview items={data.storageOverview.data} />
             ) : (
               <SectionEmpty message="No specimen-holding storage units yet." />
             )
