@@ -12,10 +12,12 @@ import {
 } from "@/features/storage-locations/hierarchy";
 import type { StorageUnit } from "@/features/storage-locations/types";
 import { LocationTree } from "./LocationTree";
+import { StorageLocationManagement } from "./StorageLocationManagement";
 
 type LocationWorkspaceProps = {
   units: StorageUnit[];
   errorMessage?: string;
+  initialSelectedId?: string;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
@@ -24,10 +26,14 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   timeZone: "Asia/Manila",
 });
 
-export function LocationWorkspace({ units, errorMessage }: LocationWorkspaceProps) {
+export function LocationWorkspace({ units, errorMessage, initialSelectedId }: LocationWorkspaceProps) {
   const hierarchy = useMemo(() => buildStorageHierarchy(units), [units]);
   const unitById = useMemo(() => new Map(units.map((unit) => [unit.id, unit])), [units]);
-  const [selectedId, setSelectedId] = useState(hierarchy[0]?.id ?? units[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(
+    initialSelectedId && unitById.has(initialSelectedId)
+      ? initialSelectedId
+      : hierarchy[0]?.id ?? units[0]?.id ?? "",
+  );
   const [query, setQuery] = useState("");
 
   const selected = unitById.get(selectedId) ?? hierarchy[0] ?? units[0];
@@ -50,10 +56,13 @@ export function LocationWorkspace({ units, errorMessage }: LocationWorkspaceProp
 
   if (!selected) {
     return (
-      <div className="rounded-xl border border-black/10 bg-white p-8 text-center">
-        <ArchiveIcon className="mx-auto h-8 w-8 text-zinc-300" />
-        <p className="mt-3 text-sm font-semibold text-zinc-900">No storage locations yet</p>
-        <p className="mt-1 text-sm text-zinc-500">Created storage units will appear here.</p>
+      <div className="space-y-5">
+        <div className="rounded-xl border border-black/10 bg-white p-8 text-center">
+          <ArchiveIcon className="mx-auto h-8 w-8 text-zinc-300" />
+          <p className="mt-3 text-sm font-semibold text-zinc-900">No storage locations yet</p>
+          <p className="mt-1 text-sm text-zinc-500">Create the first top-level storage location below.</p>
+        </div>
+        <StorageLocationManagement units={units} />
       </div>
     );
   }
@@ -174,6 +183,8 @@ export function LocationWorkspace({ units, errorMessage }: LocationWorkspaceProp
             <p className="mt-3 text-sm text-zinc-500">This location has no direct child units.</p>
           )}
         </section>
+
+        <StorageLocationManagement key={selected.id} selected={selected} units={units} />
       </main>
 
       <aside className="h-fit rounded-xl border border-black/10 bg-white p-4">

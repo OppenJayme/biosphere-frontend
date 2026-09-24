@@ -75,3 +75,21 @@ export function storagePath(units: StorageUnit[], selectedId: string): StorageUn
 
   return reversed.reverse();
 }
+
+export function storageDescendantIds(units: StorageUnit[], selectedId: string): Set<string> {
+  const childIds = new Map<string, string[]>();
+  for (const unit of units) {
+    if (!unit.parentId) continue;
+    childIds.set(unit.parentId, [...(childIds.get(unit.parentId) ?? []), unit.id]);
+  }
+
+  const descendants = new Set<string>();
+  const pending = [...(childIds.get(selectedId) ?? [])];
+  while (pending.length > 0) {
+    const id = pending.pop();
+    if (!id || id === selectedId || descendants.has(id)) continue;
+    descendants.add(id);
+    pending.push(...(childIds.get(id) ?? []));
+  }
+  return descendants;
+}
