@@ -124,7 +124,7 @@ export function RequestVisitForm({
               name="visitorList"
               type="file"
               accept=".csv,.xlsx,.pdf"
-              className={`${fieldClasses} file:mr-3 file:rounded-full file:border-0 file:bg-sage-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-forest-800`}
+              className={`${fieldClasses} file:mr-3 file:rounded-full file:border-0 file:bg-brand-soft file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-brand`}
             />
           </Field>
         </div>
@@ -155,7 +155,7 @@ export function RequestVisitForm({
                   type="button"
                   onClick={() => setVisitorRows((rows) => rows.filter((id) => id !== rowId))}
                   aria-label="Remove visitor"
-                  className="col-span-2 self-end rounded-lg p-2.5 text-zinc-400 hover:bg-sage-100 hover:text-forest-800 sm:col-span-1"
+                  className="col-span-2 self-end rounded-lg p-2.5 text-ink-muted hover:bg-brand-soft hover:text-brand sm:col-span-1"
                 >
                   <CloseIcon className="h-4 w-4" />
                 </button>
@@ -167,7 +167,7 @@ export function RequestVisitForm({
         <button
           type="button"
           onClick={() => setVisitorRows((rows) => [...rows, nextVisitorRowId()])}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-forest-700 hover:text-forest-800"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
         >
           <PlusIcon className="h-4 w-4" />
           Add Visitor Name Fields
@@ -176,12 +176,12 @@ export function RequestVisitForm({
 
       <div className="space-y-4">
         <FieldGroupLabel>Vehicle</FieldGroupLabel>
-        <div className="inline-flex rounded-full border border-black/15 p-1 text-sm font-medium">
+        <div className="inline-flex rounded-full border border-line p-1 text-sm font-medium">
           <button
             type="button"
             onClick={() => setBringingVehicle(true)}
             className={`rounded-full px-4 py-1.5 transition-colors ${
-              bringingVehicle ? "bg-forest-700 text-white" : "text-zinc-600 hover:text-forest-800"
+              bringingVehicle ? "bg-brand-solid text-white" : "text-ink-muted hover:text-brand"
             }`}
           >
             Yes, bringing a vehicle
@@ -190,7 +190,7 @@ export function RequestVisitForm({
             type="button"
             onClick={() => setBringingVehicle(false)}
             className={`rounded-full px-4 py-1.5 transition-colors ${
-              !bringingVehicle ? "bg-forest-700 text-white" : "text-zinc-600 hover:text-forest-800"
+              !bringingVehicle ? "bg-brand-solid text-white" : "text-ink-muted hover:text-brand"
             }`}
           >
             No vehicle
@@ -240,7 +240,7 @@ export function RequestVisitForm({
         </Field>
       </div>
 
-      <div className="flex justify-end gap-3 border-t border-black/10 pt-6">
+      <div className="flex justify-end gap-3 border-t border-line pt-6">
         {onCancel && (
           <Button type="button" variant="outline-forest" onClick={onCancel}>
             Cancel

@@ -18,13 +18,41 @@
 
   --color-sage-50: #f7f8f2;
   --color-sage-100: #eef1e4;
+
+  /* Semantic tokens for the public site (light only). Values match the
+     curator UI, so shared components (Button, Field, Modal) look the same there. */
+  --paper: #f5f6f0;
+  --surface: #ffffff;
+  --ink: #15241b;
+  --ink-muted: #4d5c52;
+  --line: rgb(21 36 27 / 0.12);
+  --brand: #1f4732;
+  --brand-solid: #1f4732;
+  --brand-solid-hover: #1a3628;
+  --brand-soft: #e3ebe2;
+  --accent: #a9791b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-playfair);
+  /* The curator app loads Playfair; the public site loads Bricolage instead,
+     so each falls back to whichever display face its layout provides. */
+  --font-serif: var(--font-playfair, var(--font-bricolage));
+  --font-display: var(--font-bricolage, var(--font-playfair));
+  --font-mono: var(--font-geist-mono, ui-monospace, monospace);
+
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-solid: var(--brand-solid);
+  --color-brand-solid-hover: var(--brand-solid-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
 
   --color-forest-900: var(--color-forest-900);
   --color-forest-800: var(--color-forest-800);
@@ -44,4 +72,69 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* The public site paints its own paper/ink tokens. */
+body.site {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Keep anchor jumps and keyboard focus clear of the sticky public header. */
+html:has(> body.site) {
+  scroll-padding-top: 6rem;
+}
+
+/* Public-site motion: a staggered entrance for heroes and a scroll-linked
+   reveal for sections. Both are skipped entirely under reduced motion, and the
+   scroll reveal only runs where scroll-driven animations are supported. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+/* Entrance for the curator confirmation dialog (ConfirmButton); applied only with motion-safe. */
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+/* LoadingOverlay: indeterminate bar sweep and a gentle logo pulse (motion-safe only). */
+@keyframes loading-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes loading-breathe {
+  50% {
+    transform: scale(0.94);
+    opacity: 0.85;
+  }
 }

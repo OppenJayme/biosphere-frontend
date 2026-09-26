@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export const fieldClasses =
-  "mt-1.5 w-full rounded-lg border border-black/15 px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
+  "mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function Field({
   label,
@@ -14,7 +14,7 @@ export function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="block text-xs font-medium text-zinc-700">
+      <label htmlFor={htmlFor} className="block text-xs font-medium text-ink-muted">
         {label}
       </label>
       {children}
@@ -24,6 +24,6 @@ export function Field({
 
 export function FieldGroupLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">{children}</p>
+    <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-brand">{children}</p>
   );
 }

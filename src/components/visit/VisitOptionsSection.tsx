@@ -24,57 +24,57 @@ export function VisitOptionsSection() {
 
   return (
     <>
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="rounded-2xl border border-black/10 p-8">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-forest-700 text-white">
-            <CalendarIcon className="h-5 w-5" />
-          </span>
-          <h3 className="mt-4 font-serif text-xl font-semibold text-forest-900">
-            Request a Visit
+      {/* Weighted pair: a visit request is the primary path, an inquiry the secondary one. */}
+      <div className="grid gap-5 lg:grid-cols-12">
+        <div className="reveal flex flex-col rounded-2xl bg-brand-soft p-8 sm:p-10 lg:col-span-7">
+          <CalendarIcon className="h-7 w-7 text-brand" />
+          <h3 className="mt-6 font-display text-3xl font-semibold tracking-tight text-ink">
+            Request a visit
           </h3>
-          <p className="mt-1.5 text-sm text-zinc-600">
+          <p className="mt-2 max-w-md text-ink-muted">
             Schedule a visit for yourself, your class, or your organization.
           </p>
-          <ul className="mt-5 space-y-2.5">
+          <ul className="mt-6 flex flex-wrap gap-2">
             {REQUEST_VISIT_POINTS.map((point) => (
-              <li key={point} className="flex items-center gap-2 text-sm text-zinc-700">
-                <CheckIcon className="h-4 w-4 text-forest-700" />
+              <li
+                key={point}
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-1.5 text-sm text-ink"
+              >
+                <CheckIcon className="h-3.5 w-3.5 text-brand" />
                 {point}
               </li>
             ))}
           </ul>
-          <Button className="mt-6 w-full" onClick={() => setOpenModal("visit")}>
-            Request A Visit
-            <ArrowRightIcon className="h-4 w-4" />
-          </Button>
+          <div className="mt-auto pt-10">
+            <Button onClick={() => setOpenModal("visit")}>
+              Request a visit
+              <ArrowRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-black/10 p-8">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gold-600 text-white">
-            <MailIcon className="h-5 w-5" />
-          </span>
-          <h3 className="mt-4 font-serif text-xl font-semibold text-forest-900">
-            General Inquiry
+        <div className="reveal flex flex-col rounded-2xl border border-line bg-surface p-8 sm:p-10 lg:col-span-5">
+          <MailIcon className="h-7 w-7 text-accent" />
+          <h3 className="mt-6 font-display text-3xl font-semibold tracking-tight text-ink">
+            General inquiry
           </h3>
-          <p className="mt-1.5 text-sm text-zinc-600">
+          <p className="mt-2 text-ink-muted">
             Have a question or need assistance? We&apos;re here to help.
           </p>
-          <ul className="mt-5 space-y-2.5">
+          <ul className="mt-6 space-y-2.5">
             {GENERAL_INQUIRY_POINTS.map((point) => (
-              <li key={point} className="flex items-center gap-2 text-sm text-zinc-700">
-                <CheckIcon className="h-4 w-4 text-gold-600" />
+              <li key={point} className="flex items-center gap-2.5 text-sm text-ink">
+                <CheckIcon className="h-4 w-4 text-brand" />
                 {point}
               </li>
             ))}
           </ul>
-          <Button
-            variant="solid-gold"
-            className="mt-6 w-full"
-            onClick={() => setOpenModal("inquiry")}
-          >
-            Send an Inquiry
-            <ArrowRightIcon className="h-4 w-4" />
-          </Button>
+          <div className="mt-auto pt-10">
+            <Button variant="outline-forest" onClick={() => setOpenModal("inquiry")}>
+              Send an inquiry
+              <ArrowRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

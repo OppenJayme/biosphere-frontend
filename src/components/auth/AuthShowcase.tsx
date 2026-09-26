@@ -13,7 +13,7 @@ export function AuthShowcase() {
   return (
     <div className="relative hidden overflow-hidden lg:block">
       <Image
-        src={PLACEHOLDER_IMAGES.heroBackground}
+        src={PLACEHOLDER_IMAGES.authShowcase}
         alt=""
         fill
         priority
