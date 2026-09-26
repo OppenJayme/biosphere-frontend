@@ -206,6 +206,27 @@ See `docs/offline-specimen-drafts.md` for the complete offline contract.
       no secrets, service-role keys, or database credentials appear in browser
       responses, logs, screenshots, commits, or test evidence.
 
+## Bulk specimen CSV import
+
+- [ ] Download the CSV template and confirm its headers match the backend's
+      supported specimen-core columns.
+- [ ] Reject an empty file, a non-CSV file, a file over 5 MB, and a CSV over
+      500 data rows with clear messages and no specimen creation.
+- [ ] Preview a valid CSV and confirm no database rows are created until the
+      curator explicitly commits selected rows.
+- [ ] Confirm invalid rows cannot be selected and unmapped columns remain
+      visible during review.
+- [ ] Confirm selected duplicate warnings require explicit acknowledgment.
+- [ ] Commit a subset of valid rows and confirm every created record is
+      `UNCATALOGED` and attributed to the active curator.
+- [ ] Force one commit-time row failure and confirm successful rows remain
+      created while failed rows remain selected for a safe retry.
+- [ ] Retry the same preview rows and confirm they do not create duplicates.
+- [ ] Wait more than 30 minutes and confirm an expired preview asks for a new
+      upload instead of creating anything.
+- [ ] Confirm the batch identifier is displayed, appears in the corresponding
+      audit details, and the result links to filtered `IMPORT_SPECIMEN` events.
+
 ## Deferred decisions — do not implement yet
 
 The following require museum/client approval or a dedicated backend contract:
@@ -215,8 +236,6 @@ The following require museum/client approval or a dedicated backend contract:
       or allowed to repeat.
 - [ ] Duplicate-detection fields, normalization, similarity thresholds, and
       curator override workflow.
-- [ ] Bulk-import file format, row validation, partial-failure policy,
-      idempotency, and import audit summary.
 - [ ] Collection archival, deletion, or merge behavior.
 - [ ] Specimen unarchive/restore behavior.
 - [ ] Which Cataloged fields may become public through QR exhibits.
