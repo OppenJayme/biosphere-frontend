@@ -6,7 +6,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useActionState, useState } from "react";
+import { type FormEvent, useActionState, useRef, useState } from "react";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   removeSpecimenMediaAction,
   setSpecimenMediaCoverAction,
@@ -24,6 +25,7 @@ import {
   specimenMediaSchema,
   type SpecimenMedia,
 } from "@/features/specimens/types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 export type SpecimenMediaWithPreview = SpecimenMedia & {
   signedUrl: string | null;
@@ -156,8 +158,9 @@ function UploadForm({ specimenId }: { specimenId: string }) {
           disabled={pending}
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Uploading..." : "Upload image"}
+          Upload image
         </button>
+        <PendingOverlay pending={pending} label="Uploading image…" />
       </form>
       {notice && <div className="mt-4"><NoticeBox notice={notice} /></div>}
     </section>
@@ -200,8 +203,9 @@ function MetadataForm({ specimenId, item }: { specimenId: string; item: Specimen
         </label>
       </div>
       <button type="submit" disabled={pending} className="rounded-md border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:opacity-60">
-        {pending ? "Saving..." : "Save metadata"}
+        Save metadata
       </button>
+      <PendingOverlay pending={pending} label="Saving image details…" />
       {state.message && <p role="alert" className="text-xs text-red-700">{state.message}</p>}
     </form>
   );
@@ -209,6 +213,7 @@ function MetadataForm({ specimenId, item }: { specimenId: string; item: Specimen
 
 function ReplaceFileForm({ specimenId, mediaId }: { specimenId: string; mediaId: string }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -222,8 +227,6 @@ function ReplaceFileForm({ specimenId, mediaId }: { specimenId: string; mediaId:
       setNotice({ tone: "error", message: firstMediaFormError(parsed.error) });
       return;
     }
-    if (!window.confirm("Replace this specimen image file? Its caption and display order will be retained.")) return;
-
     raw.set("mediaId", mediaId);
     setPending(true);
     setNotice(null);
@@ -258,14 +261,22 @@ function ReplaceFileForm({ specimenId, mediaId }: { specimenId: string; mediaId:
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 border-t border-black/5 pt-4">
+    <form ref={formRef} onSubmit={submit} className="space-y-2 border-t border-black/5 pt-4">
       <label className="block text-xs font-medium text-zinc-700">
         Replace image file
         <input type="file" name="file" accept={SPECIMEN_MEDIA_ACCEPT} required disabled={pending} className={inputClasses} />
       </label>
-      <button type="submit" disabled={pending} className="rounded-md border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60">
-        {pending ? "Replacing..." : "Replace file"}
-      </button>
+      <ConfirmButton
+        label="Replace file"
+        question="Replace this image file?"
+        confirmLabel="Yes, replace"
+        detail="The caption and display order are kept."
+        pending={pending}
+        pendingLabel="Replacing image…"
+        // requestSubmit runs the required-file check and the upload handler above.
+        onConfirm={() => formRef.current?.requestSubmit()}
+        className="rounded-md border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+      />
       {notice && <NoticeBox notice={notice} />}
     </form>
   );
@@ -277,8 +288,9 @@ function CoverControl({ specimenId, mediaId }: { specimenId: string; mediaId: st
   return (
     <form action={formAction}>
       <button type="submit" disabled={pending} className="rounded-md border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:opacity-60">
-        {pending ? "Setting..." : "Set as cover"}
+        Set as cover
       </button>
+      <PendingOverlay pending={pending} label="Setting cover image…" />
       {state.message && <p role="alert" className="mt-1 text-xs text-red-700">{state.message}</p>}
     </form>
   );
@@ -288,17 +300,17 @@ function RemoveControl({ specimenId, item }: { specimenId: string; item: Specime
   const action = removeSpecimenMediaAction.bind(null, specimenId, item.id);
   const [state, formAction, pending] = useActionState<MediaCommandState, FormData>(action, {});
   return (
-    <form
-      action={formAction}
-      onSubmit={(event) => {
-        if (!window.confirm(`Remove ${item.caption ? `“${item.caption}”` : "this image"} from the specimen record?`)) {
-          event.preventDefault();
-        }
-      }}
-    >
-      <button type="submit" disabled={pending} className="rounded-md border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60">
-        {pending ? "Removing..." : "Remove"}
-      </button>
+    <form action={formAction}>
+      <ConfirmButton
+        label="Remove"
+        confirmLabel="Yes, remove"
+        question={`Remove ${item.caption ? `“${item.caption}”` : "this image"}?`}
+        detail="It will be removed from the specimen record."
+        tone="danger"
+        pending={pending}
+        pendingLabel="Removing image…"
+        className="rounded-md border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+      />
       {state.message && <p role="alert" className="mt-1 text-xs text-red-700">{state.message}</p>}
     </form>
   );

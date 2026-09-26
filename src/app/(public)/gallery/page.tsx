@@ -1,117 +1,145 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import type { ComponentType, SVGProps } from "react";
-import { PageHero } from "@/components/layout/PageHero";
 import { Button } from "@/components/ui/Button";
 import { COLLECTIONS } from "@/lib/collections-data";
-import {
-  ArrowRightIcon,
-  CalendarIcon,
-  InfoIcon,
-  LeafIcon,
-  ShieldIcon,
-  SparkleIcon,
-} from "@/components/icons";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
+import { stagger } from "@/lib/stagger";
+import { ArrowRightIcon, LeafIcon, ShieldIcon, SparkleIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Gallery",
   description:
-    "Explore the USC Biological Museum's exhibit areas — Entomology, Herpetology, and Marine Biology.",
+    "Explore the USC Biological Museum's exhibit areas: Entomology, Herpetology, and Marine Biology.",
 };
 
 const WHY_VISIT = [
   {
     icon: LeafIcon,
-    title: "Philippine Biodiversity",
+    title: "Philippine biodiversity",
     description: "A deeper appreciation of the rich life and ecosystems we share.",
   },
   {
     icon: ShieldIcon,
-    title: "Curated Collection",
+    title: "Curated collection",
     description: "Carefully preserved specimens and artifacts you won't see elsewhere.",
   },
   {
     icon: SparkleIcon,
-    title: "Immersive Learning",
-    description: "Engaging displays that breathe life into the world using augmented reality.",
+    title: "Immersive learning",
+    description: "Engaging displays that bring specimens to life using augmented reality.",
   },
 ];
+
+type Collection = (typeof COLLECTIONS)[number];
 
 export default function GalleryPage() {
   return (
     <>
-      <PageHero
-        title="Explore Our Exhibits"
-        description="Step into a world of wonder. Our exhibits showcase the richness of life in the Philippines through carefully curated stories and discoveries."
-        note={
-          <span className="inline-flex items-center gap-2">
-            <InfoIcon className="h-4 w-4 text-gold-600" />
-            There&apos;s more to discover in person.
-          </span>
-        }
-        actions={
-          <>
-            <Button href="#entomology">
-              View Exhibit Areas
-              <ArrowRightIcon className="h-4 w-4" />
-            </Button>
-            <Button href="/visit" variant="outline-forest">
-              <CalendarIcon className="h-4 w-4" />
-              Request a Visit
-            </Button>
-          </>
-        }
-      />
-
-      <section className="mx-auto max-w-6xl space-y-16 px-6 py-16">
-        {COLLECTIONS.map((collection, index) => (
-          <ExhibitArea key={collection.slug} collection={collection} reversed={index % 2 === 1} />
-        ))}
-      </section>
-
-      <section className="border-t border-black/10 bg-sage-50">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <p className="text-sm font-semibold uppercase tracking-wide text-gold-600">
-            Why Visit Our Exhibits
-          </p>
-          <h2 className="mt-2 font-serif text-3xl font-semibold text-forest-900">
-            What Makes Our Exhibits Worth Visiting
-          </h2>
-
-          <div className="mt-10 grid gap-8 sm:grid-cols-3">
-            {WHY_VISIT.map((item) => (
-              <div key={item.title}>
-                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-forest-700/30 text-forest-700">
-                  <item.icon className="h-5 w-5" />
-                </span>
-                <p className="mt-4 font-serif text-lg font-semibold text-forest-900">
-                  {item.title}
-                </p>
-                <p className="mt-1.5 text-sm text-zinc-600">{item.description}</p>
-              </div>
-            ))}
+      <section className="mx-auto max-w-[1240px] px-5 pt-12 sm:px-8 lg:pt-20">
+        <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
+          <h1 className="rise font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink sm:text-6xl lg:col-span-7">
+            Explore our exhibits
+          </h1>
+          <div className="lg:col-span-5">
+            <p className="rise text-lg leading-relaxed text-ink-muted" style={stagger(1)}>
+              Three exhibit areas trace the richness of life in the Philippines.
+              There&apos;s even more to discover in person.
+            </p>
+            <div className="rise mt-7 flex flex-wrap gap-3" style={stagger(2)}>
+              <Button href="#entomology">
+                View exhibit areas
+                <ArrowRightIcon className="h-4 w-4" />
+              </Button>
+              <Button href="/visit" variant="outline-forest">
+                Plan a visit
+              </Button>
+            </div>
           </div>
+        </div>
+
+        <div
+          className="rise relative mt-12 aspect-4/3 overflow-hidden rounded-2xl sm:aspect-21/9"
+          style={stagger(3)}
+        >
+          <Image
+            src={PLACEHOLDER_IMAGES.heroGallery}
+            alt="A natural history museum hall with a whale skeleton suspended overhead"
+            fill
+            priority
+            sizes="(min-width: 1240px) 1176px, 100vw"
+            className="object-cover object-[center_40%]"
+          />
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="flex flex-col items-start gap-6 rounded-3xl bg-sage-100 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">
-          <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-forest-700/30 text-forest-700">
-              <SparkleIcon className="h-6 w-6" />
-            </span>
-            <div>
-              <h2 className="font-serif text-2xl font-semibold text-forest-900">
-                See It All in Person
-              </h2>
-              <p className="mt-1 max-w-md text-zinc-600">
-                Our exhibits are best experienced up close. Plan your visit and
-                discover more beyond what photos can show.
-              </p>
-            </div>
+      <section className="mx-auto grid max-w-[1240px] gap-12 px-5 py-24 sm:px-8 lg:grid-cols-12">
+        {/* Sticky index: jump between exhibit areas without a zigzag of image rows. */}
+        <aside className="lg:col-span-4">
+          <div className="lg:sticky lg:top-28">
+            <h2 className="font-display text-3xl font-semibold tracking-tight text-ink">
+              Exhibit areas
+            </h2>
+            <nav aria-label="Exhibit areas" className="mt-6">
+              <ul className="border-t border-line">
+                {COLLECTIONS.map((collection) => (
+                  <li key={collection.slug} className="border-b border-line">
+                    <a
+                      href={`#${collection.slug}`}
+                      className="group flex items-center gap-4 py-4 transition-colors hover:text-brand"
+                    >
+                      <Image src={collection.mark} alt="" aria-hidden className="h-9 w-9 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-display text-lg font-semibold text-ink group-hover:text-brand">
+                          {collection.name}
+                        </span>
+                        <span className="block font-mono text-[11px] text-ink-muted">
+                          {collection.taxon}
+                        </span>
+                      </span>
+                      <ArrowRightIcon className="h-4 w-4 text-ink-muted transition-transform group-hover:translate-x-1 group-hover:text-brand" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           </div>
-          <Button href="/visit" className="shrink-0">
-            Plan Your Visit Today
+        </aside>
+
+        <div className="space-y-24 lg:col-span-8">
+          {COLLECTIONS.map((collection, index) => (
+            <ExhibitArea key={collection.slug} collection={collection} priority={index === 0} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1240px] px-5 pb-24 sm:px-8">
+        <h2 className="reveal max-w-3xl font-display text-4xl font-semibold tracking-tight text-balance text-ink sm:text-5xl">
+          What makes our exhibits worth visiting
+        </h2>
+        <div className="mt-12 grid gap-10 border-t border-line pt-10 md:grid-cols-3 md:gap-8">
+          {WHY_VISIT.map((item) => (
+            <div key={item.title} className="reveal">
+              <item.icon className="h-6 w-6 text-accent" />
+              <p className="mt-4 font-display text-xl font-semibold text-ink">{item.title}</p>
+              <p className="mt-2 max-w-xs text-ink-muted">{item.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1240px] px-5 sm:px-8">
+        <div className="reveal flex flex-col items-start gap-8 rounded-2xl bg-brand-soft px-7 py-12 sm:px-12 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+              See it all in person
+            </h2>
+            <p className="mt-3 max-w-md text-ink-muted">
+              Our exhibits are best experienced up close. Plan your visit and
+              discover more beyond what photos can show.
+            </p>
+          </div>
+          <Button href="/visit">
+            Plan a visit
             <ArrowRightIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -120,53 +148,42 @@ export default function GalleryPage() {
   );
 }
 
-type Collection = (typeof COLLECTIONS)[number];
-
-function ExhibitArea({ collection, reversed }: { collection: Collection; reversed: boolean }) {
-  const Icon = collection.icon as ComponentType<SVGProps<SVGSVGElement>>;
-  const image = collection.imageWide ?? collection.image;
-
+function ExhibitArea({ collection, priority }: { collection: Collection; priority: boolean }) {
   return (
-    <div
-      id={collection.slug}
-      className={`grid scroll-mt-24 gap-8 lg:grid-cols-2 lg:items-center ${
-        reversed ? "lg:[&>*:first-child]:order-2" : ""
-      }`}
-    >
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-gold-600">
-          Featured Area
-        </p>
-        <h3 className="mt-2 font-serif text-3xl font-semibold text-forest-900">
-          {collection.name}
-        </h3>
-        <p className="mt-4 text-zinc-700">{collection.description}</p>
-
-        <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-4">
-          {collection.features.map((feature) => (
-            <li key={feature} className="flex max-w-[10rem] items-start gap-2">
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-forest-700" />
-              <span className="text-xs text-zinc-600">{feature}</span>
-            </li>
-          ))}
-        </ul>
+    <article id={collection.slug} className="scroll-mt-28">
+      <div className="reveal relative aspect-16/10 overflow-hidden rounded-2xl">
+        <Image
+          src={collection.imageWide}
+          alt={collection.name}
+          fill
+          priority={priority}
+          sizes="(min-width: 1024px) 66vw, 100vw"
+          className="object-cover"
+        />
       </div>
 
-      <div className="relative aspect-16/10 overflow-hidden rounded-2xl">
-        {image ? (
-          <Image
-            src={image}
-            alt={collection.name}
-            fill
-            sizes="(min-width: 1024px) 45vw, 90vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-forest-600 to-forest-900">
-            <Icon className="h-16 w-16 text-white/80" />
-          </div>
-        )}
+      <div className="reveal mt-8 flex items-center gap-4">
+        <Image src={collection.mark} alt="" aria-hidden className="h-12 w-12 shrink-0" />
+        <div>
+          <p className="font-mono text-xs text-ink-muted">{collection.taxon}</p>
+          <h3 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+            {collection.name}
+          </h3>
+        </div>
       </div>
-    </div>
+
+      <p className="reveal mt-5 max-w-[62ch] text-lg leading-relaxed text-ink-muted">
+        {collection.description}
+      </p>
+
+      <ul className="reveal mt-8 grid gap-4 sm:grid-cols-3">
+        {collection.features.map((feature) => (
+          <li key={feature} className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5">
+            <Image src={collection.mark} alt="" aria-hidden className="h-7 w-7 shrink-0" />
+            <span className="text-sm text-ink">{feature}</span>
+          </li>
+        ))}
+      </ul>
+    </article>
   );
 }

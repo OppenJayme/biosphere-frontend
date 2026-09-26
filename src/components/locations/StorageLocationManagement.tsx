@@ -3,6 +3,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   archiveStorageLocationAction,
   createStorageLocationAction,
@@ -17,6 +18,7 @@ import type {
   StorageLocationMoveState,
 } from "@/features/storage-locations/management";
 import type { StorageUnit } from "@/features/storage-locations/types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 const inputClasses =
   "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
@@ -142,8 +144,9 @@ function CreateStorageLocationForm({ units, parentId }: { units: StorageUnit[]; 
           disabled={pending}
           className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Creating..." : "Create location"}
+          Create location
         </button>
+        <PendingOverlay pending={pending} label="Creating location…" />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -167,8 +170,9 @@ function UpdateStorageLocationForm({ unit }: { unit: StorageUnit }) {
           disabled={pending}
           className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Saving..." : "Save changes"}
+          Save changes
         </button>
+        <PendingOverlay pending={pending} label="Saving location…" />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -219,8 +223,9 @@ function MoveStorageLocationForm({ unit, units }: { unit: StorageUnit; units: St
           disabled={pending}
           className="mt-4 rounded-lg border border-forest-700 px-4 py-2 text-sm font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Moving..." : "Move location"}
+          Move location
         </button>
+        <PendingOverlay pending={pending} label="Moving location…" />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -237,22 +242,17 @@ function ArchiveStorageLocationForm({ unit }: { unit: StorageUnit }) {
       <p className="mt-1 text-xs text-zinc-600">
         Active children and specimen lots must be resolved first. There is currently no restore action.
       </p>
-      <form
-        action={formAction}
-        className="mt-3"
-        onSubmit={(event) => {
-          if (!window.confirm(`Archive ${unit.label}? This preserves its history but cannot currently be undone.`)) {
-            event.preventDefault();
-          }
-        }}
-      >
-        <button
-          type="submit"
-          disabled={pending}
+      <form action={formAction} className="mt-3">
+        <ConfirmButton
+          label="Archive location"
+          confirmLabel="Yes, archive"
+          question={`Archive ${unit.label}?`}
+          detail="History is preserved, but this cannot currently be undone."
+          tone="danger"
+          pending={pending}
+          pendingLabel="Archiving location…"
           className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {pending ? "Archiving..." : "Archive location"}
-        </button>
+        />
       </form>
       <FormMessage message={state.message} />
     </div>

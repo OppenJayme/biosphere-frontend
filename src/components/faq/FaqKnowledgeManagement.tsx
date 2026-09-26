@@ -3,6 +3,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   changeFaqStatusAction,
   createFaqEntryAction,
@@ -10,6 +11,7 @@ import {
 } from "@/features/faq/actions";
 import type { FaqCommandState, FaqFormState, FaqFormValues } from "@/features/faq/management";
 import type { FaqEntry } from "@/features/faq/types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 const inputClasses =
   "mt-1 w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
@@ -79,8 +81,9 @@ function CreateFaqForm() {
         </p>
         <FaqFields values={state.values} />
         <button type="submit" disabled={pending} className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60">
-          {pending ? "Creating..." : "Create inactive entry"}
+          Create inactive entry
         </button>
+        <PendingOverlay pending={pending} label="Creating knowledge entry…" />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -104,8 +107,9 @@ function EditFaqForm({ entry }: { entry: FaqEntry }) {
         )}
         <FaqFields values={state.values} />
         <button type="submit" disabled={pending} className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60">
-          {pending ? "Saving..." : "Save knowledge"}
+          Save knowledge
         </button>
+        <PendingOverlay pending={pending} label="Saving knowledge…" />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -116,13 +120,17 @@ function LifecycleButton({
   entry,
   command,
   label,
-  confirmation,
+  question,
+  confirmLabel,
+  detail,
   danger = false,
 }: {
   entry: FaqEntry;
   command: "activate" | "deactivate" | "archive";
   label: string;
-  confirmation?: string;
+  question: string;
+  confirmLabel: string;
+  detail: string;
   danger?: boolean;
 }) {
   const action = changeFaqStatusAction.bind(null, entry.id, command);
@@ -130,23 +138,21 @@ function LifecycleButton({
 
   return (
     <div>
-      <form
-        action={formAction}
-        onSubmit={(event) => {
-          if (confirmation && !window.confirm(confirmation)) event.preventDefault();
-        }}
-      >
-        <button
-          type="submit"
-          disabled={pending}
+      <form action={formAction}>
+        <ConfirmButton
+          label={label}
+          question={question}
+          confirmLabel={confirmLabel}
+          detail={detail}
+          tone={danger ? "danger" : "default"}
+          pending={pending}
+          pendingLabel="Updating knowledge…"
           className={`rounded-lg border px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
             danger
               ? "border-red-200 text-red-700 hover:bg-red-50"
               : "border-forest-700 text-forest-800 hover:bg-forest-50"
           }`}
-        >
-          {pending ? "Saving..." : label}
-        </button>
+        />
       </form>
       <FormMessage message={state.message} />
     </div>
@@ -170,17 +176,28 @@ function FaqLifecycle({ entry }: { entry: FaqEntry }) {
             entry={entry}
             command="activate"
             label="Activate approved knowledge"
-            confirmation="Confirm that this answer is curator-approved for future public chatbot matching."
+            question="Activate this answer?"
+            confirmLabel="Yes, activate"
+            detail="This answer is curator-approved for future public chatbot matching."
           />
         ) : (
-          <LifecycleButton entry={entry} command="deactivate" label="Deactivate knowledge" />
+          <LifecycleButton
+            entry={entry}
+            command="deactivate"
+            label="Deactivate knowledge"
+            question="Deactivate this answer?"
+            confirmLabel="Yes, deactivate"
+            detail="The chatbot stops matching this answer until it is activated again."
+          />
         )}
         <LifecycleButton
           entry={entry}
           command="archive"
           label="Archive knowledge"
           danger
-          confirmation="Archive this FAQ knowledge permanently? It will remain in history but cannot be restored through the current workflow."
+          question="Archive this answer?"
+          confirmLabel="Yes, archive"
+          detail="It stays in history but cannot be restored through the current workflow."
         />
       </div>
     </section>

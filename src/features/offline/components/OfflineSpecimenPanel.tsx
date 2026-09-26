@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PlusIcon, SearchIcon } from "@/components/icons";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   filterCachedSpecimens,
   getCachedSpecimenCategories,
@@ -85,13 +86,8 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
     );
   }
 
+  // Confirmation happens inline on the "Remove locally" button before this runs.
   async function handleDiscard(draft: OfflineSpecimenDraft) {
-    const confirmed = window.confirm(
-      draft.syncState === "SYNCHRONIZED"
-        ? "Remove this local sync receipt? The server specimen will not be deleted."
-        : "Discard this local draft? This cannot be undone.",
-    );
-    if (!confirmed) return;
     try {
       await discardDraft(draft.clientDraftId);
       setNotice("The local draft was removed.");
@@ -222,14 +218,24 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
                         Retry
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => void handleDiscard(draft)}
+                    <ConfirmButton
+                      label="Remove locally"
+                      confirmLabel={draft.syncState === "SYNCHRONIZED" ? "Yes, remove" : "Yes, discard"}
+                      question={
+                        draft.syncState === "SYNCHRONIZED"
+                          ? "Remove this local sync receipt?"
+                          : "Discard this local draft?"
+                      }
+                      detail={
+                        draft.syncState === "SYNCHRONIZED"
+                          ? "The server specimen will not be deleted."
+                          : "This cannot be undone."
+                      }
+                      tone="danger"
                       disabled={draft.syncState === "SYNCHRONIZING"}
+                      onConfirm={() => void handleDiscard(draft)}
                       className="text-xs font-semibold text-red-700 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline"
-                    >
-                      Remove locally
-                    </button>
+                    />
                   </div>
                 </article>
               );

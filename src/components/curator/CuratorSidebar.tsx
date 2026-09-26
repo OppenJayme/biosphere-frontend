@@ -16,7 +16,6 @@ import {
   UsersIcon,
   ChartBarIcon,
   CloseIcon,
-  ChevronLeftIcon,
 } from "@/components/icons";
 
 const NAV_ITEMS: { label: string; href: string; icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
@@ -54,10 +53,10 @@ function SidebarContent({
           <LogoMark className="h-8 w-8 shrink-0 text-forest-700" />
           <span className={`flex flex-col leading-tight ${collapsed ? "lg:hidden" : ""}`}>
             <span className="text-[15px] font-semibold whitespace-nowrap text-forest-900">
-              BioSphere Inventory
+              BioSphere Collections
             </span>
             <span className="text-[11px] whitespace-nowrap text-zinc-500">
-              USC Biological Museum Curator Dashboard
+              USC-BM Curator Dashboard
             </span>
           </span>
         </Link>
@@ -93,9 +92,7 @@ function SidebarContent({
       <div
         className={`flex items-center gap-2.5 border-t border-black/10 px-5 py-4 ${collapsed ? "lg:justify-center lg:px-3" : ""}`}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-100 text-forest-700">
-          <LogoMark className="h-4.5 w-4.5" />
-        </span>
+        <LogoMark className="h-8 w-8 shrink-0" />
         <span className={`flex flex-col leading-tight ${collapsed ? "lg:hidden" : ""}`}>
           <span className="text-xs font-semibold whitespace-nowrap text-forest-900">USC Biological Museum</span>
           <span className="text-[11px] text-zinc-500">v1.0.0</span>
@@ -109,12 +106,10 @@ export function CuratorSidebar({
   mobileOpen,
   onClose,
   collapsed,
-  onToggleCollapse,
 }: {
   mobileOpen: boolean;
   onClose: () => void;
   collapsed: boolean;
-  onToggleCollapse: () => void;
 }) {
   return (
     <>
@@ -124,29 +119,7 @@ export function CuratorSidebar({
           collapsed ? "lg:w-[76px]" : "lg:w-64"
         }`}
       >
-        <SidebarContent
-          collapsed={collapsed}
-          headerAction={
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className={collapsed ? "lg:hidden" : "shrink-0 text-zinc-500 hover:text-forest-700"}
-            >
-              <ChevronLeftIcon className="h-5 w-5" />
-            </button>
-          }
-        />
-        {collapsed && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            aria-label="Expand sidebar"
-            className="hidden items-center justify-center gap-2 border-t border-black/10 px-5 py-2.5 text-zinc-500 hover:bg-sage-100 hover:text-forest-800 lg:flex"
-          >
-            <ChevronLeftIcon className="h-4 w-4 rotate-180" />
-          </button>
-        )}
+        <SidebarContent collapsed={collapsed} />
       </aside>
 
       {/* Mobile drawer — only mounted while open, so it can never overlap the topbar when closed. */}

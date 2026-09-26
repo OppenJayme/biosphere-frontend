@@ -6,6 +6,7 @@ import { OtpInput } from "@/components/auth/OtpInput";
 import { ResendCode } from "@/components/auth/ResendCode";
 import { Button } from "@/components/ui/Button";
 import { verifyResetCode, resendResetCode } from "@/features/auth/actions";
+import { FormPendingOverlay } from "@/components/ui/LoadingOverlay";
 
 export const metadata: Metadata = {
   title: "Verify Your Email",
@@ -32,6 +33,7 @@ export default async function VerifyOtpPage({
       description={`We've sent a verification code to ${email}. Enter it below.`}
     >
       <form action={verifyResetCode} className="space-y-6">
+        <FormPendingOverlay label="Verifying code…" />
         <input type="hidden" name="email" value={email} />
 
         {error && (

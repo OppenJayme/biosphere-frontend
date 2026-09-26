@@ -11,10 +11,14 @@ import {
   type ProvenanceFormMode,
   type ProvenanceFormState,
 } from "./provenance-form";
+import { catalogedEditGuardMessage } from "./lifecycle";
 
 function mutationErrorMessage(error: unknown, mode: ProvenanceFormMode) {
   if (error instanceof ApiError) {
     if (error.status === 400) {
+      // Cataloged records reject clearing a required field; say which one and how to proceed.
+      const guard = catalogedEditGuardMessage(error.body);
+      if (guard) return guard;
       return mode === "create"
         ? "Enter at least one valid provenance or preservation value before saving."
         : "No changes were saved. Change at least one provenance field and try again.";

@@ -9,6 +9,7 @@ import {
   type SpecimenFormValues,
 } from "@/features/specimens/form";
 import { SPECIMEN_GENDERS, type MuseumCollection } from "@/features/specimens/types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenCoreFormProps = {
   mode: "create" | "edit";
@@ -262,12 +263,9 @@ export function SpecimenCoreForm({
           disabled={pending}
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending
-            ? "Saving..."
-            : mode === "create"
-              ? "Save uncataloged draft"
-              : "Save core changes"}
+          {mode === "create" ? "Save uncataloged draft" : "Save core changes"}
         </button>
+        <PendingOverlay pending={pending} label="Saving specimen…" />
       </div>
     </form>
   );

@@ -1,6 +1,6 @@
 /**
- * Authenticated Cataloging actions for archival and public-display eligibility.
- * They expose no direct status setter; catalog completion stays a separate deferred rule.
+ * Authenticated Cataloging actions for cataloging, archival, and public-display eligibility.
+ * There is no direct status setter; the backend re-checks required fields before cataloging.
  */
 
 "use server";
@@ -10,10 +10,28 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
-import { archiveSpecimen, setSpecimenPublicDisplay } from "./api";
+import {
+  archiveSpecimen,
+  completeCataloging,
+  reopenCataloging,
+  setSpecimenPublicDisplay,
+} from "./api";
+import { REOPEN_REASON_MAX } from "./lifecycle";
+import { catalogRejectionSchema } from "./types";
 
 export type LifecycleActionState = {
   message?: string;
+};
+
+export type CatalogActionState = {
+  message?: string;
+  /** Readable requirements the backend reported missing at submit time (data changed meanwhile). */
+  missingRequirements?: string[];
+};
+
+export type ReopenActionState = {
+  message?: string;
+  values?: { reason: string };
 };
 
 function lifecycleError(error: unknown, operation: "archive" | "public-display") {
@@ -97,4 +115,89 @@ export async function archiveSpecimenAction(
 
   refreshSpecimenPaths(safeId.data);
   redirect(`/specimens/${safeId.data}?lifecycle=archived`);
+}
+
+export async function catalogSpecimenAction(
+  specimenId: string,
+  _previousState: CatalogActionState,
+  _formData: FormData,
+): Promise<CatalogActionState> {
+  void _previousState;
+  void _formData;
+  if (!(await verifySession())) {
+    redirect(`/login?from=${encodeURIComponent(`/specimens/${specimenId}`)}`);
+  }
+
+  const safeId = z.uuid().safeParse(specimenId);
+  if (!safeId.success) {
+    return { message: "The specimen identifier is invalid. Return to the catalog and try again." };
+  }
+
+  try {
+    await completeCataloging(safeId.data);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 400) {
+        const rejection = catalogRejectionSchema.safeParse(error.body);
+        if (rejection.success) {
+          return {
+            message: "Some requirements are missing now. Complete them, then catalog again.",
+            missingRequirements: rejection.data.missingRequirements,
+          };
+        }
+        return { message: "Archived specimens cannot complete cataloging." };
+      }
+      if (error.status === 401) return { message: "Your session expired. Sign in and try again." };
+      if (error.status === 403) return { message: "Only curators can catalog specimens." };
+      if (error.status === 404) return { message: "The specimen no longer exists. Return to the catalog." };
+    }
+    return { message: "The specimen could not be cataloged. Check your connection and try again." };
+  }
+
+  refreshSpecimenPaths(safeId.data);
+  redirect(`/specimens/${safeId.data}?lifecycle=cataloged`);
+}
+
+export async function reopenCatalogingAction(
+  specimenId: string,
+  _previousState: ReopenActionState,
+  formData: FormData,
+): Promise<ReopenActionState> {
+  void _previousState;
+  if (!(await verifySession())) {
+    redirect(`/login?from=${encodeURIComponent(`/specimens/${specimenId}`)}`);
+  }
+
+  const rawReason = formData.get("reason");
+  const values = { reason: typeof rawReason === "string" ? rawReason : "" };
+  const parsed = z
+    .object({
+      specimenId: z.uuid(),
+      reason: z
+        .string()
+        .trim()
+        .min(1, "Enter why this record needs more catalog work.")
+        .max(REOPEN_REASON_MAX, `Keep the reason to ${REOPEN_REASON_MAX} characters or fewer.`),
+    })
+    .safeParse({ specimenId, reason: values.reason });
+  if (!parsed.success) {
+    return { values, message: parsed.error.issues[0]?.message ?? "Check the reason and try again." };
+  }
+
+  try {
+    await reopenCataloging(parsed.data.specimenId, parsed.data.reason);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 400) {
+        return { values, message: "Archived specimens cannot be reopened, and a reason is required." };
+      }
+      if (error.status === 401) return { values, message: "Your session expired. Sign in and try again." };
+      if (error.status === 403) return { values, message: "Only curators can reopen cataloging." };
+      if (error.status === 404) return { values, message: "The specimen no longer exists. Return to the catalog." };
+    }
+    return { values, message: "Cataloging could not be reopened. Check your connection and try again." };
+  }
+
+  refreshSpecimenPaths(parsed.data.specimenId);
+  redirect(`/specimens/${parsed.data.specimenId}?lifecycle=reopened`);
 }

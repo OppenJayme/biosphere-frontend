@@ -12,6 +12,7 @@ import {
   type ProvenanceFormState,
   type ProvenanceFormValues,
 } from "@/features/specimens/provenance-form";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenProvenanceFormProps = {
   specimenId: string;
@@ -172,12 +173,9 @@ export function SpecimenProvenanceForm({
           disabled={pending}
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending
-            ? "Saving..."
-            : mode === "create"
-              ? "Create provenance record"
-              : "Save provenance changes"}
+          {mode === "create" ? "Create provenance record" : "Save provenance changes"}
         </button>
+        <PendingOverlay pending={pending} label="Saving provenance…" />
       </div>
     </form>
   );

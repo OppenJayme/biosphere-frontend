@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 export function ResendCode({
   action,
@@ -27,18 +28,21 @@ export function ResendCode({
   }
 
   return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() =>
-        startTransition(async () => {
-          await action();
-          setSeconds(initialSeconds);
-        })
-      }
-      className="font-semibold text-forest-700 hover:text-forest-800 disabled:opacity-50"
-    >
-      {pending ? "Sending…" : "Resend code"}
-    </button>
+    <>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            await action();
+            setSeconds(initialSeconds);
+          })
+        }
+        className="font-semibold text-forest-700 hover:text-forest-800 disabled:opacity-50"
+      >
+        Resend code
+      </button>
+      <PendingOverlay pending={pending} label="Sending a new code…" />
+    </>
   );
 }

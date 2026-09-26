@@ -44,15 +44,16 @@ export function CuratorChrome({
 
   return (
     <div className="flex min-h-screen bg-sage-50/60">
-      <CuratorSidebar
-        mobileOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapse={toggleCollapsed}
-      />
+      <CuratorSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} collapsed={collapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <CuratorTopbar onMenuClick={() => setMobileOpen(true)} ownerId={ownerId} profile={profile} />
+        <CuratorTopbar
+          onMenuClick={() => setMobileOpen(true)}
+          onToggleCollapse={toggleCollapsed}
+          sidebarCollapsed={collapsed}
+          ownerId={ownerId}
+          profile={profile}
+        />
         <main className="flex-1 p-5 lg:p-6">{children}</main>
       </div>
     </div>

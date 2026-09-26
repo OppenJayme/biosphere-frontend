@@ -7,6 +7,7 @@ import { IconInput } from "@/components/ui/IconInput";
 import { Button } from "@/components/ui/Button";
 import { MailIcon, LockIcon } from "@/components/icons";
 import { signIn } from "@/features/auth/actions";
+import { FormPendingOverlay } from "@/components/ui/LoadingOverlay";
 
 export const metadata: Metadata = {
   title: "Curator Sign In",
@@ -41,6 +42,7 @@ export default async function LoginPage({
       }
     >
       <form action={signIn} className="space-y-5">
+        <FormPendingOverlay label="Signing in…" />
         {from && <input type="hidden" name="from" value={from} />}
 
         {error && (
