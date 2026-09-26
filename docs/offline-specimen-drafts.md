@@ -77,11 +77,24 @@ Offline mode does not queue edits to existing records, taxonomy, provenance, lot
 location or quantity changes, condition changes, media, imports, archiving,
 publishing, reports, inquiries, visits, accounts, backups, QR, or AR operations.
 
-This change provides the IndexedDB data and synchronization layer. A service worker
-for offline app-shell loading is still a separate PWA task; without it, the already
-loaded page can use IndexedDB offline, but a fresh offline navigation is not yet
-guaranteed. The service-worker task must preserve account isolation and clear or
-invalidate any authenticated shell during logout/account switching; it must not
-cache authenticated HTML without that boundary. The older specimen table still
-uses placeholder presentation data and should later be replaced with the real
-online catalog list rather than being silently mixed with cached core records.
+The production frontend registers a deliberately narrow service worker. It caches
+only immutable same-origin build assets plus a record-free offline fallback page.
+Protected HTML, API responses, Supabase traffic, authentication data, and museum
+records remain network-only and are never written to the Cache API. This means a
+fresh offline navigation fails safely to the generic fallback rather than replaying
+another account's authenticated shell. The already-loaded specimen workspace can
+continue using its owner-partitioned IndexedDB records and drafts.
+
+Service workers are disabled during `next dev` to prevent stale development assets.
+Test this behavior using a production build over HTTPS (or localhost):
+
+```powershell
+npm run build
+npm start
+```
+
+Load the specimen workspace online once, use browser developer tools to switch to
+offline mode, and verify both the open workspace and a fresh navigation. A fresh
+navigation must show only `offline.html`; it must not display curator identity or
+museum records. Reconnect and use **Try again** to return to the requested online
+workflow.

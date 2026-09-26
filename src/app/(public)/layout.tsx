@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Playfair_Display } from "next/font/google";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white font-sans text-zinc-900">
+        <PwaRegistration />
         <PublicHeader />
         <main className="flex-1">{children}</main>
         <PublicFooter />
