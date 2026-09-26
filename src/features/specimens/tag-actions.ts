@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
-import { attachSpecimenTag, detachSpecimenTag } from "./api";
+import { attachSpecimenTag, changeSpecimenTag, detachSpecimenTag } from "./api";
 import {
   readAttachSpecimenTagForm,
   type DetachTagState,
@@ -105,4 +105,54 @@ export async function detachSpecimenTagAction(
 
   revalidateSpecimenTagPaths(safeIds.data.specimenId);
   redirect(`/specimens/${safeIds.data.specimenId}/tags?tag=detached`);
+}
+
+/**
+ * Change one of a specimen's tags (e.g. Mindanao -> Visayas). The backend swaps it in one
+ * transaction and records a single revision; the shared tag is not renamed elsewhere.
+ */
+export async function changeSpecimenTagAction(
+  specimenId: string,
+  oldTag: { id: string; name: string },
+  _previousState: TagFormState,
+  formData: FormData,
+): Promise<TagFormState> {
+  void _previousState;
+  if (!(await verifySession())) redirect("/login?from=/specimens");
+
+  const parsed = readAttachSpecimenTagForm(formData);
+  const safeIds = z
+    .object({ specimenId: z.uuid(), tagId: z.uuid() })
+    .safeParse({ specimenId, tagId: oldTag.id });
+  if (!safeIds.success) {
+    return {
+      values: parsed.values,
+      message: "This specimen or tag identifier is invalid. Reload and try again.",
+    };
+  }
+  if (!parsed.result.success) {
+    return { values: parsed.values, errors: parsed.result.error.flatten().fieldErrors };
+  }
+
+  let result;
+  try {
+    result = await changeSpecimenTag(
+      safeIds.data.specimenId,
+      safeIds.data.tagId,
+      parsed.result.data,
+    );
+  } catch (error) {
+    return { values: parsed.values, message: tagMutationError(error, "detach") };
+  }
+
+  // Tag matching ignores case, so e.g. "mindanao" resolves to Mindanao and nothing changes.
+  if (!result.changed) {
+    return {
+      values: parsed.values,
+      message: `That is already “${oldTag.name}”. Enter a different tag name (changing only capitalization isn't supported).`,
+    };
+  }
+
+  revalidateSpecimenTagPaths(safeIds.data.specimenId);
+  redirect(`/specimens/${safeIds.data.specimenId}/tags?tag=changed`);
 }

@@ -11,6 +11,7 @@ import {
 } from "./tag-form";
 import {
   attachSpecimenTagResultSchema,
+  changeSpecimenTagResultSchema,
   detachSpecimenTagResultSchema,
 } from "./types";
 
@@ -61,5 +62,19 @@ describe("specimen tag response contracts", () => {
       detachSpecimenTagResultSchema.safeParse({ tagId: TAG_ID, detached: true }).success,
     ).toBe(true);
     expect(detachSpecimenTagResultSchema.safeParse({ tagId: TAG_ID }).success).toBe(false);
+  });
+});
+
+describe("specimen tag change contract", () => {
+  const tag = { id: "4f1c2b7e-8d3a-4c5b-9e6f-0a1b2c3d4e5f", name: "Visayas" };
+  const previousTagId = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
+
+  it("accepts the backend's changed and no-op responses", () => {
+    expect(changeSpecimenTagResultSchema.safeParse({ tag, previousTagId, changed: true }).success).toBe(true);
+    expect(changeSpecimenTagResultSchema.safeParse({ tag, previousTagId, changed: false }).success).toBe(true);
+  });
+
+  it("rejects a response without the previous tag id", () => {
+    expect(changeSpecimenTagResultSchema.safeParse({ tag, changed: true }).success).toBe(false);
   });
 });

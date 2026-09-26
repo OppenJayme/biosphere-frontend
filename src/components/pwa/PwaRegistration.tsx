@@ -8,7 +8,14 @@ export function PwaRegistration() {
   useEffect(() => {
     // Development workers commonly serve stale bundles after code changes. The
     // production build is the supported environment for offline/PWA testing.
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) {
+    if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV !== "production") {
+      // A worker left behind by an earlier `npm start` on this origin would keep serving
+      // cached bundles in development, hiding code changes. Remove it.
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
+        .catch(() => {});
       return;
     }
 

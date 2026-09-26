@@ -6,6 +6,7 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Status = "checking" | "ready" | "invalid" | "submitting";
 
@@ -138,8 +139,9 @@ export function AcceptInviteClient() {
         />
 
         <Button type="submit" radius="lg" className="w-full" disabled={status === "submitting"}>
-          {status === "submitting" ? "Setting Password…" : "Activate Account"}
+          Activate Account
         </Button>
+        <PendingOverlay pending={status === "submitting"} label="Activating your account…" />
       </form>
     </AuthLayout>
   );

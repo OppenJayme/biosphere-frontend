@@ -249,7 +249,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
                 href={`/specimens/${specimen.id}/tags`}
                 className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
               >
-                Manage tags
+                Edit tags
               </Link>
             ) : undefined
           }

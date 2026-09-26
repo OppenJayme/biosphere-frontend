@@ -11,6 +11,7 @@ import { SpecimenRevisionHistory } from "@/components/specimens/SpecimenRevision
 import {
   getSpecimen,
   getSpecimenRevisionHistory,
+  listSpecimenRevisionFields,
 } from "@/features/specimens/api";
 import {
   parseSpecimenRevisionQuery,
@@ -41,11 +42,14 @@ export default async function SpecimenRevisionHistoryPage({
   const query = parseSpecimenRevisionQuery(await searchParams);
   let specimen;
   let history;
+  let fieldOptions: string[] | null;
   try {
     // These protected reads are independent, so start them together to avoid a request waterfall.
-    [specimen, history] = await Promise.all([
+    // The field list only feeds the filter dropdown; if it fails, the filter falls back to free text.
+    [specimen, history, fieldOptions] = await Promise.all([
       getSpecimen(id),
       getSpecimenRevisionHistory(id, query),
+      listSpecimenRevisionFields(id).catch(() => null),
     ]);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
@@ -95,7 +99,12 @@ export default async function SpecimenRevisionHistoryPage({
           catalog information. History is read-only and remains available after archival.
         </p>
       </header>
-      <SpecimenRevisionHistory specimenId={id} history={history} query={query} />
+      <SpecimenRevisionHistory
+        specimenId={id}
+        history={history}
+        query={query}
+        fieldOptions={fieldOptions}
+      />
     </div>
   );
 }

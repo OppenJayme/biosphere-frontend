@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { LockIcon } from "@/components/icons";
 import { resetPassword } from "@/features/auth/actions";
 import { verifySession } from "@/lib/session";
+import { FormPendingOverlay } from "@/components/ui/LoadingOverlay";
 
 export const metadata: Metadata = {
   title: "Reset Password",
@@ -43,6 +44,7 @@ export default async function ResetPasswordPage({
       }
     >
       <form action={resetPassword} className="space-y-5">
+        <FormPendingOverlay label="Updating password…" />
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             {ERROR_MESSAGES[error] ?? "Something went wrong. Please try again."}

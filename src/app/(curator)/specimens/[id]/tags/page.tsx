@@ -77,7 +77,9 @@ export default async function SpecimenTagsPage({
       ? "The tag was attached and recorded in revision history."
       : firstValue(rawSearchParams.tag) === "existing"
         ? "That tag was already attached; no duplicate relationship was created."
-        : firstValue(rawSearchParams.tag) === "detached"
+        : firstValue(rawSearchParams.tag) === "changed"
+          ? "The tag was changed for this specimen. Other specimens keep their tags."
+          : firstValue(rawSearchParams.tag) === "detached"
           ? "The tag was detached from this specimen. The shared vocabulary was retained."
           : null;
 

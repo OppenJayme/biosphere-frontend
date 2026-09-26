@@ -1,6 +1,6 @@
 /**
- * Authenticated Cataloging actions for archival and public-display eligibility.
- * They expose no direct status setter; catalog completion stays a separate deferred rule.
+ * Authenticated Cataloging actions for cataloging, archival, and public-display eligibility.
+ * There is no direct status setter; the backend re-checks required fields before cataloging.
  */
 
 "use server";
@@ -10,10 +10,17 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
-import { archiveSpecimen, setSpecimenPublicDisplay } from "./api";
+import { archiveSpecimen, catalogSpecimen, setSpecimenPublicDisplay } from "./api";
+import { catalogRejectionSchema } from "./types";
 
 export type LifecycleActionState = {
   message?: string;
+};
+
+export type CatalogActionState = {
+  message?: string;
+  /** Required fields the backend reported missing at submit time (data changed meanwhile). */
+  missingFields?: string[];
 };
 
 function lifecycleError(error: unknown, operation: "archive" | "public-display") {
@@ -97,4 +104,45 @@ export async function archiveSpecimenAction(
 
   refreshSpecimenPaths(safeId.data);
   redirect(`/specimens/${safeId.data}?lifecycle=archived`);
+}
+
+export async function catalogSpecimenAction(
+  specimenId: string,
+  _previousState: CatalogActionState,
+  _formData: FormData,
+): Promise<CatalogActionState> {
+  void _previousState;
+  void _formData;
+  if (!(await verifySession())) {
+    redirect(`/login?from=${encodeURIComponent(`/specimens/${specimenId}`)}`);
+  }
+
+  const safeId = z.uuid().safeParse(specimenId);
+  if (!safeId.success) {
+    return { message: "The specimen identifier is invalid. Return to the catalog and try again." };
+  }
+
+  try {
+    await catalogSpecimen(safeId.data);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 400) {
+        const rejection = catalogRejectionSchema.safeParse(error.body);
+        if (rejection.success) {
+          return {
+            message: "Some required fields are missing now. Complete them, then catalog again.",
+            missingFields: rejection.data.missingFields,
+          };
+        }
+        return { message: "Archived specimens cannot be cataloged." };
+      }
+      if (error.status === 401) return { message: "Your session expired. Sign in and try again." };
+      if (error.status === 403) return { message: "Only curators can catalog specimens." };
+      if (error.status === 404) return { message: "The specimen no longer exists. Return to the catalog." };
+    }
+    return { message: "The specimen could not be cataloged. Check your connection and try again." };
+  }
+
+  refreshSpecimenPaths(safeId.data);
+  redirect(`/specimens/${safeId.data}?lifecycle=cataloged`);
 }

@@ -6,6 +6,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   archiveSpecimenAction,
   setSpecimenPublicDisplayAction,
@@ -38,7 +39,7 @@ function PublicDisplayControl({ specimen }: { specimen: SpecimenSummary }) {
         <p className="mt-1 text-sm text-zinc-600">
           {specimen.status === "ARCHIVED"
             ? "Archived specimens cannot be publicly eligible."
-            : "Only a Cataloged specimen can be marked publicly eligible. Catalog completion remains unavailable until the museum approves its required-field rules."}
+            : "Only a Cataloged specimen can be marked publicly eligible. Catalog this specimen first."}
         </p>
       </div>
     );
@@ -51,20 +52,16 @@ function PublicDisplayControl({ specimen }: { specimen: SpecimenSummary }) {
         Currently {specimen.publicDisplay ? "eligible" : "not eligible"}. Eligibility does not
         publish an exhibit or expose the internal catalog record.
       </p>
-      <form
-        action={formAction}
-        className="mt-3"
-        onSubmit={(event) => {
-          if (!window.confirm(command.confirmation)) event.preventDefault();
-        }}
-      >
-        <button
-          type="submit"
-          disabled={pending}
+      <form action={formAction} className="mt-3">
+        <ConfirmButton
+          label={command.label}
+          question={command.question}
+          confirmLabel={command.confirmLabel}
+          detail={command.detail}
+          pending={pending}
+          pendingLabel="Updating public eligibility…"
           className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {pending ? "Saving..." : command.label}
-        </button>
+        />
       </form>
       {state.message && <p role="alert" className="mt-2 text-xs text-red-700">{state.message}</p>}
     </div>
@@ -91,22 +88,17 @@ function ArchiveControl({ specimen, activeLotCount }: SpecimenLifecyclePanelProp
           {blockedReason}
         </div>
       ) : (
-        <form
-          action={formAction}
-          className="mt-3"
-          onSubmit={(event) => {
-            if (!window.confirm("Archive this specimen record? This preserves its history but there is currently no restore workflow.")) {
-              event.preventDefault();
-            }
-          }}
-        >
-          <button
-            type="submit"
-            disabled={pending}
+        <form action={formAction} className="mt-3">
+          <ConfirmButton
+            label="Archive specimen"
+            question="Archive this specimen?"
+            confirmLabel="Yes, archive"
+            detail="History is preserved, but there is currently no restore workflow."
+            tone="danger"
+            pending={pending}
+            pendingLabel="Archiving specimen…"
             className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {pending ? "Archiving..." : "Archive specimen"}
-          </button>
+          />
         </form>
       )}
       {state.message && <p role="alert" className="mt-2 text-xs text-red-700">{state.message}</p>}

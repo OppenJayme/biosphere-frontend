@@ -24,6 +24,7 @@ import {
   type SpecimenImportPreview,
   type SpecimenImportPreviewRow,
 } from "@/features/specimens/import-types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 function rowIdentity(row: SpecimenImportPreviewRow) {
   return (
@@ -199,8 +200,9 @@ export function SpecimenImportWorkspace() {
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:pointer-events-none disabled:opacity-50"
           >
             <UploadIcon className="h-4 w-4" />
-            {isPreviewing ? "Validating…" : "Preview CSV"}
+            Preview CSV
           </button>
+          <PendingOverlay pending={isPreviewing} label="Validating CSV rows…" />
         </form>
         <p className="mt-2 text-[11px] text-zinc-400">
           Maximum upload: {(MAX_SPECIMEN_IMPORT_FILE_BYTES / 1024 / 1024).toFixed(0)} MB. The file itself is not retained by this page.
@@ -292,8 +294,9 @@ export function SpecimenImportWorkspace() {
               disabled={isCommitting || isPreviewing || selected.size === 0 || (selectedWarnings > 0 && !warningsAcknowledged)}
               className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:pointer-events-none disabled:opacity-50"
             >
-              {isCommitting ? "Importing…" : commitResult?.failedCount ? "Retry failed rows" : "Import selected rows"}
+              {commitResult?.failedCount ? "Retry failed rows" : "Import selected rows"}
             </button>
+            <PendingOverlay pending={isCommitting} label="Importing specimens…" />
           </div>
         </section>
       )}

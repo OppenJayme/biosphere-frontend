@@ -5,6 +5,7 @@ import { IconInput } from "@/components/ui/IconInput";
 import { Button } from "@/components/ui/Button";
 import { MailIcon, LockIcon } from "@/components/icons";
 import { forgotPassword } from "@/features/auth/actions";
+import { FormPendingOverlay } from "@/components/ui/LoadingOverlay";
 
 export const metadata: Metadata = {
   title: "Forgot Password",
@@ -34,6 +35,7 @@ export default async function ForgotPasswordPage({
       }
     >
       <form action={forgotPassword} className="space-y-5">
+        <FormPendingOverlay label="Sending reset code…" />
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             {ERROR_MESSAGES[error] ?? "Something went wrong. Please try again."}

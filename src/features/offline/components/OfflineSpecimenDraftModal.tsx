@@ -7,6 +7,7 @@ import { TextField } from "@/components/ui/TextField";
 import { draftFromFormData } from "../schema";
 import { SPECIMEN_GENDERS } from "../types";
 import type { OfflineSpecimenDraft, SpecimenDraftData } from "../types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 const GENDER_LABELS = {
   MALE: "Male",
@@ -164,8 +165,9 @@ export function OfflineSpecimenDraftModal({
               disabled={saving}
               className="rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save on this device"}
+              Save on this device
             </button>
+            <PendingOverlay pending={saving} label="Saving draft on this device…" />
           </div>
         </form>
       </div>

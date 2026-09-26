@@ -112,6 +112,20 @@ export const specimenRevisionPageSchema = z.object({
   limit: z.number().int().positive().max(100),
 });
 
+/** GET /specimens/:id/catalog-readiness: required non-image fields still missing. */
+export const catalogReadinessSchema = z.object({
+  specimenId: z.uuid(),
+  status: z.enum(SPECIMEN_STATUSES),
+  ready: z.boolean(),
+  missingFields: z.array(z.string().min(1)),
+});
+
+/** 400 body from PATCH /specimens/:id/catalog when required fields went missing meanwhile. */
+export const catalogRejectionSchema = z.object({
+  message: z.unknown(),
+  missingFields: z.array(z.string().min(1)).min(1),
+});
+
 export const specimenTagSchema = z.object({
   id: z.uuid(),
   name: z.string().min(1).max(100),
@@ -120,6 +134,13 @@ export const specimenTagSchema = z.object({
 export const attachSpecimenTagResultSchema = z.object({
   tag: specimenTagSchema,
   attached: z.boolean(),
+});
+
+/** PATCH /specimens/:id/tags/:tagId: swap one attached tag for another in one transaction. */
+export const changeSpecimenTagResultSchema = z.object({
+  tag: specimenTagSchema,
+  previousTagId: z.uuid(),
+  changed: z.boolean(),
 });
 
 export const detachSpecimenTagResultSchema = z.object({
@@ -184,6 +205,7 @@ export type SpecimenProvenance = z.infer<typeof specimenProvenanceSchema>;
 export type SpecimenRevision = z.infer<typeof specimenRevisionSchema>;
 export type SpecimenRevisionPage = z.infer<typeof specimenRevisionPageSchema>;
 export type SpecimenTag = z.infer<typeof specimenTagSchema>;
+export type CatalogReadiness = z.infer<typeof catalogReadinessSchema>;
 export type SpecimenMedia = z.infer<typeof specimenMediaSchema>;
 export type SpecimenMediaSignedUrl = z.infer<typeof specimenMediaSignedUrlSchema>;
 

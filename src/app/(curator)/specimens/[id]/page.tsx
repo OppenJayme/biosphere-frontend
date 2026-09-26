@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { SpecimenFullDetails } from "@/components/specimens/SpecimenFullDetails";
+import { SpecimenCatalogPanel } from "@/components/specimens/SpecimenCatalogPanel";
 import { SpecimenLifecyclePanel } from "@/components/specimens/SpecimenLifecyclePanel";
-import { getSpecimenDetails } from "@/features/specimens/api";
+import { getCatalogReadiness, getSpecimenDetails } from "@/features/specimens/api";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 
@@ -26,6 +27,9 @@ function specimenNotice(params: Record<string, string | string[] | undefined>) {
   if (lifecycle === "public-enabled") return "The specimen is now eligible for public display.";
   if (lifecycle === "public-disabled") return "Public-display eligibility was removed.";
   if (lifecycle === "archived") return "The specimen was archived and public eligibility was disabled.";
+  if (lifecycle === "cataloged") {
+    return "The specimen is now Cataloged and can be marked eligible for public display.";
+  }
   if (firstValue(params.created) === "1") return "The uncataloged specimen draft was created.";
   if (firstValue(params.updated) === "1") return "The specimen core record was updated.";
   if (firstValue(params.taxonomy) === "created") return "The specimen taxonomy record was created.";
@@ -68,6 +72,13 @@ export default async function SpecimenDetailsPage({
       </div>
     );
   }
+
+  // Only Uncataloged records can be cataloged. Readiness is advisory: if it fails to load,
+  // the panel still renders and the backend re-checks required fields on submit.
+  const readiness =
+    detail.specimen.status === "UNCATALOGED"
+      ? await getCatalogReadiness(id).catch(() => null)
+      : null;
 
   const title =
     detail.specimen.accessionNumber ??
@@ -123,6 +134,10 @@ export default async function SpecimenDetailsPage({
         >
           {savedNotice}
         </div>
+      )}
+
+      {detail.specimen.status === "UNCATALOGED" && (
+        <SpecimenCatalogPanel specimenId={id} readiness={readiness} />
       )}
 
       <SpecimenLifecyclePanel

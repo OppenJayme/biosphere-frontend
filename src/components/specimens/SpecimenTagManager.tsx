@@ -1,18 +1,21 @@
 /**
- * Interactive Cataloging UI for attaching and detaching reusable specimen tags.
+ * Interactive Cataloging UI for attaching, changing, and detaching reusable specimen tags.
  * It never renames/deletes shared vocabulary and does not manage inventory or storage.
  */
 
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   attachSpecimenTagAction,
+  changeSpecimenTagAction,
   detachSpecimenTagAction,
 } from "@/features/specimens/tag-actions";
 import type { DetachTagState, TagFormState } from "@/features/specimens/tag-form";
 import type { SpecimenTag } from "@/features/specimens/types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenTagManagerProps = {
   specimenId: string;
@@ -34,22 +37,18 @@ function DetachTagControl({ specimenId, tag }: { specimenId: string; tag: Specim
 
   return (
     <div>
-      <form
-        action={formAction}
-        onSubmit={(event) => {
-          // Detaching preserves vocabulary/history but still requires confirmation to avoid mistakes.
-          if (!window.confirm(`Detach the tag “${tag.name}” from this specimen?`)) {
-            event.preventDefault();
-          }
-        }}
-      >
-        <button
-          type="submit"
-          disabled={pending}
+      {/* Detaching preserves vocabulary/history but still asks first to avoid mistakes. */}
+      <form action={formAction}>
+        <ConfirmButton
+          label="Detach"
+          confirmLabel="Yes, detach"
+          question={`Detach “${tag.name}”?`}
+          detail="The tag stays in the shared vocabulary."
+          tone="danger"
+          pending={pending}
+          pendingLabel="Detaching tag…"
           className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {pending ? "Removing..." : "Detach"}
-        </button>
+        />
       </form>
       {state.message && (
         <p role="alert" className="mt-1 max-w-72 text-xs text-red-700">
@@ -57,6 +56,99 @@ function DetachTagControl({ specimenId, tag }: { specimenId: string; tag: Specim
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * One attached tag. "Change" swaps this specimen's tag for another name (e.g. Mindanao ->
+ * Visayas) without renaming the shared tag on other specimens.
+ */
+function TagRow({
+  specimenId,
+  tag,
+  readOnly,
+}: {
+  specimenId: string;
+  tag: SpecimenTag;
+  readOnly: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const action = changeSpecimenTagAction.bind(null, specimenId, { id: tag.id, name: tag.name });
+  const [state, formAction, pending] = useActionState<TagFormState, FormData>(action, {
+    values: { tagName: tag.name },
+  });
+  const errorId = `change-tag-${tag.id}-error`;
+  const error = state.errors?.tagName?.[0] ?? state.message;
+
+  if (editing && !readOnly) {
+    return (
+      <li className="py-3 first:pt-0 last:pb-0">
+        <form action={formAction} className="flex flex-wrap items-end gap-2">
+          <label className="min-w-56 flex-1 text-xs font-medium text-zinc-700">
+            Change “{tag.name}” to
+            <input
+              type="text"
+              name="tagName"
+              list="available-specimen-tags"
+              defaultValue={state.values.tagName}
+              maxLength={100}
+              required
+              autoFocus
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? errorId : undefined}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setEditing(false);
+              }}
+              className={inputClasses}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Save
+          </button>
+          <PendingOverlay pending={pending} label="Changing tag…" />
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => setEditing(false)}
+            className="rounded-lg border border-black/15 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+          >
+            Cancel
+          </button>
+        </form>
+        {error && (
+          <p id={errorId} role="alert" className="mt-1.5 text-xs text-red-700">
+            {error}
+          </p>
+        )}
+        <p className="mt-1.5 text-xs text-zinc-500">
+          Only this specimen changes. Other specimens tagged “{tag.name}” keep it.
+        </p>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+      <span className="rounded-full bg-sage-100 px-3 py-1.5 text-sm font-medium text-forest-800">
+        {tag.name}
+      </span>
+      {!readOnly && (
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-md border border-forest-700 px-2.5 py-1 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+          >
+            Change
+          </button>
+          <DetachTagControl specimenId={specimenId} tag={tag} />
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -86,12 +178,7 @@ export function SpecimenTagManager({
         ) : (
           <ul className="mt-4 divide-y divide-black/5">
             {currentTags.map((tag) => (
-              <li key={tag.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                <span className="rounded-full bg-sage-100 px-3 py-1.5 text-sm font-medium text-forest-800">
-                  {tag.name}
-                </span>
-                {!readOnly && <DetachTagControl specimenId={specimenId} tag={tag} />}
-              </li>
+              <TagRow key={tag.id} specimenId={specimenId} tag={tag} readOnly={readOnly} />
             ))}
           </ul>
         )}
@@ -139,8 +226,9 @@ export function SpecimenTagManager({
               disabled={pending}
               className="mt-5 rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {pending ? "Attaching..." : "Attach tag"}
+              Attach tag
             </button>
+            <PendingOverlay pending={pending} label="Attaching tag…" />
           </form>
 
           {state.message && (

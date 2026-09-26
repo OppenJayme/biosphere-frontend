@@ -1,6 +1,8 @@
 import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import {
+  catalogReadinessSchema,
+  changeSpecimenTagResultSchema,
   collectionPageSchema,
   attachSpecimenTagResultSchema,
   detachSpecimenTagResultSchema,
@@ -208,6 +210,39 @@ export async function getSpecimenRevisionHistory(
   return result.data;
 }
 
+// Bounds the field-list scan: 20 pages of 100 covers any realistic specimen history.
+const REVISION_FIELD_SCAN_LIMIT = 100;
+const REVISION_FIELD_SCAN_MAX_PAGES = 20;
+
+/**
+ * Collect the distinct field names this specimen's history has recorded, for the
+ * "Field changed" filter. The backend has no distinct-fields endpoint, so this pages
+ * through the unfiltered history (bounded above).
+ */
+export async function listSpecimenRevisionFields(specimenId: string) {
+  const fields = new Set<string>();
+
+  for (let page = 1; page <= REVISION_FIELD_SCAN_MAX_PAGES; page += 1) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(REVISION_FIELD_SCAN_LIMIT),
+    });
+    const response = await apiFetch<unknown>(
+      `/specimens/${encodeURIComponent(specimenId)}/revisions?${params}`,
+      { method: "GET", cache: "no-store" },
+    );
+    const result = specimenRevisionPageSchema.safeParse(response);
+    if (!result.success) {
+      throw new Error("The backend returned an invalid specimen revision-history response.");
+    }
+
+    for (const revision of result.data.items) fields.add(revision.fieldChanged);
+    if (page * result.data.limit >= result.data.total) break;
+  }
+
+  return [...fields];
+}
+
 /** Read the tags currently attached to one specimen. */
 export async function listSpecimenTags(specimenId: string) {
   const response = await apiFetch<unknown>(
@@ -253,6 +288,28 @@ export async function attachSpecimenTag(
 
   if (!result.success) {
     throw new Error("The backend returned an invalid attached-tag response.");
+  }
+
+  return result.data;
+}
+
+/**
+ * Swap one of a specimen's tags for another name in a single backend transaction, recorded
+ * as one revision (old name -> new name). The shared tag is never renamed for other specimens.
+ */
+export async function changeSpecimenTag(
+  specimenId: string,
+  tagId: string,
+  input: AttachSpecimenTagInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags/${encodeURIComponent(tagId)}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  const result = changeSpecimenTagResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid changed-tag response.");
   }
 
   return result.data;
@@ -421,6 +478,36 @@ export async function archiveSpecimen(id: string) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid archived specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Read which required non-image fields still block cataloging this specimen. */
+export async function getCatalogReadiness(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/catalog-readiness`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = catalogReadinessSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid catalog-readiness response.");
+  }
+
+  return result.data;
+}
+
+/** Move a complete Uncataloged specimen to Cataloged; the backend re-checks every required field. */
+export async function catalogSpecimen(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/catalog`,
+    { method: "PATCH" },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid cataloged specimen response.");
   }
 
   return result.data;

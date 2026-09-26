@@ -12,6 +12,7 @@ import {
   type TaxonomyFormState,
   type TaxonomyFormValues,
 } from "@/features/specimens/taxonomy-form";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenTaxonomyFormProps = {
   specimenId: string;
@@ -138,12 +139,9 @@ export function SpecimenTaxonomyForm({
           disabled={pending}
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending
-            ? "Saving..."
-            : mode === "create"
-              ? "Create taxonomy record"
-              : "Save taxonomy changes"}
+          {mode === "create" ? "Create taxonomy record" : "Save taxonomy changes"}
         </button>
+        <PendingOverlay pending={pending} label="Saving taxonomy…" />
       </div>
     </form>
   );

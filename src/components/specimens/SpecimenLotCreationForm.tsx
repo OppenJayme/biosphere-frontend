@@ -9,6 +9,7 @@ import {
   type CreateLotFormState,
 } from "@/features/specimen-lots/form";
 import type { StorageUnitOption } from "@/features/specimen-lots/types";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenLotCreationFormProps = {
   specimenId: string;
@@ -196,8 +197,9 @@ export function SpecimenLotCreationForm({
           disabled={pending || !hasStorageUnits}
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending ? "Creating lot..." : "Create specimen lot"}
+          Create specimen lot
         </button>
+        <PendingOverlay pending={pending} label="Creating specimen lot…" />
       </div>
     </form>
   );

@@ -15,7 +15,12 @@ type SpecimenRevisionHistoryProps = {
   specimenId: string;
   history: SpecimenRevisionPage;
   query: SpecimenRevisionQuery;
+  /** Distinct fields recorded for this specimen; null when they could not be loaded. */
+  fieldOptions: string[] | null;
 };
+
+const filterControlClasses =
+  "mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
 
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   dateStyle: "medium",
@@ -23,21 +28,38 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   timeZone: "Asia/Manila",
 });
 
-function displayValue(value: string | null) {
+function displayValue(
+  value: string | null,
+  fieldChanged: string,
+  side: "previous" | "new",
+) {
+  if (value !== null && value.length > 0) return value;
+  // Tag entries record one side only: attaching has no previous tag, detaching has no new one.
+  if (fieldChanged === "specimen_tags") {
+    return side === "previous" ? "None (tag added)" : "None (tag removed)";
+  }
   // Keep null visibly different from an empty table cell without inventing catalog data.
-  return value === null || value.length === 0 ? "Not recorded" : value;
+  return "Not recorded";
 }
 
 export function SpecimenRevisionHistory({
   specimenId,
   history,
   query,
+  fieldOptions,
 }: SpecimenRevisionHistoryProps) {
   const { items, limit, page, total } = history;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const firstRecord = total === 0 ? 0 : (page - 1) * limit + 1;
   const lastRecord = Math.min(page * limit, total);
   const hasFilters = Boolean(query.fieldChanged || query.sourceSection);
+
+  // Keep a filter from a shared/stale URL selectable even if it is no longer in the list.
+  const fields =
+    fieldOptions &&
+    [...new Set([...fieldOptions, ...(query.fieldChanged ? [query.fieldChanged] : [])])].sort(
+      (a, b) => revisionFieldLabel(a).localeCompare(revisionFieldLabel(b)),
+    );
 
   return (
     <div className="space-y-4">
@@ -47,14 +69,29 @@ export function SpecimenRevisionHistory({
       >
         <label className="min-w-56 flex-1 text-xs font-medium text-zinc-700">
           Field changed
-          <input
-            type="search"
-            name="fieldChanged"
-            defaultValue={query.fieldChanged}
-            maxLength={100}
-            placeholder="Example: scientific_name"
-            className="mt-1.5 w-full rounded-lg border border-black/15 px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-          />
+          {fields ? (
+            <select
+              name="fieldChanged"
+              defaultValue={query.fieldChanged}
+              className={filterControlClasses}
+            >
+              <option value="">All fields</option>
+              {fields.map((field) => (
+                <option key={field} value={field}>
+                  {revisionFieldLabel(field)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="search"
+              name="fieldChanged"
+              defaultValue={query.fieldChanged}
+              maxLength={100}
+              placeholder="Example: scientific_name"
+              className={filterControlClasses}
+            />
+          )}
         </label>
         <label className="min-w-56 flex-1 text-xs font-medium text-zinc-700">
           Source section
@@ -64,7 +101,7 @@ export function SpecimenRevisionHistory({
             defaultValue={query.sourceSection}
             maxLength={100}
             placeholder="Example: specimen_core"
-            className="mt-1.5 w-full rounded-lg border border-black/15 px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+            className={filterControlClasses}
           />
         </label>
         <button
@@ -154,7 +191,7 @@ export function SpecimenRevisionHistory({
                       Previous value
                     </dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-700">
-                      {displayValue(revision.oldValue)}
+                      {displayValue(revision.oldValue, revision.fieldChanged, "previous")}
                     </dd>
                   </div>
                   <div className="rounded-lg bg-sage-50 p-3">
@@ -162,7 +199,7 @@ export function SpecimenRevisionHistory({
                       New value
                     </dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
-                      {displayValue(revision.newValue)}
+                      {displayValue(revision.newValue, revision.fieldChanged, "new")}
                     </dd>
                   </div>
                 </dl>
