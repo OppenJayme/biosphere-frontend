@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
 import {
+  ArchiveIcon,
   HierarchyIcon,
   PawIcon,
   DocumentTextIcon,
@@ -25,6 +26,7 @@ const NAV_ITEMS: { label: string; href: string; icon: ComponentType<SVGProps<SVG
   { label: "Location", href: "/storage", icon: MapPinIcon },
   { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon },
   { label: "Audit Logs", href: "/audit-logs", icon: ClipboardIcon },
+  { label: "Backup History", href: "/backup-history", icon: ArchiveIcon },
   { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon },
   { label: "Public Website", href: "/public-website", icon: ChatIcon },
   { label: "User", href: "/users", icon: UsersIcon },
