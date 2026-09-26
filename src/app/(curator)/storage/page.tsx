@@ -4,8 +4,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { LocationWorkspace } from "@/components/locations/LocationWorkspace";
-import { listStorageLocations } from "@/features/storage-locations/api";
-import type { StorageUnit } from "@/features/storage-locations/types";
+import {
+  getStorageLocationMovements,
+  listStorageLocations,
+} from "@/features/storage-locations/api";
+import type { StorageMovement, StorageUnit } from "@/features/storage-locations/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 
@@ -37,6 +40,8 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
 
   let units: StorageUnit[] = [];
   let errorMessage: string | undefined;
+  let movements: StorageMovement[] = [];
+  let movementError: string | undefined;
 
   try {
     units = await listStorageLocations("ALL");
@@ -48,6 +53,26 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
       error instanceof ApiError && error.status === 403
         ? "Your active account does not have permission to view storage locations."
         : "Storage locations are temporarily unavailable. Check the backend connection and try again.";
+  }
+
+  const requestedId = selectedResult.success ? selectedResult.data : undefined;
+  const selectedId =
+    requestedId && units.some((unit) => unit.id === requestedId)
+      ? requestedId
+      : units[0]?.id;
+
+  if (!errorMessage && selectedId) {
+    try {
+      movements = await getStorageLocationMovements(selectedId);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        redirect("/login?from=/storage");
+      }
+      movementError =
+        error instanceof ApiError && error.status === 403
+          ? "You do not have permission to view location movement history."
+          : "Movement history is temporarily unavailable. The location record is still shown.";
+    }
   }
 
   return (
@@ -64,10 +89,12 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
       )}
 
       <LocationWorkspace
-        key={selectedResult.success ? selectedResult.data : "default"}
+        key={selectedId ?? "default"}
         units={units}
         errorMessage={errorMessage}
-        initialSelectedId={selectedResult.success ? selectedResult.data : undefined}
+        initialSelectedId={selectedId}
+        movements={movements}
+        movementError={movementError}
       />
     </div>
   );
