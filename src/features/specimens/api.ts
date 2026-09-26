@@ -483,7 +483,7 @@ export async function archiveSpecimen(id: string) {
   return result.data;
 }
 
-/** Read which required non-image fields still block cataloging this specimen. */
+/** Read each catalog-completion rule and whether it passes (works for any status). */
 export async function getCatalogReadiness(id: string) {
   const response = await apiFetch<unknown>(
     `/specimens/${encodeURIComponent(id)}/catalog-readiness`,
@@ -498,16 +498,31 @@ export async function getCatalogReadiness(id: string) {
   return result.data;
 }
 
-/** Move a complete Uncataloged specimen to Cataloged; the backend re-checks every required field. */
-export async function catalogSpecimen(id: string) {
+/** Promote a complete Uncataloged specimen to Cataloged; the backend re-checks every rule. */
+export async function completeCataloging(id: string) {
   const response = await apiFetch<unknown>(
-    `/specimens/${encodeURIComponent(id)}/catalog`,
+    `/specimens/${encodeURIComponent(id)}/complete-cataloging`,
     { method: "PATCH" },
   );
   const result = specimenSummarySchema.safeParse(response);
 
   if (!result.success) {
     throw new Error("The backend returned an invalid cataloged specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Return a Cataloged specimen to Uncataloged for correction; the reason is audited. */
+export async function reopenCataloging(id: string, reason: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/reopen-cataloging`,
+    { method: "PATCH", body: JSON.stringify({ reason }) },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid reopened specimen response.");
   }
 
   return result.data;

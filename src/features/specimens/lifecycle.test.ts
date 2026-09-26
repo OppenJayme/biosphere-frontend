@@ -5,7 +5,8 @@
 import { describe, expect, it } from "vitest";
 import {
   archiveBlockReason,
-  groupMissingCatalogFields,
+  catalogCheckHref,
+  catalogedEditGuardMessage,
   publicDisplayCommand,
 } from "./lifecycle";
 
@@ -34,34 +35,38 @@ describe("specimen lifecycle presentation rules", () => {
 describe("catalog readiness checklist", () => {
   const id = "0b8f5f8e-3f7e-4d3a-9d1a-2c6a1f0e9b11";
 
-  it("groups missing fields by editing section in page order with readable labels", () => {
+  it("links each backend check to the page that fixes it", () => {
+    expect(catalogCheckHref(id, "commonName")).toBe(`/specimens/${id}/edit`);
+    expect(catalogCheckHref(id, "kingdom")).toBe(`/specimens/${id}/taxonomy`);
+    expect(catalogCheckHref(id, "preservationMethod")).toBe(`/specimens/${id}/provenance`);
+    expect(catalogCheckHref(id, "activeLot")).toBe(`/specimens/${id}/lots/new`);
+  });
+
+  it("returns no link for a rule the UI does not know yet", () => {
+    expect(catalogCheckHref(id, "futureRule")).toBeNull();
+  });
+});
+
+describe("cataloged edit guard", () => {
+  it("surfaces the backend guard message and points to Reopen", () => {
+    const message = catalogedEditGuardMessage({
+      message: "Common name is required for a Cataloged specimen. Reopen cataloging before removing it.",
+      statusCode: 400,
+    });
+    expect(message).toContain("Common name is required for a Cataloged specimen");
+    expect(message).toContain("Reopen cataloging");
+  });
+
+  it("finds the guard inside a validation message array", () => {
     expect(
-      groupMissingCatalogFields(id, [
-        "activeLot",
-        "taxonomy.orderName",
-        "scientificName",
-        "provenance.collectionDate",
-        "taxonomy.genus",
-      ]),
-    ).toEqual([
-      { title: "Core record", href: `/specimens/${id}/edit`, labels: ["Scientific name"] },
-      { title: "Taxonomy", href: `/specimens/${id}/taxonomy`, labels: ["Order", "Genus"] },
-      { title: "Provenance", href: `/specimens/${id}/provenance`, labels: ["Collection date"] },
-      {
-        title: "Specimen lots",
-        href: `/specimens/${id}/lots/new`,
-        labels: ["At least one active specimen lot"],
-      },
-    ]);
+      catalogedEditGuardMessage({
+        message: ["Kingdom is required for a Cataloged specimen. Reopen cataloging before removing it."],
+      }),
+    ).toContain("Kingdom is required");
   });
 
-  it("keeps unrecognised backend fields visible instead of dropping them", () => {
-    expect(groupMissingCatalogFields(id, ["provenance.habitat"])).toEqual([
-      { title: "Other", href: null, labels: ["provenance.habitat"] },
-    ]);
-  });
-
-  it("returns no groups when nothing is missing", () => {
-    expect(groupMissingCatalogFields(id, [])).toEqual([]);
+  it("ignores unrelated 400 bodies", () => {
+    expect(catalogedEditGuardMessage({ message: "No changes were provided." })).toBeNull();
+    expect(catalogedEditGuardMessage(null)).toBeNull();
   });
 });

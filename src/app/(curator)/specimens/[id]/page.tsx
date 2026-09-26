@@ -30,6 +30,9 @@ function specimenNotice(params: Record<string, string | string[] | undefined>) {
   if (lifecycle === "cataloged") {
     return "The specimen is now Cataloged and can be marked eligible for public display.";
   }
+  if (lifecycle === "reopened") {
+    return "Cataloging was reopened. The specimen is Uncataloged again and public display is off.";
+  }
   if (firstValue(params.created) === "1") return "The uncataloged specimen draft was created.";
   if (firstValue(params.updated) === "1") return "The specimen core record was updated.";
   if (firstValue(params.taxonomy) === "created") return "The specimen taxonomy record was created.";
@@ -73,8 +76,8 @@ export default async function SpecimenDetailsPage({
     );
   }
 
-  // Only Uncataloged records can be cataloged. Readiness is advisory: if it fails to load,
-  // the panel still renders and the backend re-checks required fields on submit.
+  // Readiness drives the Uncataloged checklist. It is advisory: if it fails to load, the
+  // panel still renders and the backend re-checks every requirement on submit.
   const readiness =
     detail.specimen.status === "UNCATALOGED"
       ? await getCatalogReadiness(id).catch(() => null)
@@ -136,9 +139,11 @@ export default async function SpecimenDetailsPage({
         </div>
       )}
 
-      {detail.specimen.status === "UNCATALOGED" && (
-        <SpecimenCatalogPanel specimenId={id} readiness={readiness} />
-      )}
+      <SpecimenCatalogPanel
+        specimenId={id}
+        status={detail.specimen.status}
+        readiness={readiness}
+      />
 
       <SpecimenLifecyclePanel
         specimen={detail.specimen}

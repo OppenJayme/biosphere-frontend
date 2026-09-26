@@ -30,65 +30,42 @@ export function archiveBlockReason(status: SpecimenSummary["status"], activeLotC
   return null;
 }
 
-type CatalogSection = "core" | "taxonomy" | "provenance" | "lots" | "other";
-
-// Readable labels for the backend's missingFields keys, grouped by the section that edits them.
-const CATALOG_FIELD_LABELS: Record<string, { section: CatalogSection; label: string }> = {
-  accessionNumber: { section: "core", label: "Accession number" },
-  collectionId: { section: "core", label: "Collection" },
-  specimenCategory: { section: "core", label: "Specimen category" },
-  scientificName: { section: "core", label: "Scientific name" },
-  commonName: { section: "core", label: "Common name" },
-  gender: { section: "core", label: "Gender" },
-  "taxonomy.kingdom": { section: "taxonomy", label: "Kingdom" },
-  "taxonomy.phylum": { section: "taxonomy", label: "Phylum" },
-  "taxonomy.class": { section: "taxonomy", label: "Class" },
-  "taxonomy.orderName": { section: "taxonomy", label: "Order" },
-  "taxonomy.family": { section: "taxonomy", label: "Family" },
-  "taxonomy.genus": { section: "taxonomy", label: "Genus" },
-  "taxonomy.species": { section: "taxonomy", label: "Species" },
-  "provenance.collectionDate": { section: "provenance", label: "Collection date" },
-  "provenance.collectionLocation": { section: "provenance", label: "Collection location" },
-  "provenance.preservationType": { section: "provenance", label: "Preservation type" },
-  activeLot: { section: "lots", label: "At least one active specimen lot" },
+// Where each catalog-completion check (by backend key) is fixed.
+const CATALOG_CHECK_PATHS: Record<string, string> = {
+  collection: "edit",
+  accessionNumber: "edit",
+  commonName: "edit",
+  kingdom: "taxonomy",
+  collectionDate: "provenance",
+  preservationType: "provenance",
+  preservationMethod: "provenance",
+  activeLot: "lots/new",
 };
 
-const CATALOG_SECTIONS: { section: CatalogSection; title: string; path: string | null }[] = [
-  { section: "core", title: "Core record", path: "edit" },
-  { section: "taxonomy", title: "Taxonomy", path: "taxonomy" },
-  { section: "provenance", title: "Provenance", path: "provenance" },
-  { section: "lots", title: "Specimen lots", path: "lots/new" },
-  { section: "other", title: "Other", path: null },
-];
+/** Edit page for a failed readiness check, or null for a rule this UI doesn't know yet. */
+export function catalogCheckHref(specimenId: string, key: string) {
+  const path = CATALOG_CHECK_PATHS[key];
+  return path ? `/specimens/${specimenId}/${path}` : null;
+}
 
-export type MissingCatalogGroup = {
-  title: string;
-  href: string | null;
-  labels: string[];
-};
+export const REOPEN_REASON_MAX = 500;
 
 /**
- * Group the backend's missing required fields by the section that edits them, in page order.
- * Unrecognised keys stay visible under "Other" so a new backend rule is never hidden.
+ * Recognise the backend's edit guard ("<Field> is required for a Cataloged specimen. Reopen
+ * cataloging before removing it.") in a 400 body and return it, so edit forms can show the
+ * exact field instead of a generic "not saved" message.
  */
-export function groupMissingCatalogFields(
-  specimenId: string,
-  missingFields: string[],
-): MissingCatalogGroup[] {
-  const bySection = new Map<CatalogSection, string[]>();
-  for (const field of missingFields) {
-    const known = CATALOG_FIELD_LABELS[field];
-    const section = known?.section ?? "other";
-    const labels = bySection.get(section) ?? [];
-    labels.push(known?.label ?? field);
-    bySection.set(section, labels);
-  }
-
-  return CATALOG_SECTIONS.filter(({ section }) => bySection.has(section)).map(
-    ({ section, title, path }) => ({
-      title,
-      href: path ? `/specimens/${specimenId}/${path}` : null,
-      labels: bySection.get(section) ?? [],
-    }),
+export function catalogedEditGuardMessage(body: unknown): string | null {
+  const raw =
+    typeof body === "object" && body !== null && "message" in body
+      ? (body as { message: unknown }).message
+      : null;
+  const messages = Array.isArray(raw) ? raw : [raw];
+  const guard = messages.find(
+    (message): message is string =>
+      typeof message === "string" && message.includes("Reopen cataloging before removing it"),
   );
+  return guard
+    ? `${guard} Use “Reopen cataloging” on the specimen page first.`
+    : null;
 }

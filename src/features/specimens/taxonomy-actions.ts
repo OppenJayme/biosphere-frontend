@@ -11,10 +11,14 @@ import {
   type TaxonomyFormMode,
   type TaxonomyFormState,
 } from "./taxonomy-form";
+import { catalogedEditGuardMessage } from "./lifecycle";
 
 function mutationErrorMessage(error: unknown, mode: TaxonomyFormMode) {
   if (error instanceof ApiError) {
     if (error.status === 400) {
+      // Cataloged records reject clearing a required field; say which one and how to proceed.
+      const guard = catalogedEditGuardMessage(error.body);
+      if (guard) return guard;
       return mode === "create"
         ? "Enter at least one valid taxonomy value before saving."
         : "No changes were saved. Change at least one taxonomy field and try again.";

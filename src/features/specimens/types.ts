@@ -112,18 +112,24 @@ export const specimenRevisionPageSchema = z.object({
   limit: z.number().int().positive().max(100),
 });
 
-/** GET /specimens/:id/catalog-readiness: required non-image fields still missing. */
+/** GET /specimens/:id/catalog-readiness: each catalog-completion rule and whether it passes. */
 export const catalogReadinessSchema = z.object({
   specimenId: z.uuid(),
-  status: z.enum(SPECIMEN_STATUSES),
-  ready: z.boolean(),
-  missingFields: z.array(z.string().min(1)),
+  currentStatus: z.enum(SPECIMEN_STATUSES),
+  requirementsMet: z.boolean(),
+  /** True only when requirements pass and the record is currently Uncataloged. */
+  canComplete: z.boolean(),
+  checks: z.array(
+    z.object({ key: z.string().min(1), label: z.string().min(1), passed: z.boolean() }),
+  ),
+  /** Readable labels of the failed checks. */
+  missingRequirements: z.array(z.string()),
 });
 
-/** 400 body from PATCH /specimens/:id/catalog when required fields went missing meanwhile. */
+/** 400 body from PATCH /specimens/:id/complete-cataloging when requirements are missing. */
 export const catalogRejectionSchema = z.object({
   message: z.unknown(),
-  missingFields: z.array(z.string().min(1)).min(1),
+  missingRequirements: z.array(z.string().min(1)).min(1),
 });
 
 export const specimenTagSchema = z.object({

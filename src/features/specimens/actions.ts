@@ -7,10 +7,14 @@ import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { createSpecimen, updateSpecimen } from "./api";
 import { readSpecimenForm, type SpecimenFormState } from "./form";
+import { catalogedEditGuardMessage } from "./lifecycle";
 
 function errorMessage(error: unknown, operation: "create" | "update") {
   if (error instanceof ApiError) {
     if (error.status === 400) {
+      // Cataloged records reject clearing a required field; say which one and how to proceed.
+      const guard = catalogedEditGuardMessage(error.body);
+      if (guard) return guard;
       return operation === "update"
         ? "No changes were saved. Change at least one core field and check the entered values."
         : "The draft could not be saved. Check the entered values and try again.";
