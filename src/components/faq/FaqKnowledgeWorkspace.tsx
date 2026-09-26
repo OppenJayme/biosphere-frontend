@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ChatIcon, ClockIcon } from "@/components/icons";
+import { FaqKnowledgeManagement } from "./FaqKnowledgeManagement";
 import { faqKnowledgeHref } from "@/features/faq/query";
 import {
   FAQ_STATUSES,
@@ -18,6 +19,7 @@ type FaqKnowledgeWorkspaceProps = {
   page: FaqEntryPage | null;
   query: FaqListQuery;
   errorMessage?: string;
+  initialSelectedId?: string;
 };
 
 const inputClasses =
@@ -28,8 +30,17 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   timeZone: "Asia/Manila",
 });
 
-export function FaqKnowledgeWorkspace({ page, query, errorMessage }: FaqKnowledgeWorkspaceProps) {
-  const [selectedId, setSelectedId] = useState(page?.items[0]?.id ?? null);
+export function FaqKnowledgeWorkspace({
+  page,
+  query,
+  errorMessage,
+  initialSelectedId,
+}: FaqKnowledgeWorkspaceProps) {
+  const [selectedId, setSelectedId] = useState(
+    initialSelectedId && page?.items.some((entry) => entry.id === initialSelectedId)
+      ? initialSelectedId
+      : page?.items[0]?.id ?? null,
+  );
   const selected = page?.items.find((entry) => entry.id === selectedId) ?? page?.items[0] ?? null;
 
   if (errorMessage || !page) {
@@ -127,6 +138,8 @@ export function FaqKnowledgeWorkspace({ page, query, errorMessage }: FaqKnowledg
 
         <FaqDetail entry={selected} />
       </div>
+
+      <FaqKnowledgeManagement selected={selected} />
 
       <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-950">
         Public FAQ matching is not enabled yet. Matching rules, thresholds, ambiguity handling, and fallback wording still require approval.
