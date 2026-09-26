@@ -2,6 +2,7 @@
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { FaqKnowledgeWorkspace } from "@/components/faq/FaqKnowledgeWorkspace";
 import { listFaqEntries } from "@/features/faq/api";
 import { faqKnowledgeHref, parseFaqListQuery } from "@/features/faq/query";
@@ -15,10 +16,25 @@ type FaqKnowledgePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const notices: Record<string, string> = {
+  created: "The FAQ knowledge entry was created as inactive.",
+  updated: "The FAQ knowledge content was updated.",
+  activated: "The FAQ knowledge entry was activated.",
+  deactivated: "The FAQ knowledge entry was deactivated.",
+  archived: "The FAQ knowledge entry was archived.",
+};
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePageProps) {
   if (!(await verifySession())) redirect("/login?from=/faq-knowledge");
 
-  const query = parseFaqListQuery(await searchParams);
+  const params = await searchParams;
+  const query = parseFaqListQuery(params);
+  const selectedResult = z.uuid().safeParse(firstValue(params.selected));
+  const notice = notices[firstValue(params.notice) ?? ""];
   let page: FaqEntryPage | null = null;
   let errorMessage: string | undefined;
 
@@ -49,7 +65,19 @@ export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePag
         </p>
       </header>
 
-      <FaqKnowledgeWorkspace page={page} query={query} errorMessage={errorMessage} />
+      {notice && (
+        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+          {notice}
+        </div>
+      )}
+
+      <FaqKnowledgeWorkspace
+        key={selectedResult.success ? selectedResult.data : faqKnowledgeHref(query)}
+        page={page}
+        query={query}
+        errorMessage={errorMessage}
+        initialSelectedId={selectedResult.success ? selectedResult.data : undefined}
+      />
     </div>
   );
 }
