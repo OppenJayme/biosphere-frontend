@@ -25,6 +25,7 @@ const NAV_ITEMS: { label: string; href: string; icon: ComponentType<SVGProps<SVG
   { label: "Location", href: "/storage", icon: MapPinIcon },
   { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon },
   { label: "Audit Logs", href: "/audit-logs", icon: ClipboardIcon },
+  { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon },
   { label: "Public Website", href: "/public-website", icon: ChatIcon },
   { label: "User", href: "/users", icon: UsersIcon },
   { label: "Reports", href: "/reports", icon: ChartBarIcon },
