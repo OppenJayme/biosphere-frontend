@@ -7,7 +7,7 @@
  */
 
 const CACHE_PREFIX = "biosphere-static-";
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 const OFFLINE_URL = "/offline.html";
 const PRE_CACHE_URLS = [OFFLINE_URL, "/favicon.ico"];
 

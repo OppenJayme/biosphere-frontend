@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchIcon, BellIcon, ChevronDownIcon, MenuIcon } from "@/components/icons";
+import { BellIcon, ChevronDownIcon, MenuIcon } from "@/components/icons";
 import { useSyncStatus } from "@/features/offline/use-sync-status";
 
 function initialsFor(fullName: string) {
@@ -21,10 +21,14 @@ function formatLastSynced(iso: string) {
 
 export function CuratorTopbar({
   onMenuClick,
+  onToggleCollapse,
+  sidebarCollapsed,
   ownerId,
   profile,
 }: {
   onMenuClick: () => void;
+  onToggleCollapse: () => void;
+  sidebarCollapsed: boolean;
   ownerId: string;
   profile: { fullName: string; role: string } | null;
 }) {
@@ -40,15 +44,16 @@ export function CuratorTopbar({
       >
         <MenuIcon className="h-6 w-6" />
       </button>
-
-      <div className="relative hidden max-w-xl flex-1 sm:block">
-        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-        <input
-          type="search"
-          placeholder="Search accession no, scientific name, collector, location..."
-          className="w-full rounded-lg border border-black/15 py-2 pl-10 pr-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-        />
-      </div>
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!sidebarCollapsed}
+        title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className="hidden rounded-lg p-1.5 text-zinc-600 hover:bg-sage-100 hover:text-forest-800 lg:block"
+      >
+        <MenuIcon className="h-5 w-5" />
+      </button>
 
       <div className="ml-auto flex items-center gap-5">
         <div className="hidden flex-col items-end text-xs leading-tight md:flex">

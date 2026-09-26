@@ -16,7 +16,7 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
     <div className={dark ? "min-h-screen bg-forest-900" : "min-h-screen bg-sage-50"}>
       <header className="flex items-center justify-between bg-forest-900 px-4 py-3.5 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <LogoMark className="h-8 w-8 text-white" />
+          <LogoMark className="h-9 w-9 shrink-0" />
           <div className="leading-tight">
             <p className="font-serif text-base font-semibold text-white">BioSphere</p>
             <p className="text-[11px] font-medium text-gold-500">USC Biological Museum</p>
