@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Playfair_Display } from "next/font/google";
+import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -26,7 +27,10 @@ export default function LoginLayout({ children }: LayoutProps<"/login">) {
       lang="en"
       className={`${geistSans.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-white font-sans text-zinc-900">{children}</body>
+      <body className="min-h-full bg-white font-sans text-zinc-900">
+        <PwaRegistration />
+        {children}
+      </body>
     </html>
   );
 }

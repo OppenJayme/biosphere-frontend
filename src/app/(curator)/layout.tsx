@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Geist, Playfair_Display } from "next/font/google";
 import { CuratorChrome } from "@/components/curator/CuratorChrome";
+import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 import { getCurrentAccount } from "@/features/auth/api";
 import { verifySession } from "@/lib/session";
 import "../globals.css";
@@ -44,6 +45,7 @@ export default async function CuratorLayout({ children }: { children: ReactNode 
       className={`${geistSans.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-sage-50/60 font-sans text-zinc-900">
+        <PwaRegistration />
         <CuratorChrome ownerId={user.id} profile={profile}>
           {children}
         </CuratorChrome>
