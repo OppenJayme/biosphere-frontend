@@ -3,6 +3,7 @@
 import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import {
+  storageMovementListSchema,
   storageUnitSchema,
   storageUnitPageSchema,
   type StorageLifecycle,
@@ -50,6 +51,20 @@ export async function listStorageLocations(
   } while (items.length < total);
 
   return items;
+}
+
+export async function getStorageLocationMovements(id: string) {
+  const response = await apiFetch<unknown>(
+    `/storage-locations/${encodeURIComponent(id)}/movements`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = storageMovementListSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid storage movement history response.");
+  }
+
+  return result.data;
 }
 
 async function parseStorageUnitResponse(response: unknown, operation: string) {

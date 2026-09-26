@@ -25,6 +25,19 @@ export const storageUnitPageSchema = z.object({
   limit: z.number().int().positive(),
 });
 
+export const storageMovementSchema = z.object({
+  id: z.uuid(),
+  storageUnitId: z.uuid(),
+  fromStorageUnitId: z.uuid().nullable(),
+  toStorageUnitId: z.uuid().nullable(),
+  movedBy: z.uuid(),
+  movedAt: z.string().min(1),
+  reason: z.string().nullable(),
+});
+
+export const storageMovementListSchema = z.array(storageMovementSchema);
+
 export type StorageUnit = z.infer<typeof storageUnitSchema>;
 export type StorageUnitPage = z.infer<typeof storageUnitPageSchema>;
 export type StorageLifecycle = "ACTIVE" | "ARCHIVED" | "ALL";
+export type StorageMovement = z.infer<typeof storageMovementSchema>;

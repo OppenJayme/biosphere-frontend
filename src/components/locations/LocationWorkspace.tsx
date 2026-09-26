@@ -3,21 +3,25 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 import { ArchiveIcon, ClockIcon, InfoIcon, SearchIcon } from "@/components/icons";
 import {
   buildStorageHierarchy,
   filterStorageUnits,
   storagePath,
 } from "@/features/storage-locations/hierarchy";
-import type { StorageUnit } from "@/features/storage-locations/types";
+import type { StorageMovement, StorageUnit } from "@/features/storage-locations/types";
 import { LocationTree } from "./LocationTree";
 import { StorageLocationManagement } from "./StorageLocationManagement";
+import { StorageMovementHistory } from "./StorageMovementHistory";
 
 type LocationWorkspaceProps = {
   units: StorageUnit[];
   errorMessage?: string;
   initialSelectedId?: string;
+  movements: StorageMovement[];
+  movementError?: string;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
@@ -26,7 +30,15 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   timeZone: "Asia/Manila",
 });
 
-export function LocationWorkspace({ units, errorMessage, initialSelectedId }: LocationWorkspaceProps) {
+export function LocationWorkspace({
+  units,
+  errorMessage,
+  initialSelectedId,
+  movements,
+  movementError,
+}: LocationWorkspaceProps) {
+  const router = useRouter();
+  const [selectionPending, startSelectionTransition] = useTransition();
   const hierarchy = useMemo(() => buildStorageHierarchy(units), [units]);
   const unitById = useMemo(() => new Map(units.map((unit) => [unit.id, unit])), [units]);
   const [selectedId, setSelectedId] = useState(
@@ -44,6 +56,14 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
         .filter((unit) => unit.parentId === selected.id)
         .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
     : [];
+
+  const selectUnit = (id: string) => {
+    if (id === selectedId) return;
+    setSelectedId(id);
+    startSelectionTransition(() => {
+      router.replace(`/storage?selected=${encodeURIComponent(id)}`, { scroll: false });
+    });
+  };
 
   if (errorMessage) {
     return (
@@ -96,7 +116,7 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
                 <li key={unit.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(unit.id)}
+                    onClick={() => selectUnit(unit.id)}
                     className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${
                       unit.id === selected.id
                         ? "bg-forest-50 font-semibold text-forest-800"
@@ -113,7 +133,7 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
               )}
             </ul>
           ) : (
-            <LocationTree nodes={hierarchy} selectedId={selected.id} onSelect={setSelectedId} />
+            <LocationTree nodes={hierarchy} selectedId={selected.id} onSelect={selectUnit} />
           )}
         </div>
       </aside>
@@ -125,7 +145,7 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
               {index > 0 && <span className="text-zinc-300">/</span>}
               <button
                 type="button"
-                onClick={() => setSelectedId(unit.id)}
+                onClick={() => selectUnit(unit.id)}
                 className={index === path.length - 1 ? "font-medium text-forest-700" : "hover:text-forest-700"}
               >
                 {unit.label}
@@ -145,7 +165,7 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
                 <LifecycleBadge archived={Boolean(selected.archivedAt)} />
               </div>
               <p className="mt-1 text-sm text-zinc-500">
-                {selected.unitType} · {selected.storageType}
+                {selected.unitType} &middot; {selected.storageType}
               </p>
             </div>
           </div>
@@ -167,7 +187,7 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
                 <li key={child.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(child.id)}
+                    onClick={() => selectUnit(child.id)}
                     className="flex w-full items-center gap-3 rounded-lg border border-black/10 p-3 text-left hover:border-forest-300 hover:bg-sage-50"
                   >
                     <ArchiveIcon className="h-4 w-4 shrink-0 text-forest-700" />
@@ -183,6 +203,13 @@ export function LocationWorkspace({ units, errorMessage, initialSelectedId }: Lo
             <p className="mt-3 text-sm text-zinc-500">This location has no direct child units.</p>
           )}
         </section>
+
+        <StorageMovementHistory
+          movements={movements}
+          units={units}
+          errorMessage={movementError}
+          loading={selectionPending || selected.id !== initialSelectedId}
+        />
 
         <StorageLocationManagement key={selected.id} selected={selected} units={units} />
       </main>
