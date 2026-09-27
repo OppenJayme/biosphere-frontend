@@ -4,8 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { SpecimenFullDetails } from "@/components/specimens/SpecimenFullDetails";
 import { SpecimenCatalogPanel } from "@/components/specimens/SpecimenCatalogPanel";
+import { SpecimenCreatedDuplicates } from "@/components/specimens/SpecimenCreatedDuplicates";
 import { SpecimenLifecyclePanel } from "@/components/specimens/SpecimenLifecyclePanel";
 import { getCatalogReadiness, getSpecimenDetails } from "@/features/specimens/api";
+import { parseDuplicateCheckOutcome } from "@/features/specimens/duplicates";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 
@@ -90,6 +92,10 @@ export default async function SpecimenDetailsPage({
     "Unnamed specimen";
   const noticeParams = await searchParams;
   const savedNotice = specimenNotice(noticeParams);
+  const createdDuplicates =
+    firstValue(noticeParams.created) === "1"
+      ? parseDuplicateCheckOutcome(firstValue(noticeParams.duplicates))
+      : null;
 
   return (
     <div className="space-y-5">
@@ -137,6 +143,10 @@ export default async function SpecimenDetailsPage({
         >
           {savedNotice}
         </div>
+      )}
+
+      {createdDuplicates && (
+        <SpecimenCreatedDuplicates specimenId={id} outcome={createdDuplicates} />
       )}
 
       <SpecimenCatalogPanel

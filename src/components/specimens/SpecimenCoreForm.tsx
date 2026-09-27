@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { createSpecimenAction, updateSpecimenAction } from "@/features/specimens/actions";
 import {
   type SpecimenFormField,
@@ -10,6 +10,7 @@ import {
 } from "@/features/specimens/form";
 import { SPECIMEN_GENDERS, type MuseumCollection } from "@/features/specimens/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { SpecimenDuplicateCheck } from "./SpecimenDuplicateCheck";
 
 type SpecimenCoreFormProps = {
   mode: "create" | "edit";
@@ -57,13 +58,14 @@ export function SpecimenCoreForm({
       ? updateSpecimenAction.bind(null, specimenId)
       : createSpecimenAction;
   const [state, formAction, pending] = useActionState(action, { values: initialValues });
+  const formRef = useRef<HTMLFormElement>(null);
   const cancelHref = mode === "edit" && specimenId ? `/specimens/${specimenId}` : "/specimens";
 
   const describedBy = (field: SpecimenFormField) =>
     state.errors?.[field]?.length ? fieldErrorId(field) : undefined;
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} className="space-y-6">
       <div className="rounded-xl border border-black/10 bg-white p-5 sm:p-6">
         <div className="mb-5 border-b border-black/5 pb-4">
           <h2 className="font-serif text-lg font-semibold text-forest-800">Core record</h2>
@@ -240,6 +242,11 @@ export function SpecimenCoreForm({
           </div>
         </div>
       </div>
+
+      <SpecimenDuplicateCheck
+        formRef={formRef}
+        excludeSpecimenId={mode === "edit" ? specimenId : undefined}
+      />
 
       {state.message && (
         <div
