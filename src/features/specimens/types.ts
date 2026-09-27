@@ -40,6 +40,45 @@ export const specimenSummarySchema = z.object({
   updatedAt: z.string().min(1),
 });
 
+export const DUPLICATE_MATCH_FIELDS = [
+  "ACCESSION_NUMBER",
+  "SCIENTIFIC_NAME",
+  "COMMON_NAME",
+  "COLLECTOR",
+  "DONOR",
+  "COLLECTION_LOCATION",
+  "COLLECTION_DATE",
+] as const;
+export const DUPLICATE_CONFIDENCES = ["HIGH", "MEDIUM"] as const;
+
+export type DuplicateMatchField = (typeof DUPLICATE_MATCH_FIELDS)[number];
+export type DuplicateConfidence = (typeof DUPLICATE_CONFIDENCES)[number];
+
+/** One existing record that may duplicate the checked values (warning only, REQ-4.4-21). */
+export const possibleDuplicateSchema = z.object({
+  specimenId: z.uuid(),
+  accessionNumber: z.string().nullable(),
+  scientificName: z.string().nullable(),
+  commonName: z.string().nullable(),
+  status: z.enum(SPECIMEN_STATUSES),
+  confidence: z.enum(DUPLICATE_CONFIDENCES),
+  matchedFields: z.array(z.enum(DUPLICATE_MATCH_FIELDS)),
+  differingFields: z.array(z.enum(DUPLICATE_MATCH_FIELDS)),
+  message: z.string().min(1),
+});
+
+const duplicateCheckFields = {
+  possibleDuplicates: z.array(possibleDuplicateSchema),
+  /** False when the lookup could not run: an empty list then does NOT mean "no duplicates". */
+  duplicateCheckAvailable: z.boolean(),
+};
+
+/** POST /specimens/duplicate-check and GET /specimens/:id/possible-duplicates. */
+export const specimenDuplicateCheckResultSchema = z.object(duplicateCheckFields);
+
+/** POST /specimens: the created record plus the post-save duplicate warning result. */
+export const specimenCreateResultSchema = specimenSummarySchema.extend(duplicateCheckFields);
+
 export const specimenPageSchema = z.object({
   items: z.array(specimenSummarySchema),
   total: z.number().int().nonnegative(),
@@ -202,6 +241,9 @@ export const specimenDetailSchema = z.object({
 });
 
 export type SpecimenSummary = z.infer<typeof specimenSummarySchema>;
+export type PossibleDuplicate = z.infer<typeof possibleDuplicateSchema>;
+export type SpecimenDuplicateCheckResult = z.infer<typeof specimenDuplicateCheckResultSchema>;
+export type SpecimenCreateResult = z.infer<typeof specimenCreateResultSchema>;
 export type SpecimenPage = z.infer<typeof specimenPageSchema>;
 export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 export type MuseumCollection = z.infer<typeof museumCollectionSchema>;

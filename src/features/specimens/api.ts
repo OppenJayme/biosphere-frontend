@@ -9,7 +9,9 @@ import {
   removeSpecimenMediaResultSchema,
   replaceSpecimenMediaResultSchema,
   SPECIMEN_PAGE_LIMIT,
+  specimenCreateResultSchema,
   specimenDetailSchema,
+  specimenDuplicateCheckResultSchema,
   specimenListSchema,
   specimenPageSchema,
   specimenProvenanceSchema,
@@ -25,6 +27,7 @@ import {
   type SpecimenListQuery,
   type SpecimenSummary,
 } from "./types";
+import type { DuplicateCheckInput } from "./duplicates";
 import type { SpecimenMutationInput } from "./form";
 import type { ProvenanceMutationInput } from "./provenance-form";
 import {
@@ -445,10 +448,42 @@ export async function createSpecimen(input: SpecimenMutationInput) {
     method: "POST",
     body: JSON.stringify(input),
   });
-  const result = specimenSummarySchema.safeParse(response);
+  // Keep possibleDuplicates and duplicateCheckAvailable: dropping them would make a failed
+  // post-save duplicate lookup look the same as "no duplicates found".
+  const result = specimenCreateResultSchema.safeParse(response);
 
   if (!result.success) {
     throw new Error("The backend returned an invalid created specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Warn about possible duplicates of unsaved values; nothing is saved (REQ-4.4-21). */
+export async function checkSpecimenDuplicates(input: DuplicateCheckInput) {
+  const response = await apiFetch<unknown>("/specimens/duplicate-check", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const result = specimenDuplicateCheckResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid duplicate-check response.");
+  }
+
+  return result.data;
+}
+
+/** Re-check a saved specimen, including its provenance, for possible duplicates. */
+export async function getSpecimenPossibleDuplicates(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/possible-duplicates`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenDuplicateCheckResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid possible-duplicates response.");
   }
 
   return result.data;
