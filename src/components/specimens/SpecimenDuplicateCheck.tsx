@@ -19,7 +19,8 @@ type SpecimenDuplicateCheckProps = {
 
 /**
  * Checks accession and names against saved records when the curator leaves one of those
- * fields. Warning only: saving is never blocked (REQ-4.4-21/22).
+ * fields. Warning only: this check never blocks saving (REQ-4.4-21/22). An already-assigned
+ * accession number is blocked separately; see AccessionNumberCheck.
  */
 export function SpecimenDuplicateCheck({ formRef, excludeSpecimenId }: SpecimenDuplicateCheckProps) {
   const [state, setState] = useState<DuplicateCheckState>({ status: "idle" });

@@ -4,6 +4,7 @@
  * server actions pass the ApiError (or null for network failures) in.
  */
 
+import { accessionConflictFromBody } from "./accession";
 import { catalogedEditGuardMessage } from "./lifecycle";
 
 export type MutationMode = "create" | "update";
@@ -35,6 +36,9 @@ export function specimenCoreErrorMessage(failure: MutationFailure, mode: Mutatio
       return "The specimen or selected collection no longer exists. Reload and try again.";
     }
     if (failure.status === 409) {
+      // Checked first: an accession clash is not fixed by reloading.
+      const accession = accessionConflictFromBody(failure.body);
+      if (accession) return accession.message;
       return mode === "update"
         ? concurrentChangeMessage("saving")
         : "The specimen could not be saved because it conflicts with an existing record.";
