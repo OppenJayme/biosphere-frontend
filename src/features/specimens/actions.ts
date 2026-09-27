@@ -60,8 +60,8 @@ export async function createSpecimenAction(
   }
 
   revalidatePath("/specimens");
-  // The record is saved either way; the outcome only decides which duplicate warning to show.
-  redirect(`/specimens/${specimen.id}?created=1&duplicates=${duplicateCheckOutcome(specimen)}`);
+  // The details page re-checks duplicates with the backend, so no result travels in the URL.
+  redirect(`/specimens/${specimen.id}?created=1`);
 }
 
 /** Pre-save duplicate warning for the core form. Never blocks saving (REQ-4.4-21). */

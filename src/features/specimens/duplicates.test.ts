@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   duplicateCheckCandidate,
   duplicateCheckOutcome,
-  parseDuplicateCheckOutcome,
+  duplicateRecheckTrigger,
 } from "./duplicates";
 import {
   specimenCreateResultSchema,
@@ -100,12 +100,27 @@ describe("duplicateCheckOutcome", () => {
       duplicateCheckOutcome({ possibleDuplicates: [], duplicateCheckAvailable: true }),
     ).toBe("clear");
   });
+});
 
-  it("parses only known redirect values", () => {
-    expect(parseDuplicateCheckOutcome("unavailable")).toBe("unavailable");
-    expect(parseDuplicateCheckOutcome("found")).toBe("found");
-    expect(parseDuplicateCheckOutcome("anything")).toBeNull();
-    expect(parseDuplicateCheckOutcome(undefined)).toBeNull();
+describe("duplicateRecheckTrigger", () => {
+  it("re-checks after a create, a core update, or a provenance save", () => {
+    expect(duplicateRecheckTrigger({ created: "1" })).toBe("created");
+    expect(duplicateRecheckTrigger({ updated: "1" })).toBe("updated");
+    expect(duplicateRecheckTrigger({ provenance: "created" })).toBe("provenance");
+    expect(duplicateRecheckTrigger({ provenance: ["updated"] })).toBe("provenance");
+  });
+
+  it("does not re-check for saves that cannot change the result", () => {
+    expect(duplicateRecheckTrigger({})).toBeNull();
+    expect(duplicateRecheckTrigger({ taxonomy: "updated" })).toBeNull();
+    expect(duplicateRecheckTrigger({ lifecycle: "archived" })).toBeNull();
+    expect(duplicateRecheckTrigger({ provenance: "anything" })).toBeNull();
+  });
+
+  it("ignores a result claimed in the URL", () => {
+    // Only the trigger is read; the panel always asks the backend.
+    expect(duplicateRecheckTrigger({ duplicates: "clear" })).toBeNull();
+    expect(duplicateRecheckTrigger({ created: "1", duplicates: "clear" })).toBe("created");
   });
 });
 

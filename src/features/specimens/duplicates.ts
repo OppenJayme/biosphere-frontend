@@ -62,13 +62,27 @@ export function duplicateCheckOutcome(
   return result.possibleDuplicates.length > 0 ? "found" : "clear";
 }
 
-const DUPLICATE_OUTCOMES = ["clear", "found", "unavailable"] as const;
+/** Saves after which the specimen page re-checks duplicates with the backend. */
+export type DuplicateRecheckTrigger = "created" | "updated" | "provenance";
 
-/** Read the `duplicates` redirect parameter set after POST /specimens. */
-export function parseDuplicateCheckOutcome(value: string | undefined): DuplicateCheckOutcome | null {
-  return DUPLICATE_OUTCOMES.includes(value as DuplicateCheckOutcome)
-    ? (value as DuplicateCheckOutcome)
-    : null;
+type SearchParamValue = string | string[] | undefined;
+
+function firstValue(value: SearchParamValue) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Decide whether the specimen page should re-check duplicates. The URL only says that a
+ * save just happened; the result always comes from the backend, never from the URL.
+ */
+export function duplicateRecheckTrigger(
+  params: Record<string, SearchParamValue>,
+): DuplicateRecheckTrigger | null {
+  if (firstValue(params.created) === "1") return "created";
+  if (firstValue(params.updated) === "1") return "updated";
+  const provenance = firstValue(params.provenance);
+  if (provenance === "created" || provenance === "updated") return "provenance";
+  return null;
 }
 
 export function duplicateLabel(duplicate: PossibleDuplicate) {
