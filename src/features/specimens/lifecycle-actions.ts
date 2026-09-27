@@ -17,6 +17,7 @@ import {
   setSpecimenPublicDisplay,
 } from "./api";
 import { REOPEN_REASON_MAX } from "./lifecycle";
+import { concurrentChangeMessage } from "./mutation-errors";
 import { catalogRejectionSchema } from "./types";
 
 export type LifecycleActionState = {
@@ -151,7 +152,7 @@ export async function catalogSpecimenAction(
       if (error.status === 403) return { message: "Only curators can catalog specimens." };
       if (error.status === 404) return { message: "The specimen no longer exists. Return to the catalog." };
       if (error.status === 409) {
-        return { message: "The specimen changed at the same time. Reload before cataloging again." };
+        return { message: concurrentChangeMessage("cataloging") };
       }
     }
     return { message: "The specimen could not be cataloged. Check your connection and try again." };
@@ -198,7 +199,7 @@ export async function reopenCatalogingAction(
       if (error.status === 403) return { values, message: "Only curators can reopen cataloging." };
       if (error.status === 404) return { values, message: "The specimen no longer exists. Return to the catalog." };
       if (error.status === 409) {
-        return { values, message: "The specimen changed at the same time. Reload before reopening again." };
+        return { values, message: concurrentChangeMessage("reopening") };
       }
     }
     return { values, message: "Cataloging could not be reopened. Check your connection and try again." };

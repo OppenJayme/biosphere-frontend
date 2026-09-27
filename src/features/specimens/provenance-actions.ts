@@ -11,30 +11,8 @@ import {
   type ProvenanceFormMode,
   type ProvenanceFormState,
 } from "./provenance-form";
-import { catalogedEditGuardMessage } from "./lifecycle";
+import { provenanceErrorMessage } from "./mutation-errors";
 
-function mutationErrorMessage(error: unknown, mode: ProvenanceFormMode) {
-  if (error instanceof ApiError) {
-    if (error.status === 400) {
-      // Cataloged records reject clearing a required field; say which one and how to proceed.
-      const guard = catalogedEditGuardMessage(error.body);
-      if (guard) return guard;
-      return mode === "create"
-        ? "Enter at least one valid provenance or preservation value before saving."
-        : "No changes were saved. Change at least one provenance field and try again.";
-    }
-    if (error.status === 401) return "Your session expired. Sign in and try again.";
-    if (error.status === 403) return "You do not have permission to change provenance records.";
-    if (error.status === 404) {
-      return "The specimen or provenance record no longer exists. Reload and try again.";
-    }
-    if (error.status === 409) {
-      return "A provenance record was already created for this specimen. Reload before editing it.";
-    }
-  }
-
-  return "The provenance record could not be saved. Check your connection and try again.";
-}
 
 async function saveProvenance(
   specimenId: string,
@@ -68,7 +46,7 @@ async function saveProvenance(
       await updateSpecimenProvenance(safeId.data, parsed.result.data);
     }
   } catch (error) {
-    return { values: parsed.values, message: mutationErrorMessage(error, mode) };
+    return { values: parsed.values, message: provenanceErrorMessage(error instanceof ApiError ? error : null, mode) };
   }
 
   revalidatePath("/specimens");
