@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { getSpecimenPossibleDuplicates } from "@/features/specimens/api";
 import {
   duplicateCheckOutcome,
   type DuplicateRecheckTrigger,
 } from "@/features/specimens/duplicates";
+import { DuplicateRecheckButton } from "./DuplicateRecheckButton";
 import { SpecimenDuplicateList } from "./SpecimenDuplicateList";
 
 type SpecimenSavedDuplicatesProps = {
@@ -16,12 +16,6 @@ const SAVED_LABEL: Record<DuplicateRecheckTrigger, string> = {
   created: "The draft was saved.",
   updated: "The core changes were saved.",
   provenance: "The provenance was saved.",
-};
-
-const RETRY_QUERY: Record<DuplicateRecheckTrigger, string> = {
-  created: "created=1",
-  updated: "updated=1",
-  provenance: "provenance=updated",
 };
 
 /**
@@ -69,12 +63,7 @@ export async function SpecimenSavedDuplicates({ specimenId, trigger }: SpecimenS
         {SAVED_LABEL[trigger]} The duplicate check could not run, so possible duplicates are
         unknown.{trigger === "created" && " Do not create the record again."}
       </p>
-      <Link
-        href={`/specimens/${specimenId}?${RETRY_QUERY[trigger]}`}
-        className="rounded-lg border border-amber-300 px-3 py-1.5 text-xs font-semibold hover:bg-amber-100"
-      >
-        Check again
-      </Link>
+      <DuplicateRecheckButton />
     </div>
   );
 }
