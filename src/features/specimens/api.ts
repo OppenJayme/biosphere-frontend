@@ -27,6 +27,7 @@ import {
   type SpecimenListQuery,
   type SpecimenSummary,
 } from "./types";
+import { accessionNumberAvailabilitySchema } from "./accession";
 import type { DuplicateCheckInput } from "./duplicates";
 import type { SpecimenMutationInput } from "./form";
 import type { ProvenanceMutationInput } from "./provenance-form";
@@ -634,4 +635,21 @@ export function updateSpecimenProvenance(
   input: ProvenanceMutationInput,
 ) {
   return mutateProvenance(specimenId, "PATCH", input);
+}
+
+/** Advisory check for the core form; create/update enforce the same rule (REQ-4.4-04). */
+export async function checkAccessionNumber(accessionNumber: string, excludeSpecimenId?: string) {
+  const params = new URLSearchParams({ accessionNumber });
+  if (excludeSpecimenId) params.set("excludeSpecimenId", excludeSpecimenId);
+  const response = await apiFetch<unknown>(`/specimens/accession-number-availability?${params}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = accessionNumberAvailabilitySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid accession-number availability response.");
+  }
+
+  return result.data;
 }

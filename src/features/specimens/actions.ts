@@ -5,15 +5,39 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
-import { checkSpecimenDuplicates, createSpecimen, updateSpecimen } from "./api";
+import {
+  accessionCheckFromAvailability,
+  accessionConflictFromBody,
+  type AccessionCheckState,
+} from "./accession";
+import {
+  checkAccessionNumber,
+  checkSpecimenDuplicates,
+  createSpecimen,
+  updateSpecimen,
+} from "./api";
 import {
   duplicateCheckInputSchema,
   duplicateCheckOutcome,
   type DuplicateCheckState,
 } from "./duplicates";
 import { readSpecimenForm, type SpecimenFormState } from "./form";
-import { specimenCoreErrorMessage } from "./mutation-errors";
+import { specimenCoreErrorMessage, type MutationMode } from "./mutation-errors";
 
+function specimenFailureState(
+  values: SpecimenFormState["values"],
+  error: unknown,
+  mode: MutationMode,
+): SpecimenFormState {
+  const failure = error instanceof ApiError ? error : null;
+  const accession = failure?.status === 409 ? accessionConflictFromBody(failure.body) : null;
+  return {
+    values,
+    // Put the clash on the field itself so the curator sees what to change.
+    errors: accession ? { accessionNumber: [accession.message] } : undefined,
+    message: specimenCoreErrorMessage(failure, mode),
+  };
+}
 
 export async function createSpecimenAction(
   _previousState: SpecimenFormState,
@@ -34,7 +58,7 @@ export async function createSpecimenAction(
   try {
     specimen = await createSpecimen(parsed.result.data);
   } catch (error) {
-    return { values: parsed.values, message: specimenCoreErrorMessage(error instanceof ApiError ? error : null, "create") };
+    return specimenFailureState(parsed.values, error, "create");
   }
 
   revalidatePath("/specimens");
@@ -87,10 +111,31 @@ export async function updateSpecimenAction(
   try {
     await updateSpecimen(safeId.data, parsed.result.data);
   } catch (error) {
-    return { values: parsed.values, message: specimenCoreErrorMessage(error instanceof ApiError ? error : null, "update") };
+    return specimenFailureState(parsed.values, error, "update");
   }
 
   revalidatePath("/specimens");
   revalidatePath(`/specimens/${safeId.data}`);
   redirect(`/specimens/${safeId.data}?updated=1`);
+}
+
+const accessionCheckInputSchema = z.object({
+  accessionNumber: z.string().trim().min(1).max(100),
+  excludeSpecimenId: z.uuid().optional(),
+});
+
+/** Inline accession-number availability for the core form; advisory only, saves re-check. */
+export async function checkAccessionNumberAction(input: unknown): Promise<AccessionCheckState> {
+  if (!(await verifySession())) return { status: "unavailable" };
+
+  const parsed = accessionCheckInputSchema.safeParse(input);
+  if (!parsed.success) return { status: "idle" };
+
+  try {
+    return accessionCheckFromAvailability(
+      await checkAccessionNumber(parsed.data.accessionNumber, parsed.data.excludeSpecimenId),
+    );
+  } catch {
+    return { status: "unavailable" };
+  }
 }

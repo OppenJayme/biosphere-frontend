@@ -10,6 +10,7 @@ import {
 } from "@/features/specimens/form";
 import { SPECIMEN_GENDERS, type MuseumCollection } from "@/features/specimens/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { AccessionNumberCheck } from "./AccessionNumberCheck";
 import { SpecimenDuplicateCheck } from "./SpecimenDuplicateCheck";
 
 type SpecimenCoreFormProps = {
@@ -117,6 +118,12 @@ export function SpecimenCoreForm({
               id={fieldErrorId("accessionNumber")}
               errors={state.errors?.accessionNumber}
             />
+            {!state.errors?.accessionNumber?.length && (
+              <AccessionNumberCheck
+                formRef={formRef}
+                excludeSpecimenId={mode === "edit" ? specimenId : undefined}
+              />
+            )}
           </div>
 
           <div>
