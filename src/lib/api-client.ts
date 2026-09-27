@@ -16,7 +16,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiResponse(path: string, init?: RequestInit) {
   const token = await getAccessToken();
   const headers = new Headers(init?.headers);
 
@@ -35,5 +35,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new ApiError(res.status, await res.json().catch(() => null));
   }
 
-  return res.json();
+  return res;
+}
+
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await apiResponse(path, init);
+  return response.json();
 }

@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
-import { MoonIcon, SunIcon, CubeIcon } from "@/components/icons";
+import { MoonIcon, SunIcon } from "@/components/icons";
 import { CardGridView } from "./CardGridView";
 import { AccordionView } from "./AccordionView";
-import { ArModal } from "./ArModal";
-import type { Exhibit } from "@/lib/dummy-data/exhibits";
+import type { PublicExhibit } from "@/features/exhibits-qr/types";
 
-export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
+export function ExhibitViewer({ exhibit }: { exhibit: PublicExhibit }) {
   const [dark, setDark] = useState(false);
-  const [arOpen, setArOpen] = useState(false);
 
   return (
     <div className={dark ? "min-h-screen bg-forest-900" : "min-h-screen bg-sage-50"}>
@@ -48,20 +46,10 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
           dark ? "border-white/10 bg-forest-900" : "border-black/10 bg-sage-50/95 backdrop-blur"
         }`}
       >
-        <div className="mx-auto flex max-w-2xl gap-3">
-          <button
-            type="button"
-            onClick={() => setArOpen(true)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-colors ${
-              dark ? "bg-emerald-400 text-emerald-950 hover:bg-emerald-300" : "bg-forest-800 text-white hover:bg-forest-900"
-            }`}
-          >
-            <CubeIcon className="h-4 w-4" />
-            View in AR
-          </button>
+        <div className="mx-auto flex max-w-2xl">
           <a
             href="/gallery"
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-3 text-sm font-semibold transition-colors ${
+            className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg border py-3 text-sm font-semibold transition-colors ${
               dark ? "border-white/30 text-white hover:bg-white/10" : "border-forest-800 text-forest-800 hover:bg-forest-100/60"
             }`}
           >
@@ -69,10 +57,6 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
           </a>
         </div>
       </div>
-
-      {arOpen && (
-        <ArModal exhibit={exhibit} dark={dark} onClose={() => setArOpen(false)} />
-      )}
     </div>
   );
 }

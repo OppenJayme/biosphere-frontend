@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExhibitViewer } from "@/components/exhibits/public/ExhibitViewer";
-import { EXHIBITS } from "@/lib/dummy-data/exhibits";
+import { ApiError } from "@/lib/api-client";
+import { getPublishedExhibit } from "@/features/exhibits-qr/api";
 
 // Every exhibit page is unlisted — reachable only via its QR code or this
 // direct URL, never linked from public navigation or search-indexed listings.
-const PUBLIC_EXHIBITS = EXHIBITS.filter((exhibit) => exhibit.publishStatus === "Published");
-
-export function generateStaticParams() {
-  return PUBLIC_EXHIBITS.map((exhibit) => ({ slug: exhibit.slug }));
-}
 
 export async function generateMetadata({
   params,
@@ -17,21 +13,29 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const exhibit = PUBLIC_EXHIBITS.find((e) => e.slug === slug);
-
-  if (!exhibit) return { title: "Exhibit" };
+  let exhibit;
+  try {
+    exhibit = await getPublishedExhibit(slug);
+  } catch {
+    return { title: "Exhibit" };
+  }
 
   return {
-    title: exhibit.commonName,
-    description: exhibit.description,
+    title: exhibit.publicSlug,
+    description: exhibit.publicDescription ?? "A published BioSphere museum exhibit.",
   };
 }
 
 export default async function ExhibitPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const exhibit = PUBLIC_EXHIBITS.find((e) => e.slug === slug);
+  let exhibit;
 
-  if (!exhibit) notFound();
+  try {
+    exhibit = await getPublishedExhibit(slug);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  }
 
   return <ExhibitViewer exhibit={exhibit} />;
 }
