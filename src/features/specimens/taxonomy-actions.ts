@@ -11,30 +11,8 @@ import {
   type TaxonomyFormMode,
   type TaxonomyFormState,
 } from "./taxonomy-form";
-import { catalogedEditGuardMessage } from "./lifecycle";
+import { taxonomyErrorMessage } from "./mutation-errors";
 
-function mutationErrorMessage(error: unknown, mode: TaxonomyFormMode) {
-  if (error instanceof ApiError) {
-    if (error.status === 400) {
-      // Cataloged records reject clearing a required field; say which one and how to proceed.
-      const guard = catalogedEditGuardMessage(error.body);
-      if (guard) return guard;
-      return mode === "create"
-        ? "Enter at least one valid taxonomy value before saving."
-        : "No changes were saved. Change at least one taxonomy field and try again.";
-    }
-    if (error.status === 401) return "Your session expired. Sign in and try again.";
-    if (error.status === 403) return "You do not have permission to change taxonomy records.";
-    if (error.status === 404) {
-      return "The specimen or taxonomy record no longer exists. Reload and try again.";
-    }
-    if (error.status === 409) {
-      return "A taxonomy record was already created for this specimen. Reload before editing it.";
-    }
-  }
-
-  return "The taxonomy record could not be saved. Check your connection and try again.";
-}
 
 function invalidIdState(formData: FormData, mode: TaxonomyFormMode): TaxonomyFormState {
   return {
@@ -70,7 +48,7 @@ async function saveTaxonomy(
       await updateSpecimenTaxonomy(safeId.data, parsed.result.data);
     }
   } catch (error) {
-    return { values: parsed.values, message: mutationErrorMessage(error, mode) };
+    return { values: parsed.values, message: taxonomyErrorMessage(error instanceof ApiError ? error : null, mode) };
   }
 
   revalidatePath("/specimens");

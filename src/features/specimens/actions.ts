@@ -12,30 +12,8 @@ import {
   type DuplicateCheckState,
 } from "./duplicates";
 import { readSpecimenForm, type SpecimenFormState } from "./form";
-import { catalogedEditGuardMessage } from "./lifecycle";
+import { specimenCoreErrorMessage } from "./mutation-errors";
 
-function errorMessage(error: unknown, operation: "create" | "update") {
-  if (error instanceof ApiError) {
-    if (error.status === 400) {
-      // Cataloged records reject clearing a required field; say which one and how to proceed.
-      const guard = catalogedEditGuardMessage(error.body);
-      if (guard) return guard;
-      return operation === "update"
-        ? "No changes were saved. Change at least one core field and check the entered values."
-        : "The draft could not be saved. Check the entered values and try again.";
-    }
-    if (error.status === 401) return "Your session expired. Sign in and try again.";
-    if (error.status === 403) return "You do not have permission to change specimen records.";
-    if (error.status === 404) {
-      return "The specimen or selected collection no longer exists. Reload and try again.";
-    }
-    if (error.status === 409) {
-      return "The specimen could not be saved because it conflicts with an existing record.";
-    }
-  }
-
-  return "The specimen could not be saved right now. Check your connection and try again.";
-}
 
 export async function createSpecimenAction(
   _previousState: SpecimenFormState,
@@ -56,7 +34,7 @@ export async function createSpecimenAction(
   try {
     specimen = await createSpecimen(parsed.result.data);
   } catch (error) {
-    return { values: parsed.values, message: errorMessage(error, "create") };
+    return { values: parsed.values, message: specimenCoreErrorMessage(error instanceof ApiError ? error : null, "create") };
   }
 
   revalidatePath("/specimens");
@@ -109,7 +87,7 @@ export async function updateSpecimenAction(
   try {
     await updateSpecimen(safeId.data, parsed.result.data);
   } catch (error) {
-    return { values: parsed.values, message: errorMessage(error, "update") };
+    return { values: parsed.values, message: specimenCoreErrorMessage(error instanceof ApiError ? error : null, "update") };
   }
 
   revalidatePath("/specimens");
