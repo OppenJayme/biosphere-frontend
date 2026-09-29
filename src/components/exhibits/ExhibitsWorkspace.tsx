@@ -1,90 +1,76 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
+import Link from "next/link";
 import { ExhibitToolbar } from "./ExhibitToolbar";
 import { ExhibitTable } from "./ExhibitTable";
 import { ExhibitDetailPanel } from "./ExhibitDetailPanel";
+import { ExhibitEditor } from "./ExhibitEditor";
 import { CreateExhibitModal } from "./CreateExhibitModal";
-import type { Exhibit, EXHIBIT_FILTERS } from "@/lib/dummy-data/exhibits";
-
-const PAGE_SIZES = ["5 / page", "10 / page", "25 / page"];
-const TOTAL_EXHIBITS = 128;
-const PAGE_COUNT = 26;
+import type { Exhibit, ExhibitListQuery } from "@/features/exhibits-qr/types";
 
 export function ExhibitsWorkspace({
   exhibits,
-  filters,
+  query,
+  filtered,
+  selected,
+  selectedError,
+  errorMessage,
 }: {
   exhibits: Exhibit[];
-  filters: typeof EXHIBIT_FILTERS;
+  query: ExhibitListQuery;
+  filtered: boolean;
+  selected: Exhibit | null;
+  selectedError?: string;
+  errorMessage?: string;
 }) {
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(exhibits[0]?.slug ?? null);
   const [modalOpen, setModalOpen] = useState(false);
-
-  const selected = exhibits.find((e) => e.slug === selectedSlug) ?? null;
 
   return (
     <div className="space-y-4">
-      <ExhibitToolbar filters={filters} onAddClick={() => setModalOpen(true)} />
+      <ExhibitToolbar query={query} onAddClick={() => setModalOpen(true)} />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
-        <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
-          <ExhibitTable exhibits={exhibits} selectedSlug={selectedSlug} onSelect={setSelectedSlug} />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
+        <div className="min-w-0 space-y-4">
+          <div className="space-y-4 rounded-xl border border-black/10 bg-white p-5">
+            {errorMessage ? (
+              <p role="alert" className="py-8 text-center text-sm font-medium text-red-700">
+                {errorMessage}
+              </p>
+            ) : exhibits.length === 0 ? (
+              <div className="py-10 text-center text-sm text-zinc-500">
+                {filtered ? (
+                  <>
+                    No exhibits match these filters.{" "}
+                    <Link href="/exhibits" className="font-semibold text-forest-700 underline">
+                      Clear filters
+                    </Link>
+                  </>
+                ) : (
+                  "No exhibits yet. Create one from a Cataloged specimen approved for public display."
+                )}
+              </div>
+            ) : (
+              <ExhibitTable exhibits={exhibits} query={query} selectedId={selected?.id ?? null} />
+            )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
-            <p>
-              Showing 1 to {exhibits.length} of {TOTAL_EXHIBITS} exhibits
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Previous page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
-              >
-                <ChevronLeftIcon className="h-3.5 w-3.5" />
-              </button>
-              {[1, 2, 3, 4, 5].map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
-                    page === 1 ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <span className="px-1">&hellip;</span>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                {PAGE_COUNT}
-              </button>
-              <button
-                type="button"
-                aria-label="Next page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
-              >
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="relative">
-              <select
-                defaultValue={PAGE_SIZES[0]}
-                className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
-              >
-                {PAGE_SIZES.map((size) => (
-                  <option key={size}>{size}</option>
-                ))}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
-            </div>
+            {!errorMessage && exhibits.length > 0 && (
+              <p className="border-t border-black/10 pt-4 text-xs text-zinc-500">
+                {exhibits.length} {filtered ? "matching" : "active"} exhibit{exhibits.length === 1 ? "" : "s"}.
+                Archived exhibits are not listed.
+              </p>
+            )}
           </div>
+
+          {selected && <ExhibitEditor exhibit={selected} />}
         </div>
 
-        <ExhibitDetailPanel exhibit={selected} onClear={() => setSelectedSlug(null)} />
+        <div className="xl:self-start">
+          <ExhibitDetailPanel exhibit={selected} query={query} selectedError={selectedError} />
+        </div>
       </div>
 
-      <CreateExhibitModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <CreateExhibitModal open={modalOpen} onClose={() => setModalOpen(false)} query={query} />
     </div>
   );
 }
