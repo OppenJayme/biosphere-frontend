@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import Image from "next/image";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -10,15 +9,25 @@ import {
   ArchiveIcon,
   ShieldIcon,
   MapPinIcon,
+  SparkleIcon,
 } from "@/components/icons";
-import type { Exhibit } from "@/lib/dummy-data/exhibits";
+import type { PublicExhibit } from "@/features/exhibits-qr/types";
+import {
+  exhibitFacts,
+  exhibitImages,
+  exhibitName,
+  exhibitTags,
+  ImageStack,
+  taxonomyRows,
+  type PublicImage,
+} from "./exhibit-content";
 
-function HeroCarousel({ images, alt }: { images: string[]; alt: string }) {
+function HeroCarousel({ images, alt, dark }: { images: PublicImage[]; alt: string; dark: boolean }) {
   const [index, setIndex] = useState(0);
 
   return (
     <div className="relative aspect-4/3 overflow-hidden rounded-2xl bg-black/20">
-      <Image src={images[index]} alt={alt} fill sizes="640px" priority className="object-cover" />
+      <ImageStack images={images} index={index} alt={alt} dark={dark} />
       {images.length > 1 && (
         <>
           <button
@@ -52,13 +61,14 @@ function ReadMoreText({ text, dark }: { text: string; dark: boolean }) {
 
   return (
     <div>
-      <p className={`text-sm leading-relaxed ${dark ? "text-white/80" : "text-zinc-700"} ${!expanded && long ? "line-clamp-2" : ""}`}>
+      <p className={`whitespace-pre-line text-sm leading-relaxed ${dark ? "text-white/80" : "text-zinc-700"} ${!expanded && long ? "line-clamp-2" : ""}`}>
         {text}
       </p>
       {long && (
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
+          aria-expanded={expanded}
           className={`mt-1.5 text-xs font-semibold uppercase tracking-wide ${dark ? "text-emerald-300" : "text-forest-700"}`}
         >
           {expanded ? "Read Less ▲" : "Read More ▼"}
@@ -70,10 +80,10 @@ function ReadMoreText({ text, dark }: { text: string; dark: boolean }) {
 
 function SectionLabel({ icon: Icon, children, dark }: { icon: typeof InfoIcon; children: string; dark: boolean }) {
   return (
-    <p className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide ${dark ? "text-emerald-300" : "text-forest-700"}`}>
+    <h2 className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide ${dark ? "text-emerald-300" : "text-forest-700"}`}>
       <Icon className="h-3.5 w-3.5" />
       {children}
-    </p>
+    </h2>
   );
 }
 
@@ -85,9 +95,10 @@ function EcologyFact({
 }: {
   icon: typeof ArchiveIcon;
   label: string;
-  value: string;
+  value: string | null;
   dark: boolean;
 }) {
+  if (!value) return null;
   return (
     <div>
       <p className={`flex items-center gap-1.5 text-xs font-semibold ${dark ? "text-emerald-300" : "text-forest-700"}`}>
@@ -99,55 +110,90 @@ function EcologyFact({
   );
 }
 
-export function CardGridView({ exhibit, dark }: { exhibit: Exhibit; dark: boolean }) {
+export function CardGridView({ exhibit, dark }: { exhibit: PublicExhibit; dark: boolean }) {
+  const name = exhibitName(exhibit);
+  const taxonomy = taxonomyRows(exhibit);
+  const facts = exhibitFacts(exhibit);
+  const tags = exhibitTags(exhibit);
+  const hasEcology = [exhibit.habitat, exhibit.ecologicalRole, exhibit.conservationStatus, exhibit.distribution, exhibit.diet].some(Boolean);
+  const card = `rounded-2xl border p-4 ${dark ? "border-white/10 bg-white/5" : "border-black/10 bg-white"}`;
+
   return (
     <div className="space-y-5">
-      <HeroCarousel images={exhibit.images} alt={exhibit.commonName} />
+      <HeroCarousel images={exhibitImages(exhibit)} alt={name} dark={dark} />
 
       <div>
-        <h1 className={`font-serif text-2xl font-semibold ${dark ? "text-white" : "text-zinc-900"}`}>{exhibit.commonName}</h1>
-        <p className={`text-sm italic ${dark ? "text-white/60" : "text-zinc-500"}`}>{exhibit.scientificName}</p>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {exhibit.tags.map((tag) => (
-            <span key={tag} className="rounded-full bg-forest-700 px-3 py-1 text-xs font-medium text-white">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className={`rounded-2xl border p-4 ${dark ? "border-white/10 bg-white/5" : "border-black/10 bg-white"}`}>
-        <SectionLabel icon={InfoIcon} dark={dark}>
-          About This Specimen
-        </SectionLabel>
-        <div className="mt-2">
-          <ReadMoreText text={exhibit.description} dark={dark} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className={`rounded-2xl border p-4 ${dark ? "border-white/10 bg-white/5" : "border-black/10 bg-white"}`}>
-          <SectionLabel icon={LayersIcon} dark={dark}>
-            Classification
-          </SectionLabel>
-          <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2.5 text-sm">
-            {Object.entries(exhibit.taxonomy).map(([label, value]) => (
-              <Fragment key={label}>
-                <dt className={`capitalize ${dark ? "text-white/40" : "text-zinc-400"}`}>{label}</dt>
-                <dd className={dark ? "text-white/85" : "text-zinc-800"}>{value}</dd>
-              </Fragment>
+        <h1 className={`font-serif text-2xl font-semibold ${dark ? "text-white" : "text-zinc-900"}`}>{name}</h1>
+        {exhibit.scientificName && exhibit.scientificName !== name && (
+          <p className={`text-sm italic ${dark ? "text-white/60" : "text-zinc-500"}`}>{exhibit.scientificName}</p>
+        )}
+        {tags.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-forest-700 px-3 py-1 text-xs font-medium text-white">
+                {tag}
+              </span>
             ))}
           </div>
-        </div>
-
-        <div className="space-y-3.5">
-          <EcologyFact icon={ArchiveIcon} label="Habitat" value={exhibit.habitat} dark={dark} />
-          <EcologyFact icon={InfoIcon} label="Ecological Role" value={exhibit.ecologicalRole} dark={dark} />
-          <EcologyFact icon={ShieldIcon} label="Conservation Status" value={exhibit.conservationStatus} dark={dark} />
-          <EcologyFact icon={MapPinIcon} label="Distribution" value={exhibit.distribution} dark={dark} />
-          <EcologyFact icon={ArchiveIcon} label="Diet" value={exhibit.diet} dark={dark} />
-        </div>
+        )}
       </div>
+
+      {exhibit.publicDescription && (
+        <section className={card}>
+          <SectionLabel icon={InfoIcon} dark={dark}>
+            About This Specimen
+          </SectionLabel>
+          <div className="mt-2">
+            <ReadMoreText text={exhibit.publicDescription} dark={dark} />
+          </div>
+        </section>
+      )}
+
+      {(taxonomy.length > 0 || hasEcology) && (
+        <div className={`grid gap-4 ${taxonomy.length > 0 && hasEcology ? "grid-cols-2" : "grid-cols-1"}`}>
+          {taxonomy.length > 0 && (
+            <section className={card}>
+              <SectionLabel icon={LayersIcon} dark={dark}>
+                Classification
+              </SectionLabel>
+              <dl className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2.5 text-sm">
+                {taxonomy.map(({ rank, value }) => (
+                  <Fragment key={rank}>
+                    <dt className={`capitalize ${dark ? "text-white/40" : "text-zinc-400"}`}>{rank}</dt>
+                    <dd className={`break-words ${dark ? "text-white/85" : "text-zinc-800"}`}>{value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {hasEcology && (
+            <div className="space-y-3.5">
+              <EcologyFact icon={ArchiveIcon} label="Habitat" value={exhibit.habitat} dark={dark} />
+              <EcologyFact icon={InfoIcon} label="Ecological Role" value={exhibit.ecologicalRole} dark={dark} />
+              <EcologyFact icon={ShieldIcon} label="Conservation Status" value={exhibit.conservationStatus} dark={dark} />
+              <EcologyFact icon={MapPinIcon} label="Distribution" value={exhibit.distribution} dark={dark} />
+              <EcologyFact icon={ArchiveIcon} label="Diet" value={exhibit.diet} dark={dark} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {facts.length > 0 && (
+        <section className={card}>
+          <SectionLabel icon={SparkleIcon} dark={dark}>
+            Interesting Facts
+          </SectionLabel>
+          <ul className={`mt-2 space-y-1.5 text-sm ${dark ? "text-white/80" : "text-zinc-700"}`}>
+            {facts.map((fact) => (
+              <li key={fact} className="flex gap-2">
+                <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-current" />
+                {fact}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

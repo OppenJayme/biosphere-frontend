@@ -1,16 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { MoonIcon, SunIcon, CubeIcon } from "@/components/icons";
+import { detectArCapability, type ArCapability } from "@/features/exhibits-qr/ar-support";
+import { exhibitLayout, type PublicExhibit } from "@/features/exhibits-qr/types";
 import { CardGridView } from "./CardGridView";
 import { AccordionView } from "./AccordionView";
 import { ArModal } from "./ArModal";
-import type { Exhibit } from "@/lib/dummy-data/exhibits";
 
-export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
+export function ExhibitViewer({ exhibit }: { exhibit: PublicExhibit }) {
   const [dark, setDark] = useState(false);
   const [arOpen, setArOpen] = useState(false);
+  // Unknown until checked in the browser, so the action never flashes on unsupported devices.
+  const [capability, setCapability] = useState<ArCapability>("none");
+  const name = exhibit.commonName ?? exhibit.scientificName ?? "Specimen";
+
+  useEffect(() => {
+    if (!exhibit.ar.available) return;
+    let cancelled = false;
+    detectArCapability(exhibit.ar.models)
+      .then((result) => {
+        if (!cancelled) setCapability(result);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [exhibit.ar]);
 
   return (
     <div className={dark ? "min-h-screen bg-forest-900" : "min-h-screen bg-sage-50"}>
@@ -28,6 +45,7 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
             type="button"
             onClick={() => setDark((d) => !d)}
             aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={dark}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10"
           >
             {dark ? <SunIcon className="h-4.5 w-4.5" /> : <MoonIcon className="h-4.5 w-4.5" />}
@@ -36,7 +54,7 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 pb-28 pt-4 sm:px-6">
-        {exhibit.publicLayout === "card-grid" ? (
+        {exhibitLayout(exhibit.layoutType) === "card-grid" ? (
           <CardGridView exhibit={exhibit} dark={dark} />
         ) : (
           <AccordionView exhibit={exhibit} dark={dark} />
@@ -49,16 +67,18 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
         }`}
       >
         <div className="mx-auto flex max-w-2xl gap-3">
-          <button
-            type="button"
-            onClick={() => setArOpen(true)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-colors ${
-              dark ? "bg-emerald-400 text-emerald-950 hover:bg-emerald-300" : "bg-forest-800 text-white hover:bg-forest-900"
-            }`}
-          >
-            <CubeIcon className="h-4 w-4" />
-            View in AR
-          </button>
+          {capability !== "none" && (
+            <button
+              type="button"
+              onClick={() => setArOpen(true)}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-colors ${
+                dark ? "bg-emerald-400 text-emerald-950 hover:bg-emerald-300" : "bg-forest-800 text-white hover:bg-forest-900"
+              }`}
+            >
+              <CubeIcon className="h-4 w-4" />
+              {capability === "ar" ? "View in AR" : "View in 3D"}
+            </button>
+          )}
           <a
             href="/gallery"
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-3 text-sm font-semibold transition-colors ${
@@ -70,8 +90,15 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
         </div>
       </div>
 
-      {arOpen && (
-        <ArModal exhibit={exhibit} dark={dark} onClose={() => setArOpen(false)} />
+      {arOpen && capability !== "none" && (
+        <ArModal
+          slug={exhibit.publicSlug}
+          name={name}
+          models={exhibit.ar.models}
+          capability={capability}
+          dark={dark}
+          onClose={() => setArOpen(false)}
+        />
       )}
     </div>
   );
