@@ -91,10 +91,24 @@ export function fileExtension(name: string) {
 
 const modelFormatSchema = z.enum(AR_MODEL_FORMATS, "Choose the model format: GLB or USDZ.");
 
-const authorizationConfirmedSchema = z.literal(
-  "on",
-  "Confirm that the curator approved this asset and its use is authorized.",
-);
+// Documented authorization (REQ-4.2-05), e.g. the curator's approval memo reference. The backend
+// requires it for upload, replacement, and activation and stores it in the audit log.
+const authorizationReferenceSchema = z
+  .string()
+  .trim()
+  .min(1, "Record the curator authorization for this AR asset (e.g. approval memo reference).")
+  .max(
+    AUTHORIZATION_REASON_MAX_LENGTH,
+    `The authorization reference must be ${AUTHORIZATION_REASON_MAX_LENGTH} characters or fewer.`,
+  );
+
+export type ArAssetCommandState = { message?: string };
+
+export function readArAssetActivateForm(formData: FormData) {
+  return z
+    .object({ authorizationReference: authorizationReferenceSchema })
+    .safeParse({ authorizationReference: formString(formData, "authorizationReference") });
+}
 
 function arFileSchema(format: ArModelFormat | undefined) {
   return z
@@ -128,17 +142,17 @@ function formatHint(formData: FormData): ArModelFormat | undefined {
 export function readArAssetCreateForm(formData: FormData) {
   return z
     .object({
-      exhibitId: z.uuid("Enter the exhibit ID the curator approved for AR."),
+      exhibitId: z.uuid("Choose a curator-approved exhibit."),
       modelFormat: modelFormatSchema,
       file: arFileSchema(formatHint(formData)),
-      authorizationConfirmed: authorizationConfirmedSchema,
+      authorizationReference: authorizationReferenceSchema,
       isEnabled: z.boolean(),
     })
     .safeParse({
       exhibitId: formString(formData, "exhibitId").trim(),
       modelFormat: formData.get("modelFormat"),
       file: formData.get("file"),
-      authorizationConfirmed: formData.get("authorizationConfirmed"),
+      authorizationReference: formString(formData, "authorizationReference"),
       isEnabled: formData.get("isEnabled") === "on",
     });
 }
@@ -149,13 +163,13 @@ export function readArAssetReplaceForm(formData: FormData) {
       assetId: z.uuid("The AR asset ID is invalid."),
       modelFormat: modelFormatSchema,
       file: arFileSchema(formatHint(formData)),
-      authorizationConfirmed: authorizationConfirmedSchema,
+      authorizationReference: authorizationReferenceSchema,
     })
     .safeParse({
       assetId: formString(formData, "assetId").trim(),
       modelFormat: formData.get("modelFormat"),
       file: formData.get("file"),
-      authorizationConfirmed: formData.get("authorizationConfirmed"),
+      authorizationReference: formString(formData, "authorizationReference"),
     });
 }
 
@@ -184,13 +198,14 @@ function typedModelFile(file: File, format: ArModelFormat) {
   return new File([file], file.name, { type: AR_MIME_TYPES[format] });
 }
 
-/** Allowlisted multipart body for POST /developer/ar-assets; the authorization checkbox is UI-only. */
+/** Allowlisted multipart body for POST /developer/ar-assets. */
 export function toCreateArAssetFormData(input: ArAssetCreateInput) {
   const body = new FormData();
   body.set("file", typedModelFile(input.file, input.modelFormat));
   body.set("exhibitId", input.exhibitId);
   body.set("modelFormat", input.modelFormat);
   body.set("isEnabled", String(input.isEnabled));
+  body.set("authorizationReference", input.authorizationReference);
   return body;
 }
 
@@ -199,5 +214,6 @@ export function toReplaceArAssetFormData(input: ArAssetReplaceInput) {
   const body = new FormData();
   body.set("file", typedModelFile(input.file, input.modelFormat));
   body.set("modelFormat", input.modelFormat);
+  body.set("authorizationReference", input.authorizationReference);
   return body;
 }

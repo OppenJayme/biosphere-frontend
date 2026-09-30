@@ -2,50 +2,67 @@
 
 "use client";
 
-import { useId, useState, useTransition, type FormEvent } from "react";
+import { useActionState, useId, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import {
+  activateArAssetAction,
+  deactivateArAssetAction,
   removeArAssetAction,
-  setArAssetEnabledAction,
-  type ArAssetCommandResult,
 } from "@/features/developer/actions";
 import {
   AR_ASSET_ACCEPT,
+  AUTHORIZATION_REASON_MAX_LENGTH,
   firstValidationMessage,
   readArAssetCreateForm,
   readArAssetReplaceForm,
+  type ArAssetCommandState,
 } from "@/features/developer/form";
-import { AR_MODEL_FORMATS, arAssetSchema, type ArAsset } from "@/features/developer/types";
+import { AR_MODEL_FORMATS, arAssetSchema, type ArAsset, type ArExhibit } from "@/features/developer/types";
 
 type Notice = { tone: "success" | "error"; message: string };
 
 const inputClasses =
   "mt-1 w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
 
+const fileInputClasses = `${inputClasses} file:mr-3 file:rounded-md file:border-0 file:bg-forest-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-forest-800`;
+
 const primaryButtonClasses =
   "rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 const outlineButtonClasses =
-  "rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "rounded-lg border border-forest-700 px-3 py-1.5 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 const dangerButtonClasses =
-  "rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60";
 
-const AUTHORIZATION_LABEL =
-  "I confirm the Museum Curator approved this exhibit for AR and this asset's use is documented as authorized.";
+const AUTHORIZATION_PLACEHOLDER = "e.g. Curator AR approval memo no., approving official, and date";
+
+function exhibitLabel(exhibit: ArExhibit) {
+  const name = exhibit.commonName ?? exhibit.scientificName ?? "Unnamed specimen";
+  return `${name} — /exhibits/${exhibit.publicSlug}`;
+}
 
 function NoticeLine({ notice }: { notice: Notice | null }) {
   if (!notice) return null;
   return notice.tone === "error" ? (
-    <p role="alert" className="mt-3 text-xs font-medium text-red-700">
+    <p role="alert" className="mt-2 text-xs font-medium text-red-700">
       {notice.message}
     </p>
   ) : (
-    <p role="status" className="mt-3 text-xs font-medium text-emerald-700">
+    <p role="status" className="mt-2 text-xs font-medium text-emerald-700">
       {notice.message}
     </p>
   );
+}
+
+function CommandMessage({ state }: { state: ArAssetCommandState }) {
+  return state.message ? (
+    <p role="alert" className="mt-2 text-xs font-medium text-red-700">
+      {state.message}
+    </p>
+  ) : null;
 }
 
 async function responseMessage(response: Response) {
@@ -75,27 +92,37 @@ function FormatSelect({ disabled }: { disabled: boolean }) {
   );
 }
 
-function AuthorizationCheckbox({ disabled }: { disabled: boolean }) {
+function AuthorizationField({ disabled, hint }: { disabled: boolean; hint: string }) {
+  const id = useId();
   return (
-    <label className="flex items-start gap-2 text-xs text-zinc-700">
-      <input
-        type="checkbox"
-        name="authorizationConfirmed"
-        required
+    <div>
+      <label htmlFor={id} className="block text-xs font-medium text-zinc-700">
+        Curator authorization (required)
+      </label>
+      <textarea
+        id={id}
+        name="authorizationReference"
+        // Not `required`: a confirm dialog can make the page inert and hide the browser's
+        // validation bubble. The form parser returns the message instead.
+        aria-required="true"
+        rows={2}
+        maxLength={AUTHORIZATION_REASON_MAX_LENGTH}
         disabled={disabled}
-        className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/20 accent-forest-700"
+        placeholder={AUTHORIZATION_PLACEHOLDER}
+        className={`${inputClasses} resize-y`}
       />
-      {AUTHORIZATION_LABEL}
-    </label>
+      <p className="mt-1 text-xs text-zinc-500">{hint}</p>
+    </div>
   );
 }
 
-/** Upload a new asset or replace an existing asset's file through the same-origin route. */
-function useUpload(onDeployed: (asset: ArAsset) => void) {
+/** Upload or replace a model through the same-origin route, then reload the server list. */
+function useModelUpload() {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  async function upload(form: HTMLFormElement, method: "POST" | "PUT", success: string) {
+  async function upload(form: HTMLFormElement, method: "POST" | "PUT", success: (asset: ArAsset) => string) {
     setPending(true);
     setNotice(null);
     try {
@@ -110,8 +137,8 @@ function useUpload(onDeployed: (asset: ArAsset) => void) {
         return;
       }
       form.reset();
-      onDeployed(result.data);
-      setNotice({ tone: "success", message: success });
+      setNotice({ tone: "success", message: success(result.data) });
+      router.refresh();
     } catch {
       setNotice({ tone: "error", message: "The upload failed. Check your connection and try again." });
     } finally {
@@ -122,8 +149,8 @@ function useUpload(onDeployed: (asset: ArAsset) => void) {
   return { pending, notice, setNotice, upload };
 }
 
-function DeployForm({ onDeployed }: { onDeployed: (asset: ArAsset) => void }) {
-  const { pending, notice, setNotice, upload } = useUpload(onDeployed);
+function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
+  const { pending, notice, setNotice, upload } = useModelUpload();
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,10 +161,8 @@ function DeployForm({ onDeployed }: { onDeployed: (asset: ArAsset) => void }) {
       setNotice({ tone: "error", message: firstValidationMessage(parsed.error) });
       return;
     }
-    void upload(
-      form,
-      "POST",
-      parsed.data.isEnabled
+    void upload(form, "POST", (asset) =>
+      asset.isEnabled
         ? "The AR asset was deployed and is active."
         : "The AR asset was deployed. It stays inactive until you activate it.",
     );
@@ -149,37 +174,49 @@ function DeployForm({ onDeployed }: { onDeployed: (asset: ArAsset) => void }) {
         Upload AR asset
       </h3>
       <p className="mt-1 text-xs text-zinc-600">
-        Single-file GLB or USDZ only, up to 50 MB. The file&apos;s extension and contents must match
-        the selected format.
+        Single-file GLB or USDZ only, up to 50 MB. The file&apos;s extension and contents must match the
+        selected format.
       </p>
-      <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-medium text-zinc-700 sm:col-span-2">
-          Exhibit ID (from the curator)
-          <input
-            name="exhibitId"
-            required
-            disabled={pending}
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="00000000-0000-0000-0000-000000000000"
-            className={`${inputClasses} font-mono`}
-          />
-        </label>
-        <FormatSelect disabled={pending} />
-        <label className="text-xs font-medium text-zinc-700">
-          Model file
-          <input
-            type="file"
-            name="file"
-            accept={AR_ASSET_ACCEPT}
-            required
-            disabled={pending}
-            className={`${inputClasses} file:mr-3 file:rounded-md file:border-0 file:bg-forest-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-forest-800`}
-          />
-        </label>
-        <div className="space-y-2 sm:col-span-2">
-          <AuthorizationCheckbox disabled={pending} />
-          <label className="flex items-center gap-2 text-xs text-zinc-700">
+
+      {exhibits.length === 0 ? (
+        <p className="mt-4 rounded-lg border border-black/10 bg-sage-50 px-3 py-2 text-sm text-zinc-600">
+          No exhibits are eligible for AR yet. An exhibit becomes eligible once its specimen is Cataloged
+          and approved for public display by the curator.
+        </p>
+      ) : (
+        <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="text-xs font-medium text-zinc-700 sm:col-span-2">
+            Curator-approved exhibit
+            <select name="exhibitId" required disabled={pending} defaultValue="" className={inputClasses}>
+              <option value="" disabled>
+                Choose an exhibit…
+              </option>
+              {exhibits.map((exhibit) => (
+                <option key={exhibit.id} value={exhibit.id}>
+                  {exhibitLabel(exhibit)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <FormatSelect disabled={pending} />
+          <label className="text-xs font-medium text-zinc-700">
+            Model file
+            <input
+              type="file"
+              name="file"
+              accept={AR_ASSET_ACCEPT}
+              required
+              disabled={pending}
+              className={fileInputClasses}
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <AuthorizationField
+              disabled={pending}
+              hint="Recorded in the audit log with this deployment."
+            />
+          </div>
+          <label className="flex items-center gap-2 text-xs text-zinc-700 sm:col-span-2">
             <input
               type="checkbox"
               name="isEnabled"
@@ -188,235 +225,209 @@ function DeployForm({ onDeployed }: { onDeployed: (asset: ArAsset) => void }) {
             />
             Activate immediately (otherwise the asset is deployed inactive)
           </label>
-        </div>
-        <div className="sm:col-span-2">
-          <button type="submit" disabled={pending} className={primaryButtonClasses}>
-            Upload asset
-          </button>
-          <PendingOverlay pending={pending} label="Uploading AR asset…" />
-          <NoticeLine notice={notice} />
-        </div>
-      </form>
+          <div className="sm:col-span-2">
+            <button type="submit" disabled={pending} className={primaryButtonClasses}>
+              Upload asset
+            </button>
+            <PendingOverlay pending={pending} label="Uploading AR asset…" />
+            <NoticeLine notice={notice} />
+          </div>
+        </form>
+      )}
     </section>
   );
 }
 
-function ManageAssetForm({
-  assetId,
-  onAssetIdChange,
-  onDeployed,
-  onCommand,
-  commandPending,
-  commandNotice,
-}: {
-  assetId: string;
-  onAssetIdChange: (value: string) => void;
-  onDeployed: (asset: ArAsset) => void;
-  onCommand: (command: "activate" | "deactivate" | "remove", id: string) => void;
-  commandPending: boolean;
-  commandNotice: Notice | null;
-}) {
-  const { pending, notice, setNotice, upload } = useUpload(onDeployed);
-  const assetInputId = useId();
-  const busy = pending || commandPending;
-  const trimmed = assetId.trim();
+function ActivateControl({ asset }: { asset: ArAsset }) {
+  const action = activateArAssetAction.bind(null, asset.id);
+  const [state, formAction, pending] = useActionState<ArAssetCommandState, FormData>(action, {});
 
-  function replace(event: FormEvent<HTMLFormElement>) {
+  return (
+    <details>
+      <summary className="cursor-pointer text-xs font-semibold text-forest-800 hover:underline">Activate…</summary>
+      <form action={formAction} className="mt-2 max-w-sm space-y-2">
+        <AuthorizationField disabled={pending} hint="Recorded in the audit log with the activation." />
+        <ConfirmButton
+          label="Activate asset"
+          question="Activate this AR asset?"
+          detail="Only activate an asset that passed technical review. Visitors can then open it from the exhibit page when the curator has AR switched on."
+          confirmLabel="Yes, activate"
+          pending={pending}
+          pendingLabel="Activating AR asset…"
+          className={outlineButtonClasses}
+        />
+        <CommandMessage state={state} />
+      </form>
+    </details>
+  );
+}
+
+function DeactivateControl({ asset }: { asset: ArAsset }) {
+  const action = deactivateArAssetAction.bind(null, asset.id);
+  const [state, formAction, pending] = useActionState<ArAssetCommandState, FormData>(action, {});
+
+  return (
+    <form action={formAction}>
+      <ConfirmButton
+        label="Deactivate"
+        question="Deactivate this AR asset?"
+        detail="Visitors will no longer be offered this AR model. The exhibit page keeps its non-AR view."
+        confirmLabel="Yes, deactivate"
+        pending={pending}
+        pendingLabel="Deactivating AR asset…"
+        className={outlineButtonClasses}
+      />
+      <CommandMessage state={state} />
+    </form>
+  );
+}
+
+function RemoveControl({ asset }: { asset: ArAsset }) {
+  const action = removeArAssetAction.bind(null, asset.id);
+  const [state, formAction, pending] = useActionState<ArAssetCommandState, FormData>(action, {});
+
+  return (
+    <form action={formAction}>
+      <ConfirmButton
+        label="Remove"
+        question="Remove this AR asset?"
+        detail="The asset record and its stored model file are deleted. This cannot be undone; the model would have to be uploaded again."
+        confirmLabel="Yes, remove"
+        tone="danger"
+        pending={pending}
+        pendingLabel="Removing AR asset…"
+        className={dangerButtonClasses}
+      />
+      <CommandMessage state={state} />
+    </form>
+  );
+}
+
+function ReplaceControl({ asset }: { asset: ArAsset }) {
+  const { pending, notice, setNotice, upload } = useModelUpload();
+
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (pending) return;
     const form = event.currentTarget;
     const parsed = readArAssetReplaceForm(new FormData(form));
     if (!parsed.success) {
       setNotice({ tone: "error", message: firstValidationMessage(parsed.error) });
       return;
     }
-    void upload(form, "PUT", "The AR asset file was replaced. Its active state is unchanged.");
+    void upload(form, "PUT", () => "The model file was replaced. Its active state is unchanged.");
   }
 
   return (
-    <section className="rounded-xl border border-black/10 bg-white p-5" aria-labelledby="manage-heading">
-      <h3 id="manage-heading" className="text-sm font-semibold text-zinc-900">
-        Manage existing AR asset
-      </h3>
-      <p className="mt-1 text-xs text-zinc-600">
-        Enter the asset ID returned when it was uploaded, or pick one from the list below.
-      </p>
+    <details>
+      <summary className="cursor-pointer text-xs font-semibold text-forest-800 hover:underline">
+        Replace file…
+      </summary>
+      <form onSubmit={submit} className="mt-2 grid max-w-md gap-2">
+        <input type="hidden" name="assetId" value={asset.id} />
+        <FormatSelect disabled={pending} />
+        <label className="text-xs font-medium text-zinc-700">
+          Replacement file
+          <input
+            type="file"
+            name="file"
+            accept={AR_ASSET_ACCEPT}
+            required
+            disabled={pending}
+            className={fileInputClasses}
+          />
+        </label>
+        <AuthorizationField disabled={pending} hint="Recorded in the audit log with the replacement." />
+        <div>
+          <button type="submit" disabled={pending} className={outlineButtonClasses}>
+            Replace file
+          </button>
+          <PendingOverlay pending={pending} label="Replacing AR model…" />
+          <NoticeLine notice={notice} />
+        </div>
+      </form>
+    </details>
+  );
+}
 
-      <label htmlFor={assetInputId} className="mt-4 block text-xs font-medium text-zinc-700">
-        AR asset ID
-      </label>
-      <input
-        id={assetInputId}
-        value={assetId}
-        onChange={(event) => onAssetIdChange(event.target.value)}
-        disabled={busy}
-        autoComplete="off"
-        spellCheck={false}
-        placeholder="00000000-0000-0000-0000-000000000000"
-        className={`${inputClasses} font-mono`}
-      />
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <ConfirmButton
-          label="Activate"
-          question="Activate this AR asset?"
-          detail="Only activate an asset that passed technical review and whose use is documented as authorized. Visitors can then open it from the exhibit page, if the curator has AR switched on."
-          confirmLabel="Yes, activate"
-          disabled={busy || !trimmed}
-          pending={commandPending}
-          pendingLabel="Updating AR asset…"
-          className={outlineButtonClasses}
-          onConfirm={() => onCommand("activate", trimmed)}
-        />
-        <ConfirmButton
-          label="Deactivate"
-          question="Deactivate this AR asset?"
-          detail="Visitors will no longer be offered this AR model. The exhibit page keeps its non-AR view."
-          confirmLabel="Yes, deactivate"
-          disabled={busy || !trimmed}
-          pending={commandPending}
-          pendingLabel="Updating AR asset…"
-          className={outlineButtonClasses}
-          onConfirm={() => onCommand("deactivate", trimmed)}
-        />
-        <ConfirmButton
-          label="Remove"
-          question="Remove this AR asset?"
-          detail="The asset record and its stored model file are deleted. This cannot be undone; you would need to upload the model again."
-          confirmLabel="Yes, remove"
-          tone="danger"
-          disabled={busy || !trimmed}
-          pending={commandPending}
-          pendingLabel="Removing AR asset…"
-          className={dangerButtonClasses}
-          onConfirm={() => onCommand("remove", trimmed)}
-        />
+function AssetRow({ asset, deployable }: { asset: ArAsset; deployable: boolean }) {
+  return (
+    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <p className="truncate font-mono text-xs text-zinc-900" title={asset.id}>
+          {asset.id}
+        </p>
+        <p className="mt-1 text-xs text-zinc-600">
+          <span className="uppercase">{asset.modelFormat}</span>
+          {" · "}
+          {asset.isEnabled ? (
+            <span className="font-semibold text-emerald-700">Active</span>
+          ) : (
+            <span className="text-zinc-500">Inactive</span>
+          )}
+        </p>
       </div>
-      <NoticeLine notice={commandNotice} />
-
-      <details className="mt-4 border-t border-black/5 pt-4">
-        <summary className="cursor-pointer text-xs font-semibold text-forest-800">Replace model file</summary>
-        <form onSubmit={replace} className="mt-3 grid gap-3 sm:grid-cols-2">
-          <input type="hidden" name="assetId" value={trimmed} />
-          <FormatSelect disabled={busy} />
-          <label className="text-xs font-medium text-zinc-700">
-            Replacement file
-            <input
-              type="file"
-              name="file"
-              accept={AR_ASSET_ACCEPT}
-              required
-              disabled={busy}
-              className={`${inputClasses} file:mr-3 file:rounded-md file:border-0 file:bg-forest-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-forest-800`}
-            />
-          </label>
-          <div className="sm:col-span-2">
-            <AuthorizationCheckbox disabled={busy} />
-          </div>
-          <div className="sm:col-span-2">
-            <button type="submit" disabled={busy || !trimmed} className={primaryButtonClasses}>
-              Replace file
-            </button>
-            <PendingOverlay pending={pending} label="Replacing AR model…" />
-            <NoticeLine notice={notice} />
-          </div>
-        </form>
-      </details>
-    </section>
+      <div className="flex flex-wrap items-start gap-3">
+        {!asset.isEnabled && deployable && <ActivateControl asset={asset} />}
+        {asset.isEnabled && <DeactivateControl asset={asset} />}
+        {deployable && <ReplaceControl asset={asset} />}
+        <RemoveControl asset={asset} />
+      </div>
+    </li>
   );
 }
 
-function SessionAssets({ assets, onSelect }: { assets: ArAsset[]; onSelect: (id: string) => void }) {
-  if (assets.length === 0) return null;
-
+function ExhibitCard({ exhibit }: { exhibit: ArExhibit }) {
   return (
-    <section className="overflow-x-auto rounded-xl border border-black/10 bg-white" aria-labelledby="session-assets-heading">
-      <h3 id="session-assets-heading" className="px-4 pt-4 text-sm font-semibold text-zinc-900">
-        AR assets changed in this session
-      </h3>
-      <p className="px-4 pt-1 text-xs text-zinc-500">
-        Copy the asset IDs somewhere safe. This list clears when you leave the page.
-      </p>
-      <table className="mt-3 w-full min-w-[40rem] text-left text-sm">
-        <thead className="border-y border-black/10 bg-sage-50 text-xs uppercase tracking-wide text-zinc-500">
-          <tr>
-            <th scope="col" className="px-4 py-2 font-semibold">Asset ID</th>
-            <th scope="col" className="px-4 py-2 font-semibold">Exhibit ID</th>
-            <th scope="col" className="px-4 py-2 font-semibold">Format</th>
-            <th scope="col" className="px-4 py-2 font-semibold">State</th>
-            <th scope="col" className="px-4 py-2 font-semibold"><span className="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-black/5">
-          {assets.map((asset) => (
-            <tr key={asset.id}>
-              <td className="px-4 py-2 font-mono text-xs text-zinc-900">{asset.id}</td>
-              <td className="px-4 py-2 font-mono text-xs text-zinc-600">{asset.exhibitId}</td>
-              <td className="px-4 py-2 text-xs uppercase text-zinc-600">{asset.modelFormat}</td>
-              <td className="px-4 py-2 text-xs">
-                {asset.isEnabled ? (
-                  <span className="font-semibold text-emerald-700">Active</span>
-                ) : (
-                  <span className="text-zinc-500">Inactive</span>
-                )}
-              </td>
-              <td className="px-4 py-2 text-right">
-                <button
-                  type="button"
-                  onClick={() => onSelect(asset.id)}
-                  className="text-xs font-semibold text-forest-800 hover:underline"
-                >
-                  Manage
-                </button>
-              </td>
-            </tr>
+    <li className="rounded-xl border border-black/10 bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium text-zinc-900">
+            {exhibit.commonName ?? "Unnamed specimen"}
+            {exhibit.scientificName && (
+              <span className="ml-2 text-sm font-normal italic text-zinc-500">{exhibit.scientificName}</span>
+            )}
+          </p>
+          <p className="mt-0.5 font-mono text-xs text-zinc-500">/exhibits/{exhibit.publicSlug}</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold capitalize text-zinc-600 ring-1 ring-zinc-200">
+            {exhibit.status.toLowerCase()}
+          </span>
+          {!exhibit.deployable && (
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
+              Cleanup only
+            </span>
+          )}
+        </div>
+      </div>
+
+      {!exhibit.deployable && (
+        <p className="mt-2 text-xs text-amber-900">
+          {exhibit.archived ? "This exhibit is archived." : "This exhibit is no longer approved for public display."}{" "}
+          Its assets can only be deactivated or removed.
+        </p>
+      )}
+
+      {exhibit.assets.length === 0 ? (
+        <p className="mt-3 text-xs text-zinc-500">No AR asset deployed yet.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-black/5">
+          {exhibit.assets.map((asset) => (
+            // The key includes the state, so each control's form resets after a successful change.
+            <AssetRow
+              key={`${asset.id}-${asset.isEnabled}-${asset.modelUrl}`}
+              asset={asset}
+              deployable={exhibit.deployable}
+            />
           ))}
-        </tbody>
-      </table>
-    </section>
+        </ul>
+      )}
+    </li>
   );
 }
 
-export function ArAssetDeployment() {
-  const [assets, setAssets] = useState<ArAsset[]>([]);
-  const [assetId, setAssetId] = useState("");
-  const [commandNotice, setCommandNotice] = useState<Notice | null>(null);
-  const [commandPending, startCommand] = useTransition();
-
-  function remember(asset: ArAsset) {
-    setAssets((current) => [asset, ...current.filter((existing) => existing.id !== asset.id)]);
-  }
-
-  function runCommand(command: "activate" | "deactivate" | "remove", id: string) {
-    setCommandNotice(null);
-    startCommand(async () => {
-      let result: ArAssetCommandResult;
-      try {
-        result =
-          command === "remove"
-            ? await removeArAssetAction(id)
-            : await setArAssetEnabledAction(id, command === "activate");
-      } catch {
-        setCommandNotice({ tone: "error", message: "The request failed. Check your connection and try again." });
-        return;
-      }
-
-      if (!result.ok) {
-        setCommandNotice({ tone: "error", message: result.message });
-      } else if ("removedId" in result) {
-        setAssets((current) => current.filter((asset) => asset.id !== result.removedId));
-        setAssetId("");
-        setCommandNotice({ tone: "success", message: "The AR asset and its model file were removed." });
-      } else {
-        remember(result.asset);
-        setCommandNotice({
-          tone: "success",
-          message: result.asset.isEnabled ? "The AR asset is now active." : "The AR asset is now inactive.",
-        });
-      }
-    });
-  }
-
+export function ArAssetDeployment({ exhibits }: { exhibits: ArExhibit[] | null }) {
   return (
     <section className="space-y-4" aria-labelledby="ar-deployment-heading">
       <div>
@@ -424,35 +435,33 @@ export function ArAssetDeployment() {
           AR asset deployment
         </h2>
         <p className="mt-1 max-w-3xl text-sm text-zinc-600">
-          Deploy approved 3D models to exhibits the Museum Curator has approved for AR. The curator
+          Deploy approved 3D models to exhibits the Museum Curator has approved. Every upload,
+          replacement, and activation records the curator authorization in the audit log. The curator
           controls whether AR is shown on the exhibit page.
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <DeployForm
-          onDeployed={(asset) => {
-            remember(asset);
-            setAssetId(asset.id);
-          }}
-        />
-        <ManageAssetForm
-          assetId={assetId}
-          onAssetIdChange={setAssetId}
-          onDeployed={remember}
-          onCommand={runCommand}
-          commandPending={commandPending}
-          commandNotice={commandNotice}
-        />
-      </div>
-
-      <SessionAssets
-        assets={assets}
-        onSelect={(id) => {
-          setAssetId(id);
-          setCommandNotice(null);
-        }}
-      />
+      {exhibits === null ? (
+        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          AR exhibits could not be loaded. Reload the page or try again later.
+        </p>
+      ) : (
+        <>
+          <UploadForm exhibits={exhibits.filter((exhibit) => exhibit.deployable)} />
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-900">Exhibits and deployed assets</h3>
+            {exhibits.length === 0 ? (
+              <p className="mt-2 text-sm text-zinc-600">No exhibits are eligible for AR and no assets are deployed.</p>
+            ) : (
+              <ul className="mt-2 space-y-3">
+                {exhibits.map((exhibit) => (
+                  <ExhibitCard key={exhibit.id} exhibit={exhibit} />
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }

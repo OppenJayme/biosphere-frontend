@@ -7,6 +7,7 @@ import type { CuratorStatusInput, OnboardCuratorInput } from "./form";
 import {
   arAssetRemovedSchema,
   arAssetSchema,
+  arExhibitListSchema,
   curatorAccountListSchema,
   curatorAccountSchema,
 } from "./types";
@@ -45,6 +46,14 @@ export async function updateCuratorStatus(id: string, input: CuratorStatusInput)
   return parse(curatorAccountSchema, response, "curator status");
 }
 
+export async function listArExhibits() {
+  const response = await apiFetch<unknown>("/developer/ar-exhibits", {
+    method: "GET",
+    cache: "no-store",
+  });
+  return parse(arExhibitListSchema, response, "AR exhibit list");
+}
+
 export async function createArAsset(body: FormData) {
   const response = await apiFetch<unknown>("/developer/ar-assets", { method: "POST", body });
   return parse(arAssetSchema, response, "AR asset upload");
@@ -55,11 +64,18 @@ export async function replaceArAssetFile(id: string, body: FormData) {
   return parse(arAssetSchema, response, "AR asset replacement");
 }
 
-export async function setArAssetEnabled(id: string, enabled: boolean) {
-  const response = await apiFetch<unknown>(`${arAssetPath(id)}/${enabled ? "activate" : "deactivate"}`, {
+/** Activation must carry the documented authorization, which the backend audits (REQ-4.2-05). */
+export async function activateArAsset(id: string, authorizationReference: string) {
+  const response = await apiFetch<unknown>(`${arAssetPath(id)}/activate`, {
     method: "PATCH",
+    body: JSON.stringify({ authorizationReference }),
   });
-  return parse(arAssetSchema, response, enabled ? "AR asset activation" : "AR asset deactivation");
+  return parse(arAssetSchema, response, "AR asset activation");
+}
+
+export async function deactivateArAsset(id: string) {
+  const response = await apiFetch<unknown>(`${arAssetPath(id)}/deactivate`, { method: "PATCH" });
+  return parse(arAssetSchema, response, "AR asset deactivation");
 }
 
 export async function removeArAsset(id: string) {

@@ -6,26 +6,39 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
-import { onboardCurator, removeArAsset, setArAssetEnabled, updateCuratorStatus } from "./api";
+import {
+  activateArAsset,
+  deactivateArAsset,
+  onboardCurator,
+  removeArAsset,
+  updateCuratorStatus,
+} from "./api";
 import {
   firstValidationMessage,
+  readArAssetActivateForm,
   readCuratorStatusForm,
   readOnboardCuratorForm,
+  type ArAssetCommandState,
   type CuratorStatusFormState,
   type OnboardFormState,
 } from "./form";
 import { getDeveloperAccess } from "./session";
-import type { ArAsset } from "./types";
-
-export type ArAssetCommandResult =
-  | { ok: true; asset: ArAsset }
-  | { ok: true; removedId: string }
-  | { ok: false; message: string };
 
 type DeveloperOperation = "onboard" | "status" | "activate" | "deactivate" | "remove";
 
+function backendMessage(error: ApiError) {
+  const body = error.body;
+  return typeof body === "object" && body !== null && "message" in body && typeof body.message === "string"
+    ? body.message
+    : null;
+}
+
 function developerError(error: unknown, operation: DeveloperOperation) {
   if (error instanceof ApiError) {
+    // AR rule violations (e.g. the exhibit is no longer deployable) are explained by the backend.
+    if (error.status === 400 && operation === "activate") {
+      return backendMessage(error) ?? "This AR asset cannot be activated right now.";
+    }
     if (error.status === 401) return "Your session expired. Sign in and try again.";
     if (error.status === 403) {
       return operation === "status"
@@ -35,7 +48,7 @@ function developerError(error: unknown, operation: DeveloperOperation) {
     if (error.status === 404) {
       return operation === "status"
         ? "This curator account no longer exists. Reload the list."
-        : "No AR asset exists with that ID. Check the ID and try again.";
+        : "This AR asset no longer exists. Reload the list.";
     }
     if (error.status === 409 && operation === "onboard") {
       return "The invitation could not be sent. The email may already belong to an existing account.";
@@ -110,29 +123,73 @@ export async function updateCuratorStatusAction(
   return {};
 }
 
-export async function setArAssetEnabledAction(assetId: string, enabled: boolean): Promise<ArAssetCommandResult> {
-  if (!(await requireDeveloper())) return { ok: false, message: NOT_DEVELOPER };
+const INVALID_ASSET = "The AR asset identifier is invalid. Reload and try again.";
 
-  const id = z.uuid().safeParse(assetId.trim());
-  if (!id.success) return { ok: false, message: "Enter a valid AR asset ID." };
+/** Activation carries the documented authorization, which the backend stores in the audit log. */
+export async function activateArAssetAction(
+  assetId: string,
+  _previousState: ArAssetCommandState,
+  formData: FormData,
+): Promise<ArAssetCommandState> {
+  void _previousState;
+  if (!(await requireDeveloper())) return { message: NOT_DEVELOPER };
+
+  const id = z.uuid().safeParse(assetId);
+  if (!id.success) return { message: INVALID_ASSET };
+
+  const parsed = readArAssetActivateForm(formData);
+  if (!parsed.success) return { message: firstValidationMessage(parsed.error) };
 
   try {
-    return { ok: true, asset: await setArAssetEnabled(id.data, enabled === true) };
+    await activateArAsset(id.data, parsed.data.authorizationReference);
   } catch (error) {
-    return { ok: false, message: developerError(error, enabled ? "activate" : "deactivate") };
+    return { message: developerError(error, "activate") };
   }
+
+  revalidatePath("/developer");
+  return {};
 }
 
-export async function removeArAssetAction(assetId: string): Promise<ArAssetCommandResult> {
-  if (!(await requireDeveloper())) return { ok: false, message: NOT_DEVELOPER };
+export async function deactivateArAssetAction(
+  assetId: string,
+  _previousState: ArAssetCommandState,
+  _formData: FormData,
+): Promise<ArAssetCommandState> {
+  void _previousState;
+  void _formData;
+  if (!(await requireDeveloper())) return { message: NOT_DEVELOPER };
 
-  const id = z.uuid().safeParse(assetId.trim());
-  if (!id.success) return { ok: false, message: "Enter a valid AR asset ID." };
+  const id = z.uuid().safeParse(assetId);
+  if (!id.success) return { message: INVALID_ASSET };
 
   try {
-    const result = await removeArAsset(id.data);
-    return { ok: true, removedId: result.id };
+    await deactivateArAsset(id.data);
   } catch (error) {
-    return { ok: false, message: developerError(error, "remove") };
+    return { message: developerError(error, "deactivate") };
   }
+
+  revalidatePath("/developer");
+  return {};
+}
+
+export async function removeArAssetAction(
+  assetId: string,
+  _previousState: ArAssetCommandState,
+  _formData: FormData,
+): Promise<ArAssetCommandState> {
+  void _previousState;
+  void _formData;
+  if (!(await requireDeveloper())) return { message: NOT_DEVELOPER };
+
+  const id = z.uuid().safeParse(assetId);
+  if (!id.success) return { message: INVALID_ASSET };
+
+  try {
+    await removeArAsset(id.data);
+  } catch (error) {
+    return { message: developerError(error, "remove") };
+  }
+
+  revalidatePath("/developer");
+  return {};
 }

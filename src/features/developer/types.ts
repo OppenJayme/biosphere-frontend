@@ -37,7 +37,26 @@ export const arAssetRemovedSchema = z.object({
   removed: z.literal(true),
 });
 
+/**
+ * GET /developer/ar-exhibits: curator-approved (deployable) exhibits, plus any
+ * exhibit that still holds assets so they can be cleaned up. Public identity only.
+ */
+export const arExhibitSchema = z.object({
+  id: z.uuid(),
+  publicSlug: z.string().min(1),
+  status: z.string().min(1),
+  archived: z.boolean(),
+  // false = cleanup-only: assets can be deactivated or removed, not activated or replaced.
+  deployable: z.boolean(),
+  commonName: z.string().nullable(),
+  scientificName: z.string().nullable(),
+  assets: z.array(arAssetSchema),
+});
+
+export const arExhibitListSchema = z.array(arExhibitSchema);
+
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export type ArModelFormat = (typeof AR_MODEL_FORMATS)[number];
 export type CuratorAccount = z.infer<typeof curatorAccountSchema>;
 export type ArAsset = z.infer<typeof arAssetSchema>;
+export type ArExhibit = z.infer<typeof arExhibitSchema>;

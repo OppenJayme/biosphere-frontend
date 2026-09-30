@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import { ArAssetDeployment } from "@/components/developer/ArAssetDeployment";
 import { CuratorAccountAdmin } from "@/components/developer/CuratorAccountAdmin";
-import { listCuratorAccounts } from "@/features/developer/api";
-import type { CuratorAccount } from "@/features/developer/types";
+import { listArExhibits, listCuratorAccounts } from "@/features/developer/api";
+import type { ArExhibit, CuratorAccount } from "@/features/developer/types";
 
 export const metadata: Metadata = {
   title: "Developer Interface",
 };
 
 export default async function DeveloperPage() {
-  let curators: CuratorAccount[] | null = null;
-  try {
-    curators = await listCuratorAccounts();
-  } catch {
-    curators = null;
-  }
+  const [curators, exhibits] = await Promise.all([
+    listCuratorAccounts().catch((): CuratorAccount[] | null => null),
+    listArExhibits().catch((): ArExhibit[] | null => null),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -28,7 +26,7 @@ export default async function DeveloperPage() {
       </div>
 
       <CuratorAccountAdmin curators={curators} />
-      <ArAssetDeployment />
+      <ArAssetDeployment exhibits={exhibits} />
     </div>
   );
 }

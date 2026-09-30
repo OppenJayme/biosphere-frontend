@@ -54,8 +54,8 @@ function backendError(error: unknown, operation: "upload" | "replace") {
         {
           message:
             operation === "upload"
-              ? "No exhibit exists with that ID. Check the ID with the curator."
-              : "No AR asset exists with that ID.",
+              ? "This exhibit no longer exists. Reload the list."
+              : "This AR asset no longer exists. Reload the list.",
         },
         404,
       );

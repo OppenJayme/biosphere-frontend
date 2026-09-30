@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   matchesModelSignature,
+  readArAssetActivateForm,
   readArAssetCreateForm,
   readArAssetReplaceForm,
   readCuratorStatusForm,
@@ -23,7 +24,7 @@ function createForm(overrides: Record<string, string | File | null> = {}) {
     exhibitId: EXHIBIT_ID,
     modelFormat: "glb",
     file: glbFile(),
-    authorizationConfirmed: "on",
+    authorizationReference: "  Curator AR approval memo 2026-07  ",
     ...overrides,
   };
   const form = new FormData();
@@ -86,15 +87,21 @@ describe("curator status form", () => {
 });
 
 describe("AR asset upload form", () => {
-  it("accepts a GLB for an exhibit when authorization is confirmed", () => {
+  it("accepts a GLB for an exhibit with a trimmed authorization reference", () => {
     const parsed = readArAssetCreateForm(createForm());
     expect(parsed.success).toBe(true);
     expect(parsed.success && parsed.data.isEnabled).toBe(false);
+    expect(parsed.success && parsed.data.authorizationReference).toBe("Curator AR approval memo 2026-07");
   });
 
-  it("requires the authorization confirmation", () => {
-    const parsed = readArAssetCreateForm(createForm({ authorizationConfirmed: null }));
+  it.each([null, "", "   "])("requires a documented authorization reference (%p)", (reference) => {
+    const parsed = readArAssetCreateForm(createForm({ authorizationReference: reference }));
     expect(parsed.success).toBe(false);
+    expect(!parsed.success && parsed.error.issues[0]?.message).toMatch(/curator authorization/);
+  });
+
+  it("rejects authorization references over the backend's 500-character limit", () => {
+    expect(readArAssetCreateForm(createForm({ authorizationReference: "x".repeat(501) })).success).toBe(false);
   });
 
   it("rejects a file whose extension does not match the selected format", () => {
@@ -117,8 +124,15 @@ describe("AR asset upload form", () => {
     if (!parsed.success) throw new Error("expected a valid form");
 
     const body = toCreateArAssetFormData(parsed.data);
-    expect([...body.keys()].sort()).toEqual(["exhibitId", "file", "isEnabled", "modelFormat"]);
+    expect([...body.keys()].sort()).toEqual([
+      "authorizationReference",
+      "exhibitId",
+      "file",
+      "isEnabled",
+      "modelFormat",
+    ]);
     expect(body.get("isEnabled")).toBe("true");
+    expect(body.get("authorizationReference")).toBe("Curator AR approval memo 2026-07");
     expect((body.get("file") as File).name).toBe("heron.glb");
   });
 
@@ -132,18 +146,34 @@ describe("AR asset upload form", () => {
 });
 
 describe("AR asset replacement form", () => {
-  it("sends only the file and its format", () => {
+  it("sends only the file, its format, and the authorization reference", () => {
     const form = createForm({ assetId: ASSET_ID, exhibitId: null });
     const parsed = readArAssetReplaceForm(form);
     if (!parsed.success) throw new Error("expected a valid form");
 
     const body = toReplaceArAssetFormData(parsed.data);
-    expect([...body.keys()].sort()).toEqual(["file", "modelFormat"]);
+    expect([...body.keys()].sort()).toEqual(["authorizationReference", "file", "modelFormat"]);
     expect((body.get("file") as File).type).toBe("model/gltf-binary");
   });
 
   it("requires a valid asset ID", () => {
     expect(readArAssetReplaceForm(createForm({ assetId: "abc" })).success).toBe(false);
+  });
+
+  it("requires a documented authorization reference", () => {
+    const form = createForm({ assetId: ASSET_ID, exhibitId: null, authorizationReference: " " });
+    expect(readArAssetReplaceForm(form).success).toBe(false);
+  });
+});
+
+describe("AR asset activation form", () => {
+  it("requires and trims the authorization reference", () => {
+    const form = new FormData();
+    form.set("authorizationReference", "  Memo AR-12  ");
+    const parsed = readArAssetActivateForm(form);
+    expect(parsed.success && parsed.data.authorizationReference).toBe("Memo AR-12");
+
+    expect(readArAssetActivateForm(new FormData()).success).toBe(false);
   });
 });
 
