@@ -20,6 +20,8 @@ const PROTECTED_PREFIX_PATHS = [
   "/public-website",
   "/reports",
   "/users",
+  // Restricted Developer interface — src/app/(developer)/developer/.
+  "/developer",
 ];
 
 const LOGIN_PATH = "/login";
@@ -81,6 +83,8 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Run on everything except static assets, image optimization, and metadata files.
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    // api/developer/ar-assets is also skipped: proxy buffers at most 10 MB of a request
+    // body, which would truncate 50 MB AR models. That route authorizes itself.
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/developer/ar-assets).*)",
   ],
 };

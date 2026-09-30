@@ -39,6 +39,10 @@ export default async function CuratorLayout({ children }: { children: ReactNode 
     profile = null;
   }
 
+  // The Developer role never gets the curator workspace (REQ-4.2-06/07/08).
+  // The backend's CURATOR role checks remain the real enforcement.
+  if (profile?.role === "DEVELOPER") redirect("/developer");
+
   return (
     <html
       lang="en"
