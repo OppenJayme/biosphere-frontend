@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import type { Inquiry } from "@/features/inquiries/types";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
-import { publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
+import { hasListFilters, publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
 import type { CampusEntrySummary, VisitRequest } from "@/features/visit-requests/types";
 import { InquiryDetail } from "./InquiryDetail";
 import { PublicWebsiteToolbar } from "./PublicWebsiteToolbar";
@@ -66,10 +66,18 @@ export function PublicWebsiteWorkspace({
       : { kind: "visit", items: rows.items.slice(start, start + pageSize) }
     : null;
 
-  const returnQuery = { tab: query.tab, status: query.status, search: query.search };
+  const returnQuery = {
+    tab: query.tab,
+    status: query.status,
+    search: query.search,
+    submittedFrom: query.submittedFrom,
+    submittedTo: query.submittedTo,
+    visitDateFrom: query.visitDateFrom,
+    visitDateTo: query.visitDateTo,
+  };
   const hrefFor = (id: string) => publicWebsiteHref(query, { selected: id });
   const recordLabel = query.tab === "inquiries" ? "inquiries" : "visit requests";
-  const filtered = Boolean(query.status || query.search);
+  const filtered = hasListFilters(query);
 
   return (
     <div className="space-y-4">
