@@ -5,7 +5,13 @@ import { canApproveSchedule, isUpcomingVisit, nextVisitStatuses } from "../visit
 import { curatorActionError } from "./errors";
 import { INQUIRY_STATUS_LABELS } from "../inquiries/workflow";
 import { readableHistoryMessage } from "./history";
-import { parsePublicWebsiteQuery, parseSelectedId, publicWebsiteHref } from "./query";
+import {
+  hasListFilters,
+  listFilterKey,
+  parsePublicWebsiteQuery,
+  parseSelectedId,
+  publicWebsiteHref,
+} from "./query";
 
 describe("status transitions (SRS B.3)", () => {
   it("only offers the inquiry changes the backend allows", () => {
@@ -40,17 +46,54 @@ describe("status transitions (SRS B.3)", () => {
 });
 
 describe("curator page query", () => {
+  const noDates = { submittedFrom: "", submittedTo: "", visitDateFrom: "", visitDateTo: "" };
+
   it("drops statuses that don't belong to the tab and caps search", () => {
     expect(parsePublicWebsiteQuery({ tab: "visits", status: "REVIEWED" })).toEqual({
       tab: "visits",
       status: "",
       search: "",
+      ...noDates,
     });
     expect(parsePublicWebsiteQuery({ status: "CLOSED", search: ` ${"a".repeat(150)} ` })).toEqual({
       tab: "inquiries",
       status: "CLOSED",
       search: "a".repeat(100),
+      ...noDates,
     });
+  });
+
+  it("keeps real YYYY-MM-DD dates and drops anything else", () => {
+    expect(
+      parsePublicWebsiteQuery({
+        tab: "visits",
+        submittedFrom: "2026-09-01",
+        submittedTo: "2026-02-30",
+        visitDateFrom: "10/01/2026",
+        visitDateTo: "2026-10-31",
+      }),
+    ).toMatchObject({ submittedFrom: "2026-09-01", submittedTo: "", visitDateFrom: "", visitDateTo: "2026-10-31" });
+  });
+
+  it("orders a reversed range instead of sending one the API rejects", () => {
+    expect(parsePublicWebsiteQuery({ submittedFrom: "2026-09-30", submittedTo: "2026-09-01" })).toMatchObject({
+      submittedFrom: "2026-09-01",
+      submittedTo: "2026-09-30",
+    });
+  });
+
+  it("ignores visit dates on the inquiries tab", () => {
+    const query = parsePublicWebsiteQuery({ visitDateFrom: "2026-10-01" });
+    expect(query.visitDateFrom).toBe("");
+    expect(hasListFilters(query)).toBe(false);
+    expect(publicWebsiteHref({ tab: "inquiries", visitDateFrom: "2026-10-01" })).toBe("/public-website");
+  });
+
+  it("treats a date as a list filter and keys it", () => {
+    const query = parsePublicWebsiteQuery({ tab: "visits", visitDateFrom: "2026-10-01" });
+    expect(hasListFilters(query)).toBe(true);
+    expect(listFilterKey(query)).not.toBe(listFilterKey(parsePublicWebsiteQuery({ tab: "visits" })));
+    expect(publicWebsiteHref(query)).toBe("/public-website?tab=visits&visitDateFrom=2026-10-01");
   });
 
   it("accepts only UUID selections and round-trips hrefs", () => {
