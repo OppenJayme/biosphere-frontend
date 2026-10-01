@@ -1,6 +1,7 @@
 "use client";
 
-import { BellIcon, ChevronDownIcon, MenuIcon } from "@/components/icons";
+import { ChevronDownIcon, MenuIcon } from "@/components/icons";
+import { NotificationBell } from "./NotificationBell";
 import { useSyncStatus } from "@/features/offline/use-sync-status";
 
 function initialsFor(fullName: string) {
@@ -67,10 +68,7 @@ export function CuratorTopbar({
           </span>
         </div>
 
-        <button type="button" aria-label="Notifications" className="relative text-zinc-600">
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-        </button>
+        <NotificationBell />
 
         <button type="button" className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-700 text-xs font-semibold text-white">
