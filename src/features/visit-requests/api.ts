@@ -19,6 +19,10 @@ export async function listVisitRequests(query: VisitRequestListQuery = {}): Prom
   const params = new URLSearchParams();
   if (query.status) params.set("status", query.status);
   if (query.search) params.set("search", query.search);
+  if (query.submittedFrom) params.set("submittedFrom", query.submittedFrom);
+  if (query.submittedTo) params.set("submittedTo", query.submittedTo);
+  if (query.visitDateFrom) params.set("visitDateFrom", query.visitDateFrom);
+  if (query.visitDateTo) params.set("visitDateTo", query.visitDateTo);
   const serialized = params.toString();
 
   const response = await apiFetch<unknown>(serialized ? `/visit-requests?${serialized}` : "/visit-requests", {
