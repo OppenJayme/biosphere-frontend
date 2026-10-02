@@ -70,7 +70,6 @@ export type ActivityItem = {
 
 export type QrReadinessPending = {
   id: string;
-  name: string;
   publicSlug: string;
 };
 
@@ -79,7 +78,6 @@ export type QrReadiness = {
   published: number;
   unpublished: number;
   disabled: number;
-  arEnabled: number;
   pending: QrReadinessPending[];
 };
 

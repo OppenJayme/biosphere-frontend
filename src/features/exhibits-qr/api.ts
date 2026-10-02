@@ -9,6 +9,7 @@ import {
   exhibitListSchema,
   exhibitMediaSchema,
   exhibitSchema,
+  exhibitSummaryListSchema,
   publicExhibitSchema,
   type ExhibitListQuery,
   type PublicExhibit,
@@ -38,6 +39,12 @@ export async function listExhibits(query: Partial<ExhibitListQuery> = {}) {
     cache: "no-store",
   });
   return parse(exhibitListSchema, response, "list");
+}
+
+/** Status-only exhibit list for the dashboard's QR readiness summary. */
+export async function listExhibitSummaries() {
+  const response = await apiFetch<unknown>("/exhibits", { method: "GET", cache: "no-store" });
+  return parse(exhibitSummaryListSchema, response, "summary list");
 }
 
 export async function getExhibit(id: string) {

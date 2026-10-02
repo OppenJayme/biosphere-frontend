@@ -2,8 +2,8 @@ import "server-only";
 import { ApiError } from "@/lib/api-client";
 import { listAuditLogs } from "../audit/api";
 import type { AuditLogEntry } from "../audit/types";
-import { listExhibits } from "../exhibits-qr/api";
-import type { Exhibit } from "../exhibits-qr/types";
+import { listExhibitSummaries } from "../exhibits-qr/api";
+import type { ExhibitSummary } from "../exhibits-qr/types";
 import { listInquiries } from "../inquiries/api";
 import type { Inquiry } from "../inquiries/types";
 import { listActiveLots } from "../specimen-lots/api";
@@ -56,7 +56,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       listVisitRequests(),
       listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT }),
       listStorageLocations(),
-      listExhibits(),
+      listExhibitSummaries(),
     ]);
 
   // An expired/invalid session fails every endpoint the same way — surface
@@ -318,25 +318,20 @@ function buildRecentActivity(items: AuditLogEntry[]): ActivityItem[] {
 
 // The backend list already excludes archived exhibits, so every row here is a
 // live QR target: published resolves for visitors, the rest return 404.
-function buildQrReadiness(exhibits: Exhibit[]): QrReadiness {
-  const count = (status: Exhibit["status"]) => exhibits.filter((exhibit) => exhibit.status === status).length;
+function buildQrReadiness(exhibits: ExhibitSummary[]): QrReadiness {
+  const count = (status: ExhibitSummary["status"]) => exhibits.filter((exhibit) => exhibit.status === status).length;
 
   const pending = exhibits
     .filter((exhibit) => exhibit.status === "UNPUBLISHED")
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, QR_PENDING_LIMIT)
-    .map((exhibit) => ({
-      id: exhibit.id,
-      name: exhibit.specimen.commonName ?? exhibit.specimen.scientificName ?? "Unnamed specimen",
-      publicSlug: exhibit.publicSlug,
-    }));
+    .map((exhibit) => ({ id: exhibit.id, publicSlug: exhibit.publicSlug }));
 
   return {
     total: exhibits.length,
     published: count("PUBLISHED"),
     unpublished: count("UNPUBLISHED"),
     disabled: count("DISABLED"),
-    arEnabled: exhibits.filter((exhibit) => exhibit.status === "PUBLISHED" && exhibit.arEnabled).length,
     pending,
   };
 }

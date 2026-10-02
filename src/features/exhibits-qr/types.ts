@@ -65,7 +65,16 @@ export const exhibitSchema = z.object({
 
 export const exhibitListSchema = z.array(exhibitSchema);
 
+/**
+ * Only the fields every backend version returns: the dashboard summary must not break when the
+ * backend lacks the newer curator fields (specimen, publicUrl, AR state).
+ */
+export const exhibitSummaryListSchema = z.array(
+  exhibitSchema.pick({ id: true, publicSlug: true, status: true, updatedAt: true }),
+);
+
 export type Exhibit = z.infer<typeof exhibitSchema>;
+export type ExhibitSummary = z.infer<typeof exhibitSummaryListSchema>[number];
 export type ExhibitMedia = z.infer<typeof exhibitMediaSchema>;
 
 const nullableText = z.string().nullable();

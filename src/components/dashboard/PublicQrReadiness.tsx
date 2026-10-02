@@ -54,10 +54,6 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
             <span className="font-medium text-zinc-900">{row.value.toLocaleString()}</span>
           </li>
         ))}
-        <li className="flex items-center justify-between border-t border-zinc-100 pt-1.5 text-xs">
-          <span className="text-zinc-600">Published with AR</span>
-          <span className="font-medium text-zinc-900">{readiness.arEnabled.toLocaleString()}</span>
-        </li>
       </ul>
 
       {readiness.pending.length > 0 && (
@@ -67,9 +63,8 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
             {readiness.pending.map((exhibit) => (
               <li key={exhibit.id} className="min-w-0">
                 <Link href="/exhibits" className="block truncate text-xs font-medium text-zinc-900 hover:text-forest-700">
-                  {exhibit.name}
+                  /exhibits/{exhibit.publicSlug}
                 </Link>
-                <p className="truncate text-[11px] text-zinc-500">/exhibits/{exhibit.publicSlug}</p>
               </li>
             ))}
           </ul>
