@@ -10,7 +10,7 @@ import {
   readUpdateExhibitForm,
   suggestSlug,
 } from "./form";
-import { exhibitLayout, publicExhibitSchema, sortExhibitMedia, splitFacts } from "./types";
+import { exhibitLayout, publicExhibitSchema, sortExhibitMedia, splitFacts, titleFromSlug } from "./types";
 
 const SPECIMEN_ID = "ac6f699b-08bf-4931-990d-b975b16b46bc";
 
@@ -94,6 +94,16 @@ describe("update exhibit form", () => {
     );
     expect(parsed.ok && parsed.input.layoutType).toBe("card-grid");
   });
+
+  it("sends the URL ending only when the curator changed it, and validates it", () => {
+    const base = { publicDescription: "", interestingFacts: "", distribution: "", diet: "", layoutType: "card-grid", originalLayout: "card-grid", originalSlug: "lynx" };
+    const unchanged = readUpdateExhibitForm(form({ ...base, publicSlug: "lynx" }));
+    expect(unchanged.ok && unchanged.input).not.toHaveProperty("publicSlug");
+    const changed = readUpdateExhibitForm(form({ ...base, publicSlug: " canada-lynx " }));
+    expect(changed.ok && changed.input.publicSlug).toBe("canada-lynx");
+    const invalid = readUpdateExhibitForm(form({ ...base, publicSlug: "Canada Lynx" }));
+    expect(!invalid.ok && invalid.errors.publicSlug).toBeTruthy();
+  });
 });
 
 describe("image metadata and files", () => {
@@ -152,6 +162,10 @@ describe("public exhibit helpers", () => {
       { id: "c", isCover: false, displayOrder: 1 },
     ]);
     expect(sorted.map((item) => item.id)).toEqual(["b", "a", "c"]);
+  });
+
+  it("turns a URL ending into a page title", () => {
+    expect(titleFromSlug("giant-forest-beetle")).toBe("Giant Forest Beetle");
   });
 
   it("splits facts one per line and strips list bullets", () => {

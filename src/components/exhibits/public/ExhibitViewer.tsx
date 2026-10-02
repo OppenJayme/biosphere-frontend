@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
-import { MoonIcon, SunIcon, CubeIcon } from "@/components/icons";
+import { MoonIcon, SunIcon } from "@/components/icons";
+import { exhibitLayout, type PublicExhibit } from "@/features/exhibits-qr/types";
 import { CardGridView } from "./CardGridView";
 import { AccordionView } from "./AccordionView";
-import { ArModal } from "./ArModal";
-import type { Exhibit } from "@/lib/dummy-data/exhibits";
 
-export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
+export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; title: string }) {
   const [dark, setDark] = useState(false);
-  const [arOpen, setArOpen] = useState(false);
 
   return (
     <div className={dark ? "min-h-screen bg-forest-900" : "min-h-screen bg-sage-50"}>
@@ -36,10 +34,10 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 pb-28 pt-4 sm:px-6">
-        {exhibit.publicLayout === "card-grid" ? (
-          <CardGridView exhibit={exhibit} dark={dark} />
+        {exhibitLayout(exhibit.layoutType) === "card-grid" ? (
+          <CardGridView exhibit={exhibit} title={title} dark={dark} />
         ) : (
-          <AccordionView exhibit={exhibit} dark={dark} />
+          <AccordionView exhibit={exhibit} title={title} dark={dark} />
         )}
       </div>
 
@@ -49,16 +47,6 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
         }`}
       >
         <div className="mx-auto flex max-w-2xl gap-3">
-          <button
-            type="button"
-            onClick={() => setArOpen(true)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-colors ${
-              dark ? "bg-emerald-400 text-emerald-950 hover:bg-emerald-300" : "bg-forest-800 text-white hover:bg-forest-900"
-            }`}
-          >
-            <CubeIcon className="h-4 w-4" />
-            View in AR
-          </button>
           <a
             href="/gallery"
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-3 text-sm font-semibold transition-colors ${
@@ -70,9 +58,6 @@ export function ExhibitViewer({ exhibit }: { exhibit: Exhibit }) {
         </div>
       </div>
 
-      {arOpen && (
-        <ArModal exhibit={exhibit} dark={dark} onClose={() => setArOpen(false)} />
-      )}
     </div>
   );
 }

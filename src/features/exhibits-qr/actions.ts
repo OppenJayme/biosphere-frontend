@@ -1,4 +1,4 @@
-/** Authenticated Server Actions for curator QR exhibit management (SRS 4.12, 4.13 curator side). */
+/** Authenticated Server Actions for curator QR exhibit management (SRS 4.12 curator side). */
 
 "use server";
 
@@ -11,50 +11,34 @@ import { verifySession } from "@/lib/session";
 import {
   changeExhibitStatus,
   createExhibit,
+  getExhibit,
+  getPublicExhibit,
   listExhibits,
   removeExhibitMedia,
-  replaceExhibitUrl,
-  setExhibitAr,
   updateExhibit,
-  updateExhibitMedia,
   type ExhibitLifecycleCommand,
 } from "./api";
 import {
   backendMessage,
-  exhibitsHref,
-  parseExhibitListQuery,
   readCreateExhibitForm,
-  readMediaMetadataForm,
-  readReplaceUrlForm,
   readUpdateExhibitForm,
   SLUG_MAX_LENGTH,
   SLUG_PATTERN,
   type ExhibitCommandState,
-  type ExhibitContentValues,
   type ExhibitCreateValues,
+  type ExhibitEditValues,
   type ExhibitFormState,
 } from "./form";
-import type { ExhibitListQuery } from "./types";
+import { sortExhibitMedia, type ExhibitMedia, type PublicExhibitMedia } from "./types";
 
-type Operation =
-  | "create"
-  | "update"
-  | "replace-url"
-  | ExhibitLifecycleCommand
-  | "ar-on"
-  | "ar-off"
-  | "media";
+type Operation = "create" | "update" | ExhibitLifecycleCommand | "media";
 
 const FALLBACK_400: Record<Operation, string> = {
   create: "Only a Cataloged specimen approved for public display can have an exhibit.",
   update: "Change at least one exhibit field before saving.",
-  "replace-url": "This URL cannot be used. Choose a different URL ending.",
   publish: "This exhibit cannot be published. Its specimen must still be Cataloged and approved for public display.",
-  unpublish: "Only a published exhibit can be unpublished.",
-  disable: "Only a published exhibit can be disabled.",
+  disable: "This exhibit cannot be disabled in its current state.",
   archive: "This exhibit cannot be archived in its current state.",
-  "ar-on": "No AR model has been uploaded for this exhibit yet. A developer must upload one first.",
-  "ar-off": "AR could not be turned off for this exhibit.",
   media: "The image change was rejected. Reload and try again.",
 };
 
@@ -86,6 +70,7 @@ async function requireSession() {
 
 function refreshExhibitConsumers(slugs: string[] = []) {
   revalidatePath("/exhibits");
+  revalidatePath("/dashboard");
   revalidatePath("/audit-logs");
   // Slugs are bound from the client, so only well-formed ones reach revalidatePath.
   for (const slug of slugs) {
@@ -93,25 +78,19 @@ function refreshExhibitConsumers(slugs: string[] = []) {
   }
 }
 
-/** Re-parses the bound list query so a tampered value can't reach the redirect. */
-function returnHref(query: ExhibitListQuery, extra: Record<string, string>) {
-  return exhibitsHref(
-    parseExhibitListQuery({
-      status: query?.status ?? "",
-      ar: query?.ar ?? "",
-      search: query?.search ?? "",
-    }),
-    extra,
-  );
-}
-
 const idSchema = z.uuid();
 
+/** Create state carries the new id so the workspace can select it. */
+export type CreateExhibitState = ExhibitFormState<ExhibitCreateValues> & { exhibitId?: string };
+
+/**
+ * Creates an UNPUBLISHED exhibit. With `intent=publish` it is published right after; if that
+ * second step fails the exhibit still exists, and the message says so.
+ */
 export async function createExhibitAction(
-  query: ExhibitListQuery,
-  _previousState: ExhibitFormState<ExhibitCreateValues>,
+  _previousState: CreateExhibitState,
   formData: FormData,
-): Promise<ExhibitFormState<ExhibitCreateValues>> {
+): Promise<CreateExhibitState> {
   void _previousState;
   await requireSession();
   const parsed = readCreateExhibitForm(formData);
@@ -126,16 +105,35 @@ export async function createExhibitAction(
     return { values: parsed.values, message: exhibitError(error, "create") };
   }
 
-  refreshExhibitConsumers();
-  redirect(returnHref(query, { selected: created.id, notice: "created" }));
+  if (formData.get("intent") === "publish") {
+    try {
+      await changeExhibitStatus(created.id, "publish");
+    } catch (error) {
+      refreshExhibitConsumers();
+      return {
+        values: parsed.values,
+        ok: true,
+        exhibitId: created.id,
+        message: `The exhibit was saved as Unpublished, but publishing failed: ${exhibitError(error, "publish")}`,
+      };
+    }
+  }
+
+  refreshExhibitConsumers([created.publicSlug]);
+  return {
+    values: parsed.values,
+    ok: true,
+    exhibitId: created.id,
+    message: formData.get("intent") === "publish" ? "Exhibit created and published." : "Exhibit saved as Unpublished.",
+  };
 }
 
 export async function updateExhibitAction(
   exhibitId: string,
   publicSlug: string,
-  _previousState: ExhibitFormState<ExhibitContentValues>,
+  _previousState: ExhibitFormState<ExhibitEditValues>,
   formData: FormData,
-): Promise<ExhibitFormState<ExhibitContentValues>> {
+): Promise<ExhibitFormState<ExhibitEditValues>> {
   void _previousState;
   await requireSession();
   const parsed = readUpdateExhibitForm(formData);
@@ -145,63 +143,37 @@ export async function updateExhibitAction(
     return { values: parsed.values, errors: parsed.errors, message: "Check the highlighted fields." };
   }
 
+  let updated;
   try {
-    await updateExhibit(id.data, parsed.input);
+    updated = await updateExhibit(id.data, parsed.input);
   } catch (error) {
     return { values: parsed.values, message: exhibitError(error, "update") };
   }
 
-  refreshExhibitConsumers([publicSlug]);
-  return { values: parsed.values, ok: true, message: "Exhibit content saved." };
-}
-
-export async function replaceExhibitUrlAction(
-  exhibitId: string,
-  previousSlug: string,
-  _previousState: ExhibitFormState<{ publicSlug: string }>,
-  formData: FormData,
-): Promise<ExhibitFormState<{ publicSlug: string }>> {
-  void _previousState;
-  await requireSession();
-  const parsed = readReplaceUrlForm(formData);
-  const id = idSchema.safeParse(exhibitId);
-  if (!id.success) return { values: parsed.values, message: "The exhibit identifier is invalid. Reload and try again." };
-  if (!parsed.ok) return { values: parsed.values, message: parsed.message };
-
-  try {
-    await replaceExhibitUrl(id.data, parsed.publicSlug);
-  } catch (error) {
-    return { values: parsed.values, message: exhibitError(error, "replace-url") };
-  }
-
-  refreshExhibitConsumers([previousSlug, parsed.publicSlug]);
+  refreshExhibitConsumers([publicSlug, updated.publicSlug]);
   return {
-    values: { publicSlug: "" },
+    values: parsed.values,
     ok: true,
-    message: `The public URL now ends in /exhibits/${parsed.publicSlug}. Download and print the new QR label.`,
+    message: parsed.input.publicSlug
+      ? `Saved. The public URL now ends in /exhibits/${updated.publicSlug}; QR codes printed for the old URL no longer work.`
+      : "Exhibit content saved.",
   };
 }
 
-const LIFECYCLE_NOTICES: Record<ExhibitLifecycleCommand, string> = {
-  publish: "published",
-  unpublish: "unpublished",
-  disable: "disabled",
-  archive: "archived",
+const LIFECYCLE_MESSAGES: Record<ExhibitLifecycleCommand, string> = {
+  publish: "Exhibit published. Its public page is now live.",
+  disable: "Exhibit disabled. Its public page is no longer available.",
+  archive: "Exhibit archived.",
 };
 
 export async function changeExhibitStatusAction(
   exhibitId: string,
   publicSlug: string,
   command: ExhibitLifecycleCommand,
-  query: ExhibitListQuery,
-  _previousState: ExhibitCommandState,
-  _formData: FormData,
 ): Promise<ExhibitCommandState> {
-  void _previousState;
-  void _formData;
   await requireSession();
   const parsed = z
-    .object({ id: idSchema, command: z.enum(["publish", "unpublish", "disable", "archive"]) })
+    .object({ id: idSchema, command: z.enum(["publish", "disable", "archive"]) })
     .safeParse({ id: exhibitId, command });
   if (!parsed.success) return { message: "The exhibit command is invalid. Reload and try again." };
 
@@ -212,100 +184,16 @@ export async function changeExhibitStatusAction(
   }
 
   refreshExhibitConsumers([publicSlug]);
-  const notice = LIFECYCLE_NOTICES[parsed.data.command];
-  redirect(
-    returnHref(query, parsed.data.command === "archive" ? { notice } : { selected: parsed.data.id, notice }),
-  );
-}
-
-export async function setExhibitArAction(
-  exhibitId: string,
-  publicSlug: string,
-  enabled: boolean,
-  query: ExhibitListQuery,
-  _previousState: ExhibitCommandState,
-  _formData: FormData,
-): Promise<ExhibitCommandState> {
-  void _previousState;
-  void _formData;
-  await requireSession();
-  const id = idSchema.safeParse(exhibitId);
-  if (!id.success || typeof enabled !== "boolean") {
-    return { message: "The AR command is invalid. Reload and try again." };
-  }
-
-  try {
-    await setExhibitAr(id.data, enabled);
-  } catch (error) {
-    return { message: exhibitError(error, enabled ? "ar-on" : "ar-off") };
-  }
-
-  refreshExhibitConsumers([publicSlug]);
-  redirect(returnHref(query, { selected: id.data, notice: enabled ? "ar-on" : "ar-off" }));
-}
-
-function parseMediaIds(exhibitId: string, mediaId: string) {
-  return z.object({ exhibitId: idSchema, mediaId: idSchema }).safeParse({ exhibitId, mediaId });
-}
-
-export async function updateExhibitMediaAction(
-  exhibitId: string,
-  mediaId: string,
-  publicSlug: string,
-  _previousState: ExhibitCommandState,
-  formData: FormData,
-): Promise<ExhibitCommandState> {
-  void _previousState;
-  await requireSession();
-  const ids = parseMediaIds(exhibitId, mediaId);
-  if (!ids.success) return { message: "The image identifier is invalid. Reload and try again." };
-  const parsed = readMediaMetadataForm(formData);
-  if (!parsed.ok) return { message: parsed.message };
-
-  try {
-    await updateExhibitMedia(ids.data.exhibitId, ids.data.mediaId, parsed.input);
-  } catch (error) {
-    return { message: exhibitError(error, "media") };
-  }
-
-  refreshExhibitConsumers([publicSlug]);
-  return { ok: true, message: "Image details saved." };
-}
-
-export async function setExhibitCoverAction(
-  exhibitId: string,
-  mediaId: string,
-  publicSlug: string,
-  _previousState: ExhibitCommandState,
-  _formData: FormData,
-): Promise<ExhibitCommandState> {
-  void _previousState;
-  void _formData;
-  await requireSession();
-  const ids = parseMediaIds(exhibitId, mediaId);
-  if (!ids.success) return { message: "The image identifier is invalid. Reload and try again." };
-
-  try {
-    await updateExhibitMedia(ids.data.exhibitId, ids.data.mediaId, { isCover: true });
-  } catch (error) {
-    return { message: exhibitError(error, "media") };
-  }
-
-  refreshExhibitConsumers([publicSlug]);
-  return { ok: true, message: "Cover image changed." };
+  return { ok: true, message: LIFECYCLE_MESSAGES[parsed.data.command] };
 }
 
 export async function removeExhibitMediaAction(
   exhibitId: string,
   mediaId: string,
   publicSlug: string,
-  _previousState: ExhibitCommandState,
-  _formData: FormData,
 ): Promise<ExhibitCommandState> {
-  void _previousState;
-  void _formData;
   await requireSession();
-  const ids = parseMediaIds(exhibitId, mediaId);
+  const ids = z.object({ exhibitId: idSchema, mediaId: idSchema }).safeParse({ exhibitId, mediaId });
   if (!ids.success) return { message: "The image identifier is invalid. Reload and try again." };
 
   try {
@@ -316,6 +204,31 @@ export async function removeExhibitMediaAction(
 
   refreshExhibitConsumers([publicSlug]);
   return { ok: true, message: "Image removed." };
+}
+
+export type ExhibitMediaResult = {
+  /** Media records (storage paths only; the curator API has no viewable image links). */
+  media: ExhibitMedia[];
+  /** Short-lived viewable links from the public page, only while the exhibit is published. */
+  previews: PublicExhibitMedia[];
+  message?: string;
+};
+
+/** Loads an exhibit's media for the detail panel and the edit dialog. */
+export async function loadExhibitMediaAction(exhibitId: string): Promise<ExhibitMediaResult> {
+  if (!(await verifySession())) return { media: [], previews: [], message: "Your session expired. Sign in and try again." };
+  const id = idSchema.safeParse(exhibitId);
+  if (!id.success) return { media: [], previews: [], message: "The exhibit identifier is invalid." };
+
+  try {
+    const exhibit = await getExhibit(id.data);
+    const media = sortExhibitMedia(exhibit.media ?? []);
+    if (exhibit.status !== "PUBLISHED" || media.length === 0) return { media, previews: [] };
+    const publicPage = await getPublicExhibit(exhibit.publicSlug).catch(() => null);
+    return { media, previews: sortExhibitMedia(publicPage?.media ?? []) };
+  } catch (error) {
+    return { media: [], previews: [], message: exhibitError(error, "media") };
+  }
 }
 
 export type EligibleSpecimen = {

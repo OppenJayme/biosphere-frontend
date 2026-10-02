@@ -28,11 +28,11 @@ export const EXHIBIT_LAYOUT_LABELS: Record<ExhibitLayout, string> = {
   "card-grid": "Card grid",
 };
 
+/** Curator media record. `mediaUrl` is the private storage path, not a viewable URL. */
 export const exhibitMediaSchema = z.object({
   id: z.uuid(),
   exhibitId: z.uuid(),
   mediaUrl: z.string(),
-  previewUrl: z.string().nullable().optional(),
   displayOrder: z.number().int(),
   caption: z.string().nullable(),
   isCover: z.boolean(),
@@ -41,21 +41,14 @@ export const exhibitMediaSchema = z.object({
 export const exhibitSchema = z.object({
   id: z.uuid(),
   specimenId: z.uuid(),
+  createdBy: z.string(),
   publicSlug: z.string().min(1),
-  publicUrl: z.string().nullable(),
   interestingFacts: z.string().nullable(),
   publicDescription: z.string().nullable(),
   distribution: z.string().nullable(),
   diet: z.string().nullable(),
   layoutType: z.string().nullable(),
   status: z.enum(EXHIBIT_STATUSES),
-  arEnabled: z.boolean(),
-  arAssetCount: z.number().int().nonnegative(),
-  specimen: z.object({
-    commonName: z.string().nullable(),
-    scientificName: z.string().nullable(),
-    accessionNumber: z.string().nullable(),
-  }),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
   createdAt: z.string().min(1),
@@ -65,50 +58,69 @@ export const exhibitSchema = z.object({
 
 export const exhibitListSchema = z.array(exhibitSchema);
 
+/**
+ * Only the fields every backend version returns: the dashboard summary must not break when the
+ * backend lacks the newer curator fields (specimen, publicUrl, AR state).
+ */
+export const exhibitSummaryListSchema = z.array(
+  exhibitSchema.pick({ id: true, publicSlug: true, status: true, updatedAt: true }),
+);
+
 export type Exhibit = z.infer<typeof exhibitSchema>;
+export type ExhibitSummary = z.infer<typeof exhibitSummaryListSchema>[number];
 export type ExhibitMedia = z.infer<typeof exhibitMediaSchema>;
+
+/**
+ * The exhibit endpoints return only the specimen id, so the curator page looks up the
+ * specimen's names separately. Null when that lookup failed.
+ */
+export type ExhibitSpecimenInfo = {
+  commonName: string | null;
+  scientificName: string | null;
+  accessionNumber: string | null;
+};
+
+export type ExhibitRow = Exhibit & { specimen: ExhibitSpecimenInfo | null };
 
 const nullableText = z.string().nullable();
 
-/** Public QR page content: only curator-approved fields (REQ-4.12-08, REQ-4.13-07). */
+export const publicExhibitMediaSchema = z.object({
+  mediaUrl: z.string().min(1),
+  displayOrder: z.number().int(),
+  caption: nullableText,
+  isCover: z.boolean(),
+});
+
+/** Public QR page content: only curator-approved fields (REQ-4.12-08). */
 export const publicExhibitSchema = z.object({
   publicSlug: z.string().min(1),
-  commonName: nullableText,
-  scientificName: nullableText,
-  collection: nullableText,
-  taxonomy: z.object({
-    kingdom: nullableText,
-    phylum: nullableText,
-    class: nullableText,
-    order: nullableText,
-    family: nullableText,
-    genus: nullableText,
-    species: nullableText,
-  }),
-  habitat: nullableText,
-  ecologicalRole: nullableText,
-  conservationStatus: nullableText,
   interestingFacts: nullableText,
   publicDescription: nullableText,
   distribution: nullableText,
   diet: nullableText,
   layoutType: nullableText,
-  media: z.array(
-    z.object({
-      mediaUrl: z.string().min(1),
-      displayOrder: z.number().int(),
-      caption: nullableText,
-      isCover: z.boolean(),
-    }),
-  ),
-  ar: z.object({
-    available: z.boolean(),
-    models: z.array(z.object({ format: z.enum(["glb", "usdz"]), url: z.string().min(1) })),
-  }),
+  media: z.array(publicExhibitMediaSchema),
 });
 
 export type PublicExhibit = z.infer<typeof publicExhibitSchema>;
-export type PublicArModel = PublicExhibit["ar"]["models"][number];
+export type PublicExhibitMedia = z.infer<typeof publicExhibitMediaSchema>;
+
+/**
+ * The public endpoint does not return the specimen name, so the page title comes from the
+ * curator-chosen URL ending: "giant-forest-beetle" -> "Giant Forest Beetle".
+ */
+export function titleFromSlug(slug: string) {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/** Display name for an exhibit row, falling back to the URL ending when the specimen is unknown. */
+export function exhibitDisplayName(row: Pick<ExhibitRow, "publicSlug" | "specimen">) {
+  return row.specimen?.commonName ?? row.specimen?.scientificName ?? titleFromSlug(row.publicSlug);
+}
 
 export type ExhibitListQuery = {
   status: ExhibitStatus | "";
