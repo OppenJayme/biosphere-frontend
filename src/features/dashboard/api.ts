@@ -2,6 +2,8 @@ import "server-only";
 import { ApiError } from "@/lib/api-client";
 import { listAuditLogs } from "../audit/api";
 import type { AuditLogEntry } from "../audit/types";
+import { listExhibitSummaries } from "../exhibits-qr/api";
+import type { ExhibitSummary } from "../exhibits-qr/types";
 import { listInquiries } from "../inquiries/api";
 import type { Inquiry } from "../inquiries/types";
 import { listActiveLots } from "../specimen-lots/api";
@@ -18,6 +20,7 @@ import type {
   CollectionByType,
   DashboardData,
   DashboardStat,
+  QrReadiness,
   QueueItem,
   RecentSpecimenRow,
   SectionResult,
@@ -43,15 +46,17 @@ const CATALOGING_QUEUE_LIMIT = 5;
 const RECENT_ACTIVITY_LIMIT = 6;
 const STORAGE_HEALTH_LIMIT = 6;
 const TREND_MONTHS = 12;
+const QR_PENDING_LIMIT = 3;
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, storageUnitsResult] =
+  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, storageUnitsResult, exhibitsResult] =
     await Promise.allSettled([
       listSpecimens(),
       listInquiries(),
       listVisitRequests(),
       listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT }),
       listStorageLocations(),
+      listExhibitSummaries(),
     ]);
 
   // An expired/invalid session fails every endpoint the same way — surface
@@ -63,6 +68,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     visitRequestsResult,
     auditResult,
     storageUnitsResult,
+    exhibitsResult,
   ];
   const unauthorized = settledResults.find(
     (result) => result.status === "rejected" && result.reason instanceof ApiError && result.reason.status === 401,
@@ -94,6 +100,12 @@ export async function getDashboardData(): Promise<DashboardData> {
     auditResult.status === "fulfilled"
       ? { status: "ok", data: buildRecentActivity(auditResult.value.items) }
       : { status: "error" };
+  // Liveness depends on the backing specimen too, so without specimen data a
+  // live count could overstate readiness — show the section as unavailable.
+  const qrReadiness: SectionResult<QrReadiness> =
+    exhibitsResult.status === "fulfilled" && specimens
+      ? { status: "ok", data: buildQrReadiness(exhibitsResult.value, specimens) }
+      : { status: "error" };
 
   return {
     stats,
@@ -103,6 +115,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     recentSpecimens,
     storageOverview,
     recentActivity,
+    qrReadiness,
   };
 }
 
@@ -303,6 +316,38 @@ function buildRecentActivity(items: AuditLogEntry[]): ActivityItem[] {
     module: item.module,
     failed: item.result !== "SUCCESS",
   }));
+}
+
+// The backend list already excludes archived exhibits. A QR page resolves only
+// when the exhibit is published AND its specimen is still eligible: the public
+// endpoint re-checks that the specimen is cataloged and approved for public
+// display, so a published exhibit can still 404 after approval is withdrawn,
+// cataloging is reopened, or the specimen is archived.
+function buildQrReadiness(exhibits: ExhibitSummary[], specimens: SpecimenSummary[]): QrReadiness {
+  const count = (status: ExhibitSummary["status"]) => exhibits.filter((exhibit) => exhibit.status === status).length;
+  const specimenById = new Map(specimens.map((specimen) => [specimen.id, specimen]));
+  const isSpecimenEligible = (specimenId: string) => {
+    const specimen = specimenById.get(specimenId);
+    return specimen?.status === "CATALOGED" && specimen.publicDisplay === true;
+  };
+
+  const published = exhibits.filter((exhibit) => exhibit.status === "PUBLISHED");
+  const live = published.filter((exhibit) => isSpecimenEligible(exhibit.specimenId)).length;
+
+  const pending = exhibits
+    .filter((exhibit) => exhibit.status === "UNPUBLISHED")
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, QR_PENDING_LIMIT)
+    .map((exhibit) => ({ id: exhibit.id, publicSlug: exhibit.publicSlug }));
+
+  return {
+    total: exhibits.length,
+    live,
+    publishedUnavailable: published.length - live,
+    unpublished: count("UNPUBLISHED"),
+    disabled: count("DISABLED"),
+    pending,
+  };
 }
 
 function humanize(value: string): string {
