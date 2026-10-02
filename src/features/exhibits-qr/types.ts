@@ -70,7 +70,7 @@ export const exhibitListSchema = z.array(exhibitSchema);
  * backend lacks the newer curator fields (specimen, publicUrl, AR state).
  */
 export const exhibitSummaryListSchema = z.array(
-  exhibitSchema.pick({ id: true, publicSlug: true, status: true, updatedAt: true }),
+  exhibitSchema.pick({ id: true, specimenId: true, publicSlug: true, status: true, updatedAt: true }),
 );
 
 export type Exhibit = z.infer<typeof exhibitSchema>;

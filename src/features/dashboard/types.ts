@@ -75,7 +75,10 @@ export type QrReadinessPending = {
 
 export type QrReadiness = {
   total: number;
-  published: number;
+  /** Published with an eligible specimen, so the QR page actually resolves. */
+  live: number;
+  /** Published, but the specimen is no longer cataloged/public, so the page 404s. */
+  publishedUnavailable: number;
   unpublished: number;
   disabled: number;
   pending: QrReadinessPending[];

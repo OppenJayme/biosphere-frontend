@@ -100,9 +100,11 @@ export async function getDashboardData(): Promise<DashboardData> {
     auditResult.status === "fulfilled"
       ? { status: "ok", data: buildRecentActivity(auditResult.value.items) }
       : { status: "error" };
+  // Liveness depends on the backing specimen too, so without specimen data a
+  // live count could overstate readiness — show the section as unavailable.
   const qrReadiness: SectionResult<QrReadiness> =
-    exhibitsResult.status === "fulfilled"
-      ? { status: "ok", data: buildQrReadiness(exhibitsResult.value) }
+    exhibitsResult.status === "fulfilled" && specimens
+      ? { status: "ok", data: buildQrReadiness(exhibitsResult.value, specimens) }
       : { status: "error" };
 
   return {
@@ -316,10 +318,21 @@ function buildRecentActivity(items: AuditLogEntry[]): ActivityItem[] {
   }));
 }
 
-// The backend list already excludes archived exhibits, so every row here is a
-// live QR target: published resolves for visitors, the rest return 404.
-function buildQrReadiness(exhibits: ExhibitSummary[]): QrReadiness {
+// The backend list already excludes archived exhibits. A QR page resolves only
+// when the exhibit is published AND its specimen is still eligible: the public
+// endpoint re-checks that the specimen is cataloged and approved for public
+// display, so a published exhibit can still 404 after approval is withdrawn,
+// cataloging is reopened, or the specimen is archived.
+function buildQrReadiness(exhibits: ExhibitSummary[], specimens: SpecimenSummary[]): QrReadiness {
   const count = (status: ExhibitSummary["status"]) => exhibits.filter((exhibit) => exhibit.status === status).length;
+  const specimenById = new Map(specimens.map((specimen) => [specimen.id, specimen]));
+  const isSpecimenEligible = (specimenId: string) => {
+    const specimen = specimenById.get(specimenId);
+    return specimen?.status === "CATALOGED" && specimen.publicDisplay === true;
+  };
+
+  const published = exhibits.filter((exhibit) => exhibit.status === "PUBLISHED");
+  const live = published.filter((exhibit) => isSpecimenEligible(exhibit.specimenId)).length;
 
   const pending = exhibits
     .filter((exhibit) => exhibit.status === "UNPUBLISHED")
@@ -329,7 +342,8 @@ function buildQrReadiness(exhibits: ExhibitSummary[]): QrReadiness {
 
   return {
     total: exhibits.length,
-    published: count("PUBLISHED"),
+    live,
+    publishedUnavailable: published.length - live,
     unpublished: count("UNPUBLISHED"),
     disabled: count("DISABLED"),
     pending,

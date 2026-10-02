@@ -1,6 +1,5 @@
 /** Dashboard summary of which exhibit QR codes currently resolve for visitors. */
 
-import Link from "next/link";
 import { QrCodeIcon } from "@/components/icons";
 import type { QrReadiness } from "@/features/dashboard/types";
 
@@ -15,9 +14,10 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
     );
   }
 
-  const livePct = Math.round((readiness.published / readiness.total) * 100);
+  const livePct = livePercent(readiness.live, readiness.total);
   const rows = [
-    { label: "Published", value: readiness.published, dot: "bg-forest-600" },
+    { label: "Live", value: readiness.live, dot: "bg-forest-600" },
+    { label: "Published, specimen not public", value: readiness.publishedUnavailable, dot: "bg-red-500" },
     { label: "Unpublished", value: readiness.unpublished, dot: "bg-amber-500" },
     { label: "Disabled", value: readiness.disabled, dot: "bg-zinc-400" },
   ];
@@ -27,10 +27,12 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
       <div>
         <div className="flex items-baseline justify-between">
           <p className="text-2xl font-semibold text-forest-800">
-            {readiness.published.toLocaleString()}
+            {readiness.live.toLocaleString()}
             <span className="text-sm font-normal text-zinc-500"> / {readiness.total.toLocaleString()} live</span>
           </p>
-          <span className="text-xs font-medium text-zinc-500">{livePct}%</span>
+          <span className="text-xs font-medium text-zinc-500">
+            {livePct.toLocaleString(undefined, { maximumFractionDigits: 1 })}%
+          </span>
         </div>
         <div
           className="mt-2 h-2 overflow-hidden rounded-full bg-sage-100"
@@ -56,15 +58,14 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
         ))}
       </ul>
 
+      {/* Plain text, not links: /exhibits on develop still renders placeholder data. */}
       {readiness.pending.length > 0 && (
         <div>
           <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400">Awaiting publish</p>
           <ul className="space-y-1.5">
             {readiness.pending.map((exhibit) => (
               <li key={exhibit.id} className="min-w-0">
-                <Link href="/exhibits" className="block truncate text-xs font-medium text-zinc-900 hover:text-forest-700">
-                  /exhibits/{exhibit.publicSlug}
-                </Link>
+                <p className="truncate text-xs font-medium text-zinc-900">/exhibits/{exhibit.publicSlug}</p>
               </li>
             ))}
           </ul>
@@ -72,4 +73,13 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
       )}
     </div>
   );
+}
+
+/**
+ * Rounded down to one decimal so an incomplete count never displays as 100%
+ * (499 / 500 shows 99.8%, not 100%).
+ */
+function livePercent(live: number, total: number) {
+  if (live === total) return 100;
+  return Math.floor((live / total) * 1000) / 10;
 }
