@@ -20,6 +20,8 @@ export async function listInquiries(query: InquiryListQuery = {}): Promise<Inqui
   const params = new URLSearchParams();
   if (query.status) params.set("status", query.status);
   if (query.search) params.set("search", query.search);
+  if (query.submittedFrom) params.set("submittedFrom", query.submittedFrom);
+  if (query.submittedTo) params.set("submittedTo", query.submittedTo);
   const serialized = params.toString();
 
   const response = await apiFetch<unknown>(serialized ? `/inquiries?${serialized}` : "/inquiries", {
