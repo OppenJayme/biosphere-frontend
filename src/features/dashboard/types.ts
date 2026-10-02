@@ -68,6 +68,22 @@ export type ActivityItem = {
   failed: boolean;
 };
 
+export type QrReadinessPending = {
+  id: string;
+  publicSlug: string;
+};
+
+export type QrReadiness = {
+  total: number;
+  /** Published with an eligible specimen, so the QR page actually resolves. */
+  live: number;
+  /** Published, but the specimen is no longer cataloged/public, so the page 404s. */
+  publishedUnavailable: number;
+  unpublished: number;
+  disabled: number;
+  pending: QrReadinessPending[];
+};
+
 export type DashboardData = {
   stats: SectionResult<DashboardStat[]>;
   collectionByType: SectionResult<CollectionByType>;
@@ -76,4 +92,5 @@ export type DashboardData = {
   recentSpecimens: SectionResult<RecentSpecimenRow[]>;
   storageOverview: SectionResult<StorageOverviewItem[]>;
   recentActivity: SectionResult<ActivityItem[]>;
+  qrReadiness: SectionResult<QrReadiness>;
 };
