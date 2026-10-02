@@ -4,14 +4,13 @@ import "server-only";
 import { z } from "zod";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { env } from "@/lib/env";
-import type { CreateExhibitInput, MediaMetadataInput, UpdateExhibitInput } from "./form";
+import type { CreateExhibitInput, UpdateExhibitInput } from "./form";
 import {
   exhibitListSchema,
   exhibitMediaSchema,
   exhibitSchema,
   exhibitSummaryListSchema,
   publicExhibitSchema,
-  type ExhibitListQuery,
   type PublicExhibit,
 } from "./types";
 
@@ -27,17 +26,9 @@ function parse<T>(schema: z.ZodType<T>, response: unknown, operation: string): T
 
 const exhibitPath = (id: string) => `/exhibits/${encodeURIComponent(id)}`;
 
-export async function listExhibits(query: Partial<ExhibitListQuery> = {}) {
-  const params = new URLSearchParams();
-  if (query.status) params.set("status", query.status);
-  if (query.ar) params.set("arEnabled", String(query.ar === "on"));
-  if (query.search) params.set("search", query.search);
-  const search = params.toString();
-
-  const response = await apiFetch<unknown>(`/exhibits${search ? `?${search}` : ""}`, {
-    method: "GET",
-    cache: "no-store",
-  });
+/** Every active (non-archived) exhibit, newest first. The backend has no filters or paging. */
+export async function listExhibits() {
+  const response = await apiFetch<unknown>("/exhibits", { method: "GET", cache: "no-store" });
   return parse(exhibitListSchema, response, "list");
 }
 
@@ -60,6 +51,7 @@ export async function createExhibit(input: CreateExhibitInput) {
   return parse(exhibitSchema, response, "created");
 }
 
+/** Content and layout edits; a changed `publicSlug` breaks QR codes printed for the old URL. */
 export async function updateExhibit(id: string, input: UpdateExhibitInput) {
   const response = await apiFetch<unknown>(exhibitPath(id), {
     method: "PATCH",
@@ -68,29 +60,11 @@ export async function updateExhibit(id: string, input: UpdateExhibitInput) {
   return parse(exhibitSchema, response, "updated");
 }
 
-/** Intentional URL change: QR codes printed for the old URL stop working (REQ-4.12-10). */
-export async function replaceExhibitUrl(id: string, publicSlug: string) {
-  const response = await apiFetch<unknown>(`${exhibitPath(id)}/replace-url`, {
-    method: "PATCH",
-    body: JSON.stringify({ publicSlug }),
-  });
-  return parse(exhibitSchema, response, "replaced");
-}
-
-export type ExhibitLifecycleCommand = "publish" | "unpublish" | "disable" | "archive";
+export type ExhibitLifecycleCommand = "publish" | "disable" | "archive";
 
 export async function changeExhibitStatus(id: string, command: ExhibitLifecycleCommand) {
   const response = await apiFetch<unknown>(`${exhibitPath(id)}/${command}`, { method: "PATCH" });
   return parse(exhibitSchema, response, command);
-}
-
-/** Curator on/off switch for developer-uploaded AR assets (REQ-4.13-02). */
-export async function setExhibitAr(id: string, enabled: boolean) {
-  const response = await apiFetch<unknown>(`${exhibitPath(id)}/ar`, {
-    method: "PATCH",
-    body: JSON.stringify({ enabled }),
-  });
-  return parse(exhibitSchema, response, "AR");
 }
 
 export async function addExhibitMedia(id: string, formData: FormData) {
@@ -99,18 +73,6 @@ export async function addExhibitMedia(id: string, formData: FormData) {
     body: formData,
   });
   return parse(exhibitMediaSchema, response, "uploaded media");
-}
-
-export async function updateExhibitMedia(
-  id: string,
-  mediaId: string,
-  input: MediaMetadataInput | { isCover: true },
-) {
-  const response = await apiFetch<unknown>(`${exhibitPath(id)}/media/${encodeURIComponent(mediaId)}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
-  return parse(exhibitMediaSchema, response, "updated media");
 }
 
 export async function removeExhibitMedia(id: string, mediaId: string) {

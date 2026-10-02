@@ -72,6 +72,7 @@ export const EXHIBIT_CONTENT_FIELDS = [
 type ContentField = (typeof EXHIBIT_CONTENT_FIELDS)[number];
 
 export type ExhibitContentValues = Record<ContentField, string>;
+export type ExhibitEditValues = ExhibitContentValues & { publicSlug: string };
 export type ExhibitCreateValues = ExhibitContentValues & { specimenId: string; publicSlug: string };
 
 export type ExhibitFormState<Values> = {
@@ -100,6 +101,7 @@ export type UpdateExhibitInput = {
   distribution: string | null;
   diet: string | null;
   layoutType?: ExhibitLayout;
+  publicSlug?: string;
 };
 
 function formString(formData: FormData, name: string) {
@@ -148,13 +150,20 @@ export function readCreateExhibitForm(formData: FormData) {
 
 /**
  * Blank fields become an explicit null so the curator can remove a section from the public page.
- * The layout is only sent when the curator changed it, so older stored values are kept otherwise.
+ * The layout and URL ending are only sent when the curator changed them, so older stored values
+ * are kept otherwise.
  */
 export function readUpdateExhibitForm(formData: FormData) {
-  const values = readContentValues(formData);
+  const values: ExhibitEditValues = { ...readContentValues(formData), publicSlug: formString(formData, "publicSlug") };
   const parsed = updateSchema.safeParse({ ...values, originalLayout: formString(formData, "originalLayout") });
-  if (!parsed.success) {
-    return { values, ok: false as const, errors: firstErrors<ExhibitContentValues>(parsed.error) };
+  const originalSlug = formString(formData, "originalSlug");
+  const slugChanged = formData.has("publicSlug") && values.publicSlug.trim() !== originalSlug;
+  const slug = slugChanged ? slugSchema.safeParse(values.publicSlug) : null;
+
+  if (!parsed.success || (slug && !slug.success)) {
+    const errors = parsed.success ? {} : firstErrors<ExhibitEditValues>(parsed.error);
+    if (slug && !slug.success) errors.publicSlug = slug.error.issues[0]?.message;
+    return { values, ok: false as const, errors };
   }
 
   const { originalLayout, layoutType, ...content } = parsed.data;
@@ -164,6 +173,7 @@ export function readUpdateExhibitForm(formData: FormData) {
     distribution: content.distribution || null,
     diet: content.diet || null,
     ...(layoutType === originalLayout ? {} : { layoutType }),
+    ...(slug?.success ? { publicSlug: slug.data } : {}),
   };
   return { values, ok: true as const, input };
 }
