@@ -95,14 +95,10 @@ describe("update exhibit form", () => {
     expect(parsed.ok && parsed.input.layoutType).toBe("card-grid");
   });
 
-  it("sends the URL ending only when the curator changed it, and validates it", () => {
-    const base = { publicDescription: "", interestingFacts: "", distribution: "", diet: "", layoutType: "card-grid", originalLayout: "card-grid", originalSlug: "lynx" };
-    const unchanged = readUpdateExhibitForm(form({ ...base, publicSlug: "lynx" }));
-    expect(unchanged.ok && unchanged.input).not.toHaveProperty("publicSlug");
-    const changed = readUpdateExhibitForm(form({ ...base, publicSlug: " canada-lynx " }));
-    expect(changed.ok && changed.input.publicSlug).toBe("canada-lynx");
-    const invalid = readUpdateExhibitForm(form({ ...base, publicSlug: "Canada Lynx" }));
-    expect(!invalid.ok && invalid.errors.publicSlug).toBeTruthy();
+  it("never sends the URL ending, which the backend only changes through replace-url", () => {
+    const base = { publicDescription: "", interestingFacts: "", distribution: "", diet: "", layoutType: "card-grid", originalLayout: "card-grid" };
+    const parsed = readUpdateExhibitForm(form({ ...base, publicSlug: "canada-lynx", originalSlug: "lynx" }));
+    expect(parsed.ok && parsed.input).not.toHaveProperty("publicSlug");
   });
 });
 
