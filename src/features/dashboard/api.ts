@@ -2,6 +2,8 @@ import "server-only";
 import { ApiError } from "@/lib/api-client";
 import { listAuditLogs } from "../audit/api";
 import type { AuditLogEntry } from "../audit/types";
+import { listExhibits } from "../exhibits-qr/api";
+import type { Exhibit } from "../exhibits-qr/types";
 import { listInquiries } from "../inquiries/api";
 import type { Inquiry } from "../inquiries/types";
 import { listActiveLots } from "../specimen-lots/api";
@@ -18,6 +20,7 @@ import type {
   CollectionByType,
   DashboardData,
   DashboardStat,
+  QrReadiness,
   QueueItem,
   RecentSpecimenRow,
   SectionResult,
@@ -43,15 +46,17 @@ const CATALOGING_QUEUE_LIMIT = 5;
 const RECENT_ACTIVITY_LIMIT = 6;
 const STORAGE_HEALTH_LIMIT = 6;
 const TREND_MONTHS = 12;
+const QR_PENDING_LIMIT = 3;
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, storageUnitsResult] =
+  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, storageUnitsResult, exhibitsResult] =
     await Promise.allSettled([
       listSpecimens(),
       listInquiries(),
       listVisitRequests(),
       listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT }),
       listStorageLocations(),
+      listExhibits(),
     ]);
 
   // An expired/invalid session fails every endpoint the same way — surface
@@ -63,6 +68,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     visitRequestsResult,
     auditResult,
     storageUnitsResult,
+    exhibitsResult,
   ];
   const unauthorized = settledResults.find(
     (result) => result.status === "rejected" && result.reason instanceof ApiError && result.reason.status === 401,
@@ -94,6 +100,10 @@ export async function getDashboardData(): Promise<DashboardData> {
     auditResult.status === "fulfilled"
       ? { status: "ok", data: buildRecentActivity(auditResult.value.items) }
       : { status: "error" };
+  const qrReadiness: SectionResult<QrReadiness> =
+    exhibitsResult.status === "fulfilled"
+      ? { status: "ok", data: buildQrReadiness(exhibitsResult.value) }
+      : { status: "error" };
 
   return {
     stats,
@@ -103,6 +113,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     recentSpecimens,
     storageOverview,
     recentActivity,
+    qrReadiness,
   };
 }
 
@@ -303,6 +314,31 @@ function buildRecentActivity(items: AuditLogEntry[]): ActivityItem[] {
     module: item.module,
     failed: item.result !== "SUCCESS",
   }));
+}
+
+// The backend list already excludes archived exhibits, so every row here is a
+// live QR target: published resolves for visitors, the rest return 404.
+function buildQrReadiness(exhibits: Exhibit[]): QrReadiness {
+  const count = (status: Exhibit["status"]) => exhibits.filter((exhibit) => exhibit.status === status).length;
+
+  const pending = exhibits
+    .filter((exhibit) => exhibit.status === "UNPUBLISHED")
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, QR_PENDING_LIMIT)
+    .map((exhibit) => ({
+      id: exhibit.id,
+      name: exhibit.specimen.commonName ?? exhibit.specimen.scientificName ?? "Unnamed specimen",
+      publicSlug: exhibit.publicSlug,
+    }));
+
+  return {
+    total: exhibits.length,
+    published: count("PUBLISHED"),
+    unpublished: count("UNPUBLISHED"),
+    disabled: count("DISABLED"),
+    arEnabled: exhibits.filter((exhibit) => exhibit.status === "PUBLISHED" && exhibit.arEnabled).length,
+    pending,
+  };
 }
 
 function humanize(value: string): string {

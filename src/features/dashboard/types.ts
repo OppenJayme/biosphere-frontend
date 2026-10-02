@@ -68,6 +68,21 @@ export type ActivityItem = {
   failed: boolean;
 };
 
+export type QrReadinessPending = {
+  id: string;
+  name: string;
+  publicSlug: string;
+};
+
+export type QrReadiness = {
+  total: number;
+  published: number;
+  unpublished: number;
+  disabled: number;
+  arEnabled: number;
+  pending: QrReadinessPending[];
+};
+
 export type DashboardData = {
   stats: SectionResult<DashboardStat[]>;
   collectionByType: SectionResult<CollectionByType>;
@@ -76,4 +91,5 @@ export type DashboardData = {
   recentSpecimens: SectionResult<RecentSpecimenRow[]>;
   storageOverview: SectionResult<StorageOverviewItem[]>;
   recentActivity: SectionResult<ActivityItem[]>;
+  qrReadiness: SectionResult<QrReadiness>;
 };

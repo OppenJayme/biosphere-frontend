@@ -149,7 +149,11 @@ export default async function DashboardPage() {
         </Panel>
 
         <Panel title="Public QR Readiness" viewAllHref="/exhibits">
-          <PublicQrReadiness />
+          {data.qrReadiness.status === "ok" ? (
+            <PublicQrReadiness readiness={data.qrReadiness.data} />
+          ) : (
+            <SectionError message="QR readiness is temporarily unavailable." />
+          )}
         </Panel>
       </div>
     </div>
