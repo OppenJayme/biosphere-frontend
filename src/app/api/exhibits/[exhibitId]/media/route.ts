@@ -1,10 +1,12 @@
 /**
  * Same-origin upload boundary for exhibit images.
- * It authenticates before parsing, bounds multipart requests, and forwards only allowlisted data.
+ * It checks the curator role before parsing, bounds multipart requests, and forwards only
+ * allowlisted data.
  */
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getCurrentAccount } from "@/features/auth/api";
 import { addExhibitMedia } from "@/features/exhibits-qr/api";
 import {
   backendMessage,
@@ -52,13 +54,12 @@ function backendError(error: unknown) {
   return json({ message: "The image could not be saved. Try again later." }, 502);
 }
 
-export async function POST(request: Request, context: ExhibitMediaRouteContext) {
-  const { exhibitId } = await context.params;
-  if (!z.uuid().safeParse(exhibitId).success) {
-    return json({ message: "The exhibit identifier is invalid." }, 400);
-  }
-  if (!(await verifySession())) return json({ message: "Your session expired." }, 401);
-
+/**
+ * Rejects cross-site requests and anyone who is not a curator before the body is read.
+ * The role comes from the backend's /auth/me (never the UI-hint account cookie); the backend
+ * re-checks it on the upload itself.
+ */
+async function authorize(request: Request) {
   const origin = request.headers.get("origin");
   if (
     request.headers.get("sec-fetch-site") === "cross-site" ||
@@ -66,6 +67,32 @@ export async function POST(request: Request, context: ExhibitMediaRouteContext) 
   ) {
     return json({ message: "Cross-site requests are not allowed." }, 403);
   }
+
+  if (!(await verifySession())) return json({ message: "Your session expired." }, 401);
+
+  let role: string;
+  try {
+    role = (await getCurrentAccount()).role;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return json({ message: "Your session expired." }, 401);
+    }
+    return json({ message: "Your account could not be verified. Try again." }, 502);
+  }
+  if (role !== "CURATOR") {
+    return json({ message: "You do not have permission to change exhibit images." }, 403);
+  }
+  return null;
+}
+
+export async function POST(request: Request, context: ExhibitMediaRouteContext) {
+  const { exhibitId } = await context.params;
+  if (!z.uuid().safeParse(exhibitId).success) {
+    return json({ message: "The exhibit identifier is invalid." }, 400);
+  }
+
+  const denied = await authorize(request);
+  if (denied) return denied;
 
   const contentType = request.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("multipart/form-data")) {

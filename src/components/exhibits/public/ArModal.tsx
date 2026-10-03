@@ -1,14 +1,19 @@
 "use client";
 
 import { CloseIcon, CubeIcon, InfoIcon } from "@/components/icons";
-import type { Exhibit } from "@/lib/dummy-data/exhibits";
 
+/**
+ * `available` mirrors the public exhibit's `ar.available` from the backend: true only when the
+ * curator has AR switched on and a developer-uploaded model exists (REQ-4.13-04).
+ */
 export function ArModal({
-  exhibit,
+  title,
+  available,
   dark,
   onClose,
 }: {
-  exhibit: Exhibit;
+  title: string;
+  available: boolean;
   dark: boolean;
   onClose: () => void;
 }) {
@@ -19,13 +24,13 @@ export function ArModal({
     >
       <div className={`w-full max-w-sm rounded-t-2xl p-5 sm:rounded-2xl ${dark ? "bg-forest-900 text-white" : "bg-white text-zinc-900"}`}>
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-serif text-lg font-semibold">{exhibit.arEnabled ? "AR Viewer" : "AR Not Available Yet"}</h2>
+          <h2 className="font-serif text-lg font-semibold">{available ? "AR Viewer" : "AR Not Available Yet"}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className={dark ? "text-white/60" : "text-zinc-400"}>
             <CloseIcon className="h-5 w-5" />
           </button>
         </div>
 
-        {exhibit.arEnabled ? (
+        {available ? (
           <div className="mt-4 space-y-3">
             <div className="flex aspect-square items-center justify-center rounded-xl bg-black/30">
               <div className="text-center text-white/70">
@@ -34,7 +39,7 @@ export function ArModal({
               </div>
             </div>
             <p className={`text-xs ${dark ? "text-white/60" : "text-zinc-500"}`}>
-              Point your camera at a flat surface to place the {exhibit.commonName} model. Unsupported
+              Point your camera at a flat surface to place the {title} model. Unsupported
               devices automatically fall back to this standard view.
             </p>
           </div>

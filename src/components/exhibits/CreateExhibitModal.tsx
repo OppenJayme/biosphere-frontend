@@ -14,6 +14,7 @@ import {
   StarIcon,
   TrashIcon,
   LockIcon,
+  PencilIcon,
 } from "@/components/icons";
 import {
   createExhibitAction,
@@ -21,6 +22,7 @@ import {
   removeExhibitMediaAction,
   searchEligibleSpecimensAction,
   updateExhibitAction,
+  updateExhibitMediaAction,
   type CreateExhibitState,
   type EligibleSpecimen,
   type ExhibitMediaResult,
@@ -28,11 +30,18 @@ import {
 import {
   EXHIBIT_MEDIA_ACCEPT,
   exhibitImageError,
+  readMediaMetadataForm,
   suggestSlug,
   type ExhibitEditValues,
   type ExhibitFormState,
 } from "@/features/exhibits-qr/form";
-import { exhibitDisplayName, exhibitLayout, type ExhibitLayout, type ExhibitRow } from "@/features/exhibits-qr/types";
+import {
+  exhibitDisplayName,
+  exhibitLayout,
+  type ExhibitLayout,
+  type ExhibitMedia,
+  type ExhibitRow,
+} from "@/features/exhibits-qr/types";
 
 type Tab = "Public Content" | "Images";
 
@@ -204,14 +213,91 @@ async function uploadMessage(response: Response) {
   return "The image could not be uploaded. Check your connection and try again.";
 }
 
-/** Upload and removal for an existing exhibit. The backend has no caption/order/cover edits. */
+/** Inline caption and display-order editor for one image. Plain inputs: this renders inside the exhibit form. */
+function MediaDetailsEditor({
+  item,
+  pending,
+  onSave,
+  onCancel,
+}: {
+  item: ExhibitMedia;
+  pending: boolean;
+  onSave: (input: { caption: string | null; displayOrder?: number }) => void;
+  onCancel: () => void;
+}) {
+  const [caption, setCaption] = useState(item.caption ?? "");
+  const [order, setOrder] = useState(String(item.displayOrder));
+  const [error, setError] = useState<string | null>(null);
+
+  function save() {
+    const data = new FormData();
+    data.set("caption", caption);
+    data.set("displayOrder", order);
+    const parsed = readMediaMetadataForm(data);
+    if (!parsed.ok) {
+      setError(parsed.message);
+      return;
+    }
+    onSave(parsed.input);
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-forest-700/30 bg-sage-50 px-3.5 py-3">
+      <div className="grid grid-cols-[1fr_88px] gap-2">
+        <input
+          value={caption}
+          onChange={(e) => {
+            setCaption(e.target.value);
+            setError(null);
+          }}
+          maxLength={255}
+          placeholder="Caption (optional)"
+          aria-label="Caption"
+          className={`${fieldClasses} mt-0`}
+        />
+        <input
+          value={order}
+          onChange={(e) => {
+            setOrder(e.target.value);
+            setError(null);
+          }}
+          inputMode="numeric"
+          aria-label="Display order"
+          title="Display order: lower numbers show first, after the cover photo."
+          className={`${fieldClasses} mt-0`}
+        />
+      </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] text-zinc-500">Lower order numbers show first, after the cover photo.</p>
+        <span className="flex shrink-0 gap-2 text-xs">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={save}
+            className="rounded-lg bg-forest-700 px-3 py-1.5 font-semibold text-white hover:bg-forest-800 disabled:opacity-50"
+          >
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button type="button" disabled={pending} onClick={onCancel} className="px-1 text-zinc-500 hover:underline">
+            Cancel
+          </button>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Upload, caption/order/cover edits, and removal for an existing exhibit's images. */
 function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
   const router = useRouter();
   const [media, setMedia] = useState<ExhibitMediaResult | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [removing, startRemove] = useTransition();
+  const [saving, startSave] = useTransition();
   const [reloadKey, setReloadKey] = useState(0);
   // Plain inputs, not a nested <form>: this tab renders inside the exhibit form.
   const fileRef = useRef<HTMLInputElement>(null);
@@ -272,6 +358,17 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
     });
   }
 
+  function saveMedia(mediaId: string, input: { caption?: string | null; displayOrder?: number; isCover?: boolean }) {
+    startSave(async () => {
+      const result = await updateExhibitMediaAction(exhibit.id, mediaId, exhibit.publicSlug, input);
+      setNotice({ ok: Boolean(result.ok), message: result.message ?? "The image could not be updated." });
+      if (result.ok) {
+        setEditingId(null);
+        setReloadKey((key) => key + 1);
+      }
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-3 rounded-lg border border-black/10 p-4">
@@ -318,44 +415,78 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
           <p className="text-xs text-zinc-500">No images yet.</p>
         ) : (
           <div className="space-y-2">
-            {media.media.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-lg border border-black/10 px-3.5 py-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
-                  <ImageIcon className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm text-zinc-800">{mediaName(item)}</span>
-                {item.isCover && (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold-100 px-2.5 py-1 text-[11px] font-medium text-gold-700">
-                    <StarIcon className="h-3 w-3" />
-                    Cover photo
+            {media.media.map((item) =>
+              editingId === item.id ? (
+                <MediaDetailsEditor
+                  key={item.id}
+                  item={item}
+                  pending={saving}
+                  onSave={(input) => saveMedia(item.id, input)}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <div key={item.id} className="flex items-center gap-3 rounded-lg border border-black/10 px-3.5 py-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
+                    <ImageIcon className="h-4 w-4" />
                   </span>
-                )}
-                {confirmId === item.id ? (
-                  <span className="flex shrink-0 items-center gap-2 text-[11px]">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-zinc-800">{mediaName(item)}</span>
+                    <span className="block text-[11px] text-zinc-400">Order {item.displayOrder}</span>
+                  </span>
+                  {item.isCover ? (
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold-100 px-2.5 py-1 text-[11px] font-medium text-gold-700">
+                      <StarIcon className="h-3 w-3" />
+                      Cover photo
+                    </span>
+                  ) : (
                     <button
                       type="button"
-                      disabled={removing}
-                      onClick={() => remove(item.id)}
-                      className="font-semibold text-red-600 hover:underline disabled:opacity-50"
+                      disabled={saving}
+                      onClick={() => saveMedia(item.id, { isCover: true })}
+                      className="flex shrink-0 items-center gap-1 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-zinc-600 hover:bg-sage-100 disabled:opacity-50"
                     >
-                      {removing ? "Removing…" : "Remove"}
+                      <StarIcon className="h-3 w-3" />
+                      Make cover
                     </button>
-                    <button type="button" onClick={() => setConfirmId(null)} className="text-zinc-500 hover:underline">
-                      Cancel
-                    </button>
-                  </span>
-                ) : (
+                  )}
                   <button
                     type="button"
-                    onClick={() => setConfirmId(item.id)}
-                    aria-label={`Remove ${mediaName(item)}`}
-                    className="shrink-0 text-zinc-400 hover:text-red-600"
+                    onClick={() => {
+                      setConfirmId(null);
+                      setEditingId(item.id);
+                    }}
+                    aria-label={`Edit ${mediaName(item)}`}
+                    className="shrink-0 text-zinc-400 hover:text-forest-700"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <PencilIcon className="h-4 w-4" />
                   </button>
-                )}
-              </div>
-            ))}
+                  {confirmId === item.id ? (
+                    <span className="flex shrink-0 items-center gap-2 text-[11px]">
+                      <button
+                        type="button"
+                        disabled={removing}
+                        onClick={() => remove(item.id)}
+                        className="font-semibold text-red-600 hover:underline disabled:opacity-50"
+                      >
+                        {removing ? "Removing…" : "Remove"}
+                      </button>
+                      <button type="button" onClick={() => setConfirmId(null)} className="text-zinc-500 hover:underline">
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(item.id)}
+                      aria-label={`Remove ${mediaName(item)}`}
+                      className="shrink-0 text-zinc-400 hover:text-red-600"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ),
+            )}
           </div>
         )}
         <p className="mt-3 text-xs text-zinc-500">
@@ -404,7 +535,7 @@ export function CreateExhibitModal({
   const [createState, createAction, creating] = useActionState(createExhibitAction, EMPTY_CREATE);
   const [updateState, updateAction, updating] = useActionState<ExhibitFormState<ExhibitEditValues>, FormData>(
     exhibit ? updateExhibitAction.bind(null, exhibit.id, exhibit.publicSlug) : async (state) => state,
-    { values: { publicSlug: "", publicDescription: "", interestingFacts: "", distribution: "", diet: "", layoutType: "" } },
+    { values: { publicDescription: "", interestingFacts: "", distribution: "", diet: "", layoutType: "" } },
   );
   const state = editing ? updateState : createState;
   const pending = creating || updating;
@@ -424,7 +555,6 @@ export function CreateExhibitModal({
     if (next && !slugEdited) setSlug(suggestSlug(specimenLabel(next)));
   }
 
-  const slugChanged = editing && slug.trim() !== exhibit.publicSlug;
   const canSave = editing || specimen !== null;
 
   return (
@@ -464,29 +594,39 @@ export function CreateExhibitModal({
             <input type="hidden" name="specimenId" value={specimen?.id ?? ""} />
 
             <div className="mt-5">
-              <Field label="Public URL ending" htmlFor="publicSlug">
-                <div className="flex items-center rounded-lg border border-black/15 focus-within:border-forest-700 focus-within:ring-1 focus-within:ring-forest-700">
-                  <span className="pl-3 text-sm text-zinc-400">/exhibits/</span>
-                  <input
-                    id="publicSlug"
-                    name="publicSlug"
-                    value={slug}
-                    onChange={(e) => {
-                      setSlug(e.target.value);
-                      setSlugEdited(true);
-                    }}
-                    placeholder="e.g. giant-forest-beetle"
-                    className="w-full rounded-r-lg py-2.5 pr-3 text-sm text-zinc-900 focus:outline-none"
-                  />
-                </div>
-              </Field>
-              <FieldError message={errors.publicSlug} />
-              {slugChanged && (
-                <p className="mt-1.5 text-xs text-amber-700">
-                  Changing the URL breaks any QR labels already printed for /exhibits/{exhibit.publicSlug}.
-                </p>
+              {editing ? (
+                <>
+                  <p className="text-sm font-medium text-zinc-700">Public URL</p>
+                  <p className="mt-1.5 flex items-center gap-1.5 rounded-lg bg-sage-50 px-3 py-2.5 text-sm text-zinc-700">
+                    <LockIcon className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                    <span className="break-all">/exhibits/{exhibit.publicSlug}</span>
+                  </p>
+                  <p className="mt-1.5 text-xs text-zinc-500">
+                    Editing content keeps this URL, so printed QR labels keep working. To change it, use Replace URL
+                    in the exhibit panel.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Field label="Public URL ending" htmlFor="publicSlug">
+                    <div className="flex items-center rounded-lg border border-black/15 focus-within:border-forest-700 focus-within:ring-1 focus-within:ring-forest-700">
+                      <span className="pl-3 text-sm text-zinc-400">/exhibits/</span>
+                      <input
+                        id="publicSlug"
+                        name="publicSlug"
+                        value={slug}
+                        onChange={(e) => {
+                          setSlug(e.target.value);
+                          setSlugEdited(true);
+                        }}
+                        placeholder="e.g. giant-forest-beetle"
+                        className="w-full rounded-r-lg py-2.5 pr-3 text-sm text-zinc-900 focus:outline-none"
+                      />
+                    </div>
+                  </Field>
+                  <FieldError message={errors.publicSlug} />
+                </>
               )}
-              {editing && <input type="hidden" name="originalSlug" value={exhibit.publicSlug} />}
             </div>
 
             <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-zinc-500">Public Page Layout</p>

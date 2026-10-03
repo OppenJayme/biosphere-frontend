@@ -15,12 +15,17 @@ import {
   getPublicExhibit,
   listExhibits,
   removeExhibitMedia,
+  replaceExhibitUrl,
+  setExhibitAr,
   updateExhibit,
+  updateExhibitMedia,
   type ExhibitLifecycleCommand,
+  type UpdateExhibitMediaInput,
 } from "./api";
 import {
   backendMessage,
   readCreateExhibitForm,
+  readReplaceUrlForm,
   readUpdateExhibitForm,
   SLUG_MAX_LENGTH,
   SLUG_PATTERN,
@@ -31,12 +36,15 @@ import {
 } from "./form";
 import { sortExhibitMedia, type ExhibitMedia, type PublicExhibitMedia } from "./types";
 
-type Operation = "create" | "update" | ExhibitLifecycleCommand | "media";
+type Operation = "create" | "update" | "replaceUrl" | "ar" | ExhibitLifecycleCommand | "media";
 
 const FALLBACK_400: Record<Operation, string> = {
   create: "Only a Cataloged specimen approved for public display can have an exhibit.",
   update: "Change at least one exhibit field before saving.",
+  replaceUrl: "Choose a different URL ending from the current one.",
+  ar: "AR can only be turned on after a developer uploads an AR model for this exhibit.",
   publish: "This exhibit cannot be published. Its specimen must still be Cataloged and approved for public display.",
+  unpublish: "Only a published exhibit can be unpublished.",
   disable: "This exhibit cannot be disabled in its current state.",
   archive: "This exhibit cannot be archived in its current state.",
   media: "The image change was rejected. Reload and try again.",
@@ -151,18 +159,65 @@ export async function updateExhibitAction(
   }
 
   refreshExhibitConsumers([publicSlug, updated.publicSlug]);
+  return { values: parsed.values, ok: true, message: "Exhibit content saved." };
+}
+
+/** Intentionally moves the public page to a new URL; QR labels printed for the old one stop working. */
+export async function replaceExhibitUrlAction(
+  exhibitId: string,
+  currentSlug: string,
+  formData: FormData,
+): Promise<ExhibitCommandState> {
+  await requireSession();
+  const id = idSchema.safeParse(exhibitId);
+  if (!id.success) return { message: "The exhibit identifier is invalid. Reload and try again." };
+  const parsed = readReplaceUrlForm(formData);
+  if (!parsed.ok) return { message: parsed.message };
+  if (parsed.publicSlug === currentSlug) return { message: FALLBACK_400.replaceUrl };
+
+  let updated;
+  try {
+    updated = await replaceExhibitUrl(id.data, parsed.publicSlug);
+  } catch (error) {
+    return { message: exhibitError(error, "replaceUrl") };
+  }
+
+  refreshExhibitConsumers([currentSlug, updated.publicSlug]);
   return {
-    values: parsed.values,
     ok: true,
-    message: parsed.input.publicSlug
-      ? `Saved. The public URL now ends in /exhibits/${updated.publicSlug}; QR codes printed for the old URL no longer work.`
-      : "Exhibit content saved.",
+    message: `The public URL now ends in /exhibits/${updated.publicSlug}. QR labels printed for the old URL no longer work; print new ones.`,
+  };
+}
+
+/** Curator on/off switch for the AR models a developer uploaded (REQ-4.13-02). */
+export async function setExhibitArAction(
+  exhibitId: string,
+  publicSlug: string,
+  enabled: boolean,
+): Promise<ExhibitCommandState> {
+  await requireSession();
+  const parsed = z.object({ id: idSchema, enabled: z.boolean() }).safeParse({ id: exhibitId, enabled });
+  if (!parsed.success) return { message: "The AR change is invalid. Reload and try again." };
+
+  try {
+    await setExhibitAr(parsed.data.id, parsed.data.enabled);
+  } catch (error) {
+    return { message: exhibitError(error, "ar") };
+  }
+
+  refreshExhibitConsumers([publicSlug]);
+  return {
+    ok: true,
+    message: parsed.data.enabled
+      ? "AR turned on. Visitors with a supported device now see View in AR."
+      : "AR turned off. The public page no longer offers View in AR.",
   };
 }
 
 const LIFECYCLE_MESSAGES: Record<ExhibitLifecycleCommand, string> = {
   publish: "Exhibit published. Its public page is now live.",
-  disable: "Exhibit disabled. Its public page is no longer available.",
+  unpublish: "Exhibit unpublished. Its public page is offline until you publish it again.",
+  disable: "Exhibit disabled. Its public page is no longer available and cannot be published again.",
   archive: "Exhibit archived.",
 };
 
@@ -173,7 +228,7 @@ export async function changeExhibitStatusAction(
 ): Promise<ExhibitCommandState> {
   await requireSession();
   const parsed = z
-    .object({ id: idSchema, command: z.enum(["publish", "disable", "archive"]) })
+    .object({ id: idSchema, command: z.enum(["publish", "unpublish", "disable", "archive"]) })
     .safeParse({ id: exhibitId, command });
   if (!parsed.success) return { message: "The exhibit command is invalid. Reload and try again." };
 
@@ -204,6 +259,43 @@ export async function removeExhibitMediaAction(
 
   refreshExhibitConsumers([publicSlug]);
   return { ok: true, message: "Image removed." };
+}
+
+/** Edits one image's caption, display order, or cover flag. */
+export async function updateExhibitMediaAction(
+  exhibitId: string,
+  mediaId: string,
+  publicSlug: string,
+  input: UpdateExhibitMediaInput,
+): Promise<ExhibitCommandState> {
+  await requireSession();
+  const parsed = z
+    .object({
+      exhibitId: idSchema,
+      mediaId: idSchema,
+      input: z
+        .object({
+          caption: z.string().trim().max(255, "Captions must be 255 characters or fewer.").nullable().optional(),
+          displayOrder: z.number().int().min(0).max(2_147_483_647).optional(),
+          isCover: z.boolean().optional(),
+        })
+        .strict(),
+    })
+    .safeParse({ exhibitId, mediaId, input });
+  if (!parsed.success) return { message: parsed.error.issues[0]?.message ?? "The image change is invalid." };
+
+  const { caption, ...rest } = parsed.data.input;
+  const body: UpdateExhibitMediaInput = { ...rest, ...(caption === undefined ? {} : { caption: caption || null }) };
+  if (Object.keys(body).length === 0) return { message: "Change the caption, order, or cover before saving." };
+
+  try {
+    await updateExhibitMedia(parsed.data.exhibitId, parsed.data.mediaId, body);
+  } catch (error) {
+    return { message: exhibitError(error, "media") };
+  }
+
+  refreshExhibitConsumers([publicSlug]);
+  return { ok: true, message: body.isCover ? "Cover photo updated." : "Image details saved." };
 }
 
 export type ExhibitMediaResult = {
