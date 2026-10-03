@@ -28,10 +28,18 @@ export function returnHref(
   returnQuery: ReturnQuery,
   extras: { selected: string; notice: string; tab?: WebsiteTab; email?: string },
 ) {
+  // Filters belong to the list they were set on, so they are dropped when the action switches tabs.
+  const sameTab = !extras.tab || extras.tab === returnQuery?.tab;
   const query = parsePublicWebsiteQuery({
     tab: extras.tab ?? returnQuery?.tab,
-    status: extras.tab && extras.tab !== returnQuery?.tab ? undefined : returnQuery?.status,
-    search: extras.tab && extras.tab !== returnQuery?.tab ? undefined : returnQuery?.search,
+    ...(sameTab && {
+      status: returnQuery?.status,
+      search: returnQuery?.search,
+      submittedFrom: returnQuery?.submittedFrom,
+      submittedTo: returnQuery?.submittedTo,
+      visitDateFrom: returnQuery?.visitDateFrom,
+      visitDateTo: returnQuery?.visitDateTo,
+    }),
   });
   return publicWebsiteHref(query, { selected: extras.selected, notice: extras.notice, email: extras.email });
 }

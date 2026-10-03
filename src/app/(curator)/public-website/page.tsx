@@ -12,6 +12,8 @@ import { getInquiry, getInquiryHistory, listInquiries } from "@/features/inquiri
 import type { Inquiry } from "@/features/inquiries/types";
 import {
   PUBLIC_WEBSITE_PATH,
+  hasListFilters,
+  listFilterKey,
   parsePublicWebsiteQuery,
   parseSelectedId,
 } from "@/features/public-submissions/query";
@@ -128,7 +130,13 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
   const noticeKey = firstValue(params.notice) ?? "";
   const notice = noticeKey in NOTICES ? NOTICES[noticeKey] : undefined;
   const emailNotice = notice !== undefined ? EMAIL_NOTICES[firstValue(params.email) ?? ""] : undefined;
-  const filtered = Boolean(query.status || query.search);
+  const filtered = hasListFilters(query);
+  // Status is typed per tab, so each list call adds its own.
+  const listFilters = {
+    search: query.search || undefined,
+    submittedFrom: query.submittedFrom || undefined,
+    submittedTo: query.submittedTo || undefined,
+  };
 
   // Unfiltered lists feed the stats and tab counts; the backend has no pagination for these yet.
   const [inquiriesResult, visitsResult, filteredResult] = await Promise.allSettled([
@@ -136,8 +144,13 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
     listVisitRequests(),
     filtered
       ? query.tab === "inquiries"
-        ? listInquiries({ status: query.status || undefined, search: query.search || undefined })
-        : listVisitRequests({ status: query.status || undefined, search: query.search || undefined })
+        ? listInquiries({ ...listFilters, status: query.status || undefined })
+        : listVisitRequests({
+            ...listFilters,
+            status: query.status || undefined,
+            visitDateFrom: query.visitDateFrom || undefined,
+            visitDateTo: query.visitDateTo || undefined,
+          })
       : Promise.resolve(null),
   ]);
 
@@ -232,7 +245,7 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
       </div>
 
       <PublicWebsiteWorkspace
-        key={`${query.tab}|${query.status}|${query.search}`}
+        key={listFilterKey(query)}
         query={query}
         rows={rows}
         listError={listError}

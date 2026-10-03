@@ -79,4 +79,10 @@ export type CampusEntrySummary = z.infer<typeof campusEntrySummarySchema>;
 export type VisitRequestListQuery = {
   status?: VisitRequestStatus;
   search?: string;
+  /** YYYY-MM-DD, submission date in museum time, inclusive. */
+  submittedFrom?: string;
+  submittedTo?: string;
+  /** YYYY-MM-DD: the approved date, or any preferred date while none is approved, inclusive. */
+  visitDateFrom?: string;
+  visitDateTo?: string;
 };

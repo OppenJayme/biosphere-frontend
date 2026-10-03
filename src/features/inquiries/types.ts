@@ -35,6 +35,9 @@ export type Inquiry = z.infer<typeof inquirySchema>;
 export type InquiryListQuery = {
   status?: InquiryStatus;
   search?: string;
+  /** YYYY-MM-DD, submission date in museum time, inclusive. */
+  submittedFrom?: string;
+  submittedTo?: string;
 };
 
 export type InquiryReferralInput = {
