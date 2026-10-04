@@ -43,12 +43,18 @@ export const exhibitSchema = z.object({
   specimenId: z.uuid(),
   createdBy: z.string(),
   publicSlug: z.string().min(1),
+  /** Full visitor URL encoded in the QR code; null when the backend has no public site URL configured. */
+  publicUrl: z.string().nullable(),
   interestingFacts: z.string().nullable(),
   publicDescription: z.string().nullable(),
   distribution: z.string().nullable(),
   diet: z.string().nullable(),
   layoutType: z.string().nullable(),
   status: z.enum(EXHIBIT_STATUSES),
+  /** True when at least one uploaded AR asset is enabled. */
+  arEnabled: z.boolean(),
+  /** AR assets a developer has uploaded; AR can only be switched on when this is above 0. */
+  arAssetCount: z.number().int(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
   createdAt: z.string().min(1),
