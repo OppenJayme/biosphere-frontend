@@ -3,6 +3,7 @@ import {
   CalendarIcon,
   ChartBarIcon,
   CheckIcon,
+  ClipboardIcon,
   MailIcon,
   QrCodeIcon,
 } from "@/components/icons";
@@ -14,7 +15,11 @@ const REPORT_ICONS: Record<ReportType, typeof ChartBarIcon> = {
   INQUIRY_SUMMARY: MailIcon,
   VISIT_REQUEST_SUMMARY: CalendarIcon,
   QR_AR_EXHIBITS: QrCodeIcon,
+  AUDIT_LOG: ClipboardIcon,
 };
+
+// Full-width cards: the Consolidated report leads, the audit export closes.
+const WIDE_REPORTS = new Set<ReportType>(["CONSOLIDATED_OPERATIONS", "AUDIT_LOG"]);
 
 const FORMAT_NAMES = { PDF: "PDF", DOCX: "Word", CSV: "CSV" } as const;
 
@@ -43,7 +48,7 @@ export function AvailableReportsList({
               onClick={() => onSelect(report)}
               className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
                 active ? "border-forest-700 bg-sage-50" : "border-black/10 hover:bg-sage-50"
-              } ${report.type === "CONSOLIDATED_OPERATIONS" ? "sm:col-span-2" : ""}`}
+              } ${WIDE_REPORTS.has(report.type) ? "sm:col-span-2" : ""}`}
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
                 <Icon className="h-5 w-5" />

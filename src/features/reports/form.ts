@@ -32,6 +32,9 @@ export type ReportFormState = {
   visitStatus: string;
   exhibitStatus: string;
   arEnabled: "" | "true" | "false";
+  auditModule: string;
+  auditAction: string;
+  auditResult: string;
 };
 
 export type ReportRequestBody = Record<string, string | number | boolean>;
@@ -59,12 +62,15 @@ const TEXT_FILTERS = [
   "species",
   "conditionClass",
   "inquiryType",
+  "auditModule",
+  "auditAction",
 ] as const;
 const ENUM_FILTERS = [
   "specimenStatus",
   "inquiryStatus",
   "visitStatus",
   "exhibitStatus",
+  "auditResult",
 ] as const;
 const BOOLEAN_FILTERS = ["publicDisplay", "arEnabled"] as const;
 
@@ -79,6 +85,8 @@ const TEXT_FILTER_LABELS: Record<(typeof TEXT_FILTERS)[number], string> = {
   species: "Species",
   conditionClass: "Condition",
   inquiryType: "Inquiry type",
+  auditModule: "Module",
+  auditAction: "Action",
 };
 
 /** Current month and year in museum (Philippine) time. */
@@ -117,6 +125,9 @@ export function initialReportFormState(
     visitStatus: "",
     exhibitStatus: "",
     arEnabled: "",
+    auditModule: "",
+    auditAction: "",
+    auditResult: "",
   };
 }
 

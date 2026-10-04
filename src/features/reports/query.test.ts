@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { describeReportParameters } from "./history";
 import { parseReportHistoryQuery, reportHistoryHref } from "./query";
+import { reportDefinitionListSchema, reportHistoryItemSchema } from "./types";
 
 describe("report history query", () => {
   it("keeps supported filters and builds a stable URL", () => {
@@ -22,7 +23,7 @@ describe("report history query", () => {
 
   it("drops unsupported values", () => {
     const query = parseReportHistoryQuery({
-      historyType: "AUDIT_LOG",
+      historyType: "FUTURE_REPORT",
       historyResult: "DENIED",
       historyPage: "-2",
       historyLimit: "999",
@@ -54,5 +55,45 @@ describe("report history parameters", () => {
       "September 2026 · Status: Approved by curator · Storage location: Room 101 › Cabinet A · Include sub-locations: No · Remarks: Included",
     );
     expect(describeReportParameters({ periodLabel: null, filters: {} })).toBe("No filters");
+  });
+});
+
+describe("report contracts from a newer backend", () => {
+  const definition = {
+    type: "AUDIT_LOG",
+    title: "Audit Log Report",
+    description: "",
+    formats: ["PDF"],
+    periods: ["ALL_TIME"],
+    filters: [],
+    periodAppliesTo: "",
+  };
+
+  it("skips report types this page does not know instead of failing", () => {
+    expect(
+      reportDefinitionListSchema.parse([definition, { ...definition, type: "FUTURE_REPORT" }]).map((item) => item.type),
+    ).toEqual(["AUDIT_LOG"]);
+  });
+
+  it("keeps history rows for unknown types and labels audit results", () => {
+    const item = reportHistoryItemSchema.parse({
+      id: "00000000-0000-4000-8000-000000000009",
+      type: "FUTURE_REPORT",
+      title: "Future Report",
+      format: "PDF",
+      periodLabel: "All records",
+      filters: {},
+      rowCount: 1,
+      fileName: "x.pdf",
+      result: "SUCCESS",
+      error: null,
+      generatedBy: null,
+      generatedAt: "2026-10-04T00:00:00.000Z",
+    });
+    expect(item.type).toBeNull();
+    expect(item.title).toBe("Future Report");
+    expect(
+      describeReportParameters({ periodLabel: "October 2026", filters: { auditModule: "auth", auditResult: "DENIED" } }),
+    ).toBe("October 2026 · Module: auth · Result: Denied");
   });
 });

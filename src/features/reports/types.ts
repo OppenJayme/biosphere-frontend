@@ -8,6 +8,7 @@ export const REPORT_TYPES = [
   "INQUIRY_SUMMARY",
   "VISIT_REQUEST_SUMMARY",
   "QR_AR_EXHIBITS",
+  "AUDIT_LOG",
 ] as const;
 export const REPORT_FORMATS = ["PDF", "DOCX", "CSV"] as const;
 export const REPORT_PERIODS = ["MONTHLY", "YEARLY", "CUSTOM", "ALL_TIME"] as const;
@@ -30,11 +31,23 @@ export const reportDefinitionSchema = z.object({
   periodAppliesTo: z.string(),
 });
 
-export const reportDefinitionListSchema = z.array(reportDefinitionSchema);
+/**
+ * Report types this page does not know yet are skipped rather than failing
+ * the whole list, so a newer backend never takes the Reports page down.
+ */
+export const reportDefinitionListSchema = z
+  .array(z.unknown())
+  .transform((items) =>
+    items.flatMap((item) => {
+      const parsed = reportDefinitionSchema.safeParse(item);
+      return parsed.success ? [parsed.data] : [];
+    }),
+  );
 
 export const reportHistoryItemSchema = z.object({
   id: z.uuid(),
-  type: z.enum(REPORT_TYPES).nullable(),
+  // An unknown (newer) type still lists by its title.
+  type: z.enum(REPORT_TYPES).nullable().catch(null),
   title: z.string().nullable(),
   format: z.enum(REPORT_FORMATS).nullable(),
   periodLabel: z.string().nullable(),
@@ -59,14 +72,14 @@ export const reportSummarySchema = z.object({
   generatedThisMonth: z.number().int().nonnegative(),
   mostGenerated: z
     .object({
-      type: z.enum(REPORT_TYPES),
+      type: z.string(),
       title: z.string().min(1),
       count: z.number().int().nonnegative(),
     })
     .nullable(),
   lastGenerated: z
     .object({
-      type: z.enum(REPORT_TYPES),
+      type: z.string(),
       title: z.string().min(1),
       format: z.enum(REPORT_FORMATS),
       generatedAt: z.string().min(1),
@@ -128,6 +141,12 @@ export const VISIT_STATUS_OPTIONS = [
   ["COMPLETED", "Completed"],
 ] as const;
 
+export const AUDIT_RESULT_OPTIONS = [
+  ["SUCCESS", "Success"],
+  ["FAILED", "Failed"],
+  ["DENIED", "Denied"],
+] as const;
+
 export const EXHIBIT_STATUS_OPTIONS = [
   ["PUBLISHED", "Published"],
   ["UNPUBLISHED", "Unpublished"],
@@ -154,5 +173,8 @@ export const REPORT_FILTER_LABELS: Record<string, string> = {
   visitStatus: "Status",
   exhibitStatus: "Status",
   arEnabled: "AR enabled",
+  auditModule: "Module",
+  auditAction: "Action",
+  auditResult: "Result",
   remarks: "Remarks",
 };
