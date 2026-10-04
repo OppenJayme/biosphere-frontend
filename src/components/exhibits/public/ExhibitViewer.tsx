@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
-import { MoonIcon, SunIcon } from "@/components/icons";
-import { exhibitLayout, type PublicExhibit } from "@/features/exhibits-qr/types";
+import { CubeIcon, MoonIcon, SunIcon } from "@/components/icons";
+import { exhibitLayout, publicArModels, type PublicExhibit } from "@/features/exhibits-qr/types";
 import { CardGridView } from "./CardGridView";
 import { AccordionView } from "./AccordionView";
+import { ArModal } from "./ArModal";
 
 export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; title: string }) {
   const [dark, setDark] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
+  const models = publicArModels(exhibit.ar);
 
   return (
     <div className={dark ? "min-h-screen bg-forest-900" : "min-h-screen bg-sage-50"}>
@@ -55,9 +58,30 @@ export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; titl
           >
             Scan More
           </a>
+          {models && (
+            <button
+              type="button"
+              onClick={() => setModelOpen(true)}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-colors ${
+                dark ? "bg-emerald-400 text-emerald-950 hover:bg-emerald-300" : "bg-forest-800 text-white hover:bg-forest-700"
+              }`}
+            >
+              <CubeIcon className="h-4.5 w-4.5" />
+              View in 3D
+            </button>
+          )}
         </div>
       </div>
 
+      {models && modelOpen && (
+        <ArModal
+          title={title}
+          models={models}
+          posterUrl={exhibit.media[0]?.mediaUrl ?? null}
+          dark={dark}
+          onClose={() => setModelOpen(false)}
+        />
+      )}
     </div>
   );
 }
