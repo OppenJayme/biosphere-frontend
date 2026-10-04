@@ -67,7 +67,7 @@ export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; titl
               }`}
             >
               <CubeIcon className="h-4.5 w-4.5" />
-              View in 3D
+              {models.glb ? "View in 3D" : "View in AR"}
             </button>
           )}
         </div>

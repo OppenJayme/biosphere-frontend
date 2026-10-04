@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="View in AR">
+  <rect width="400" height="400" fill="#1a3628"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 92 284 140v84l-84 48-84-48v-84Z"/>
+    <path d="M116 140l84 48 84-48M200 188v84"/>
+  </g>
+  <text x="200" y="330" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="600" text-anchor="middle">View in AR</text>
+</svg>

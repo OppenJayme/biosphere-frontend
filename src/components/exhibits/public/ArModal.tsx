@@ -25,6 +25,9 @@ declare module "react" {
 
 type ViewerState = "loading" | "ready" | "error";
 
+/** Bundled picture for the Quick Look link, used when the exhibit has no image of its own. */
+const AR_LAUNCH_IMAGE = "/ar-launch.svg";
+
 /** iOS opens a `usdz` in AR Quick Look straight from a link, without the in-page viewer. */
 function supportsQuickLook() {
   return document.createElement("a").relList.supports("ar");
@@ -58,10 +61,23 @@ export function ArModal({
   onClose: () => void;
 }) {
   const viewerRef = useRef<ModelViewerElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<ViewerState>("loading");
   const [canAr, setCanAr] = useState(false);
   const [arFailed, setArFailed] = useState(false);
   const [quickLook] = useState(supportsQuickLook);
+  const [posterFailed, setPosterFailed] = useState(false);
+  // Without a `glb` there is nothing to show in the page; the model only opens in AR.
+  const heading = models.glb ? "3D Model" : "View in AR";
+
+  // Keyboard and screen-reader users start inside the dialog and return to where they were.
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialogRef.current?.focus();
+    return () => {
+      if (previous instanceof HTMLElement) previous.focus();
+    };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
@@ -106,13 +122,15 @@ export function ArModal({
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`3D model of ${title}`}
-        className={`w-full max-w-sm rounded-t-2xl p-5 sm:rounded-2xl ${dark ? "bg-forest-900 text-white" : "bg-white text-zinc-900"}`}
+        tabIndex={-1}
+        className={`w-full max-w-sm rounded-t-2xl p-5 sm:rounded-2xl focus:outline-none ${dark ? "bg-forest-900 text-white" : "bg-white text-zinc-900"}`}
       >
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-serif text-lg font-semibold">3D Model</h2>
+          <h2 className="font-serif text-lg font-semibold">{heading}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className={dark ? "text-white/60" : "text-zinc-400"}>
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -169,12 +187,17 @@ export function ArModal({
                 </Notice>
               )}
             </>
-          ) : models.usdz && quickLook && posterUrl ? (
+          ) : models.usdz && quickLook ? (
             <>
               {/* AR Quick Look needs the link to wrap a single image. */}
               <a rel="ar" href={models.usdz} className="block overflow-hidden rounded-xl">
                 {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived link */}
-                <img src={posterUrl} alt={`View ${title} in AR`} className="aspect-square w-full object-cover" />
+                <img
+                  src={posterUrl && !posterFailed ? posterUrl : AR_LAUNCH_IMAGE}
+                  alt={`View ${title} in AR`}
+                  onError={() => setPosterFailed(true)}
+                  className="aspect-square w-full object-cover"
+                />
               </a>
               <p className={`text-xs ${muted}`}>Tap the picture to place the model in your space. Your camera turns on only then.</p>
             </>
