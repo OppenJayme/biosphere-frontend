@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { PlusIcon, PencilIcon, ChartBarIcon, GridIcon } from "@/components/icons";
+import { PlusIcon, PencilIcon, ChartBarIcon, GridIcon, MailIcon, RefreshIcon } from "@/components/icons";
 
+// REQ-4.3-04: add a specimen, review requests, open reports, and review
+// offline drafts awaiting synchronization.
 const ACTIONS = [
   { label: "Add new specimen", icon: PlusIcon, href: "/specimens/new" },
-  { label: "Continue Cataloging", icon: PencilIcon, href: "/cataloging" },
+  { label: "Review requests", icon: MailIcon, href: "/public-website?status=PENDING" },
   { label: "Generate Report", icon: ChartBarIcon, href: "/reports" },
+  { label: "Review offline drafts", icon: RefreshIcon, href: "/specimens#offline-records-heading" },
+  { label: "Continue Cataloging", icon: PencilIcon, href: "/cataloging" },
   { label: "Create Exhibit", icon: GridIcon, href: "/exhibits/new" },
 ] as const;
 

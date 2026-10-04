@@ -1,293 +1,74 @@
 import "server-only";
-import { ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { listAuditLogs } from "../audit/api";
 import type { AuditLogEntry } from "../audit/types";
-import { listExhibitSummaries } from "../exhibits-qr/api";
-import type { ExhibitSummary } from "../exhibits-qr/types";
-import { listInquiries } from "../inquiries/api";
-import type { Inquiry } from "../inquiries/types";
-import { listActiveLots } from "../specimen-lots/api";
-import type { SpecimenLot } from "../specimen-lots/types";
-import { listSpecimens } from "../specimens/api";
-import type { SpecimenSummary } from "../specimens/types";
 import { listStorageLocations } from "../storage-locations/api";
 import type { StorageUnit } from "../storage-locations/types";
-import { listVisitRequests } from "../visit-requests/api";
-import type { VisitRequest } from "../visit-requests/types";
-import type {
-  ActivityItem,
-  CatalogingTrendPoint,
-  CollectionByType,
-  DashboardData,
-  DashboardStat,
-  QrReadiness,
-  QueueItem,
-  RecentSpecimenRow,
-  SectionResult,
-  SpecimenCatalogStatus,
-  StorageOverviewItem,
+import {
+  buildCatalogingTrend,
+  buildCollectionByType,
+  buildStats,
+  toQueueItem,
+  toRecentRow,
+} from "./summary";
+import {
+  dashboardSummarySchema,
+  type ActivityItem,
+  type DashboardData,
+  type DashboardSummary,
+  type SectionResult,
+  type StorageOverviewItem,
 } from "./types";
 
-const CATEGORY_COLORS = [
-  "#c0392b",
-  "#c4922c",
-  "#2f6fa8",
-  "#2c5c42",
-  "#1f3a5f",
-  "#4a8f7b",
-  "#9aa39a",
-  "#8e5b9f",
-  "#b0665a",
-  "#5a7a9a",
-];
 
-const RECENT_SPECIMENS_LIMIT = 7;
-const CATALOGING_QUEUE_LIMIT = 5;
 const RECENT_ACTIVITY_LIMIT = 6;
 const STORAGE_HEALTH_LIMIT = 6;
-const TREND_MONTHS = 12;
-const QR_PENDING_LIMIT = 3;
+
+/** Counts and short lists computed by the backend, so no full lists are downloaded. */
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  const response = await apiFetch<unknown>("/dashboard/summary", { method: "GET", cache: "no-store" });
+  const parsed = dashboardSummarySchema.safeParse(response);
+  if (!parsed.success) throw new Error("The backend returned an invalid dashboard summary.");
+  return parsed.data;
+}
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const [specimensResult, inquiriesResult, visitRequestsResult, auditResult, storageUnitsResult, exhibitsResult] =
-    await Promise.allSettled([
-      listSpecimens(),
-      listInquiries(),
-      listVisitRequests(),
-      listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT }),
-      listStorageLocations(),
-      listExhibitSummaries(),
-    ]);
+  const [summaryResult, auditResult, storageUnitsResult] = await Promise.allSettled([
+    getDashboardSummary(),
+    listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT }),
+    listStorageLocations(),
+  ]);
 
   // An expired/invalid session fails every endpoint the same way — surface
-  // that as a redirect-worthy error instead of six separate "unavailable"
+  // that as a redirect-worthy error instead of separate "unavailable"
   // panels. Any other failure (a single endpoint down) degrades per-section.
-  const settledResults = [
-    specimensResult,
-    inquiriesResult,
-    visitRequestsResult,
-    auditResult,
-    storageUnitsResult,
-    exhibitsResult,
-  ];
-  const unauthorized = settledResults.find(
+  const unauthorized = [summaryResult, auditResult, storageUnitsResult].find(
     (result) => result.status === "rejected" && result.reason instanceof ApiError && result.reason.status === 401,
   );
   if (unauthorized && unauthorized.status === "rejected") {
     throw unauthorized.reason;
   }
 
-  const specimens = specimensResult.status === "fulfilled" ? specimensResult.value : null;
-
-  const stats = buildStats(specimens, inquiriesResult, visitRequestsResult);
-  const collectionByType: SectionResult<CollectionByType> = specimens
-    ? { status: "ok", data: buildCollectionByType(specimens) }
-    : { status: "error" };
-  const catalogingTrend: SectionResult<CatalogingTrendPoint[]> = specimens
-    ? { status: "ok", data: buildCatalogingTrend(specimens) }
-    : { status: "error" };
-  const catalogingQueue: SectionResult<QueueItem[]> = specimens
-    ? { status: "ok", data: buildCatalogingQueue(specimens) }
-    : { status: "error" };
-  const recentSpecimens: SectionResult<RecentSpecimenRow[]> = specimens
-    ? { status: "ok", data: await buildRecentSpecimens(specimens, storageUnitsResult) }
-    : { status: "error" };
-  const storageOverview: SectionResult<StorageOverviewItem[]> =
-    storageUnitsResult.status === "fulfilled"
-      ? { status: "ok", data: buildStorageOverview(storageUnitsResult.value) }
-      : { status: "error" };
-  const recentActivity: SectionResult<ActivityItem[]> =
-    auditResult.status === "fulfilled"
-      ? { status: "ok", data: buildRecentActivity(auditResult.value.items) }
-      : { status: "error" };
-  // Liveness depends on the backing specimen too, so without specimen data a
-  // live count could overstate readiness — show the section as unavailable.
-  const qrReadiness: SectionResult<QrReadiness> =
-    exhibitsResult.status === "fulfilled" && specimens
-      ? { status: "ok", data: buildQrReadiness(exhibitsResult.value, specimens) }
-      : { status: "error" };
+  const summary = summaryResult.status === "fulfilled" ? summaryResult.value : null;
+  const fromSummary = <T>(build: (data: DashboardSummary) => T): SectionResult<T> =>
+    summary ? { status: "ok", data: build(summary) } : { status: "error" };
 
   return {
-    stats,
-    collectionByType,
-    catalogingTrend,
-    catalogingQueue,
-    recentSpecimens,
-    storageOverview,
-    recentActivity,
-    qrReadiness,
+    stats: fromSummary(buildStats),
+    collectionByType: fromSummary(buildCollectionByType),
+    catalogingTrend: fromSummary(buildCatalogingTrend),
+    catalogingQueue: fromSummary((data) => data.catalogingQueue.map(toQueueItem)),
+    recentSpecimens: fromSummary((data) => data.recentSpecimens.map(toRecentRow)),
+    storageOverview:
+      storageUnitsResult.status === "fulfilled"
+        ? { status: "ok", data: buildStorageOverview(storageUnitsResult.value) }
+        : { status: "error" },
+    recentActivity:
+      auditResult.status === "fulfilled"
+        ? { status: "ok", data: buildRecentActivity(auditResult.value.items) }
+        : { status: "error" },
+    qrReadiness: fromSummary((data) => data.exhibits),
   };
-}
-
-function buildStats(
-  specimens: SpecimenSummary[] | null,
-  inquiriesResult: PromiseSettledResult<Inquiry[]>,
-  visitRequestsResult: PromiseSettledResult<VisitRequest[]>,
-): SectionResult<DashboardStat[]> {
-  if (!specimens || inquiriesResult.status === "rejected" || visitRequestsResult.status === "rejected") {
-    return { status: "error" };
-  }
-
-  const now = new Date();
-  const createdThisMonth = specimens.filter((specimen) => isSameMonth(new Date(specimen.createdAt), now)).length;
-  const draftCount = specimens.filter((specimen) => specimen.status === "UNCATALOGED").length;
-  const pendingCount =
-    inquiriesResult.value.filter((inquiry) => inquiry.status === "PENDING").length +
-    visitRequestsResult.value.filter((visitRequest) => visitRequest.status === "PENDING").length;
-  const duplicateCount = countPossibleDuplicates(specimens);
-
-  const stats: DashboardStat[] = [
-    {
-      key: "total",
-      label: "Total Specimens",
-      value: specimens.length.toLocaleString(),
-      note: createdThisMonth > 0 ? `+${createdThisMonth} this month` : "No new records this month",
-      tone: "positive",
-      icon: "specimen",
-    },
-    {
-      key: "draft",
-      label: "Draft / Incomplete",
-      value: draftCount.toLocaleString(),
-      note: "Awaiting cataloging",
-      tone: draftCount > 0 ? "warning" : "positive",
-      icon: "draft",
-    },
-    {
-      key: "pending",
-      label: "Pending Requests",
-      value: pendingCount.toLocaleString(),
-      note: "Inquiries & visit requests",
-      tone: pendingCount > 0 ? "warning" : "positive",
-      icon: "mail",
-    },
-    {
-      key: "duplicates",
-      label: "Possible Duplicates",
-      value: duplicateCount.toLocaleString(),
-      note: "Same scientific name & category",
-      tone: duplicateCount > 0 ? "danger" : "positive",
-      icon: "lock",
-    },
-  ];
-
-  return { status: "ok", data: stats };
-}
-
-// Approximation, not the SRS's REQ-4.4-21/22 curator-facing duplicate warning
-// (that lives in the catalog module). Flags active specimens sharing a
-// scientific name and category as a signal worth a curator's attention.
-function countPossibleDuplicates(specimens: SpecimenSummary[]): number {
-  const groups = new Map<string, number>();
-
-  for (const specimen of specimens) {
-    const name = specimen.scientificName?.trim().toLowerCase();
-    const category = specimen.specimenCategory?.trim().toLowerCase();
-    if (!name || !category) continue;
-
-    const key = `${name}|${category}`;
-    groups.set(key, (groups.get(key) ?? 0) + 1);
-  }
-
-  let duplicates = 0;
-  for (const count of groups.values()) {
-    if (count > 1) duplicates += count;
-  }
-  return duplicates;
-}
-
-function buildCollectionByType(specimens: SpecimenSummary[]): CollectionByType {
-  const counts = new Map<string, number>();
-
-  for (const specimen of specimens) {
-    const label = specimen.specimenCategory?.trim() || "Uncategorized";
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
-
-  const total = specimens.length;
-  const segments = Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value], index) => ({
-      label,
-      value,
-      pct: total > 0 ? Math.round((value / total) * 1000) / 10 : 0,
-      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-    }));
-
-  return { segments, total };
-}
-
-function buildCatalogingTrend(specimens: SpecimenSummary[]): CatalogingTrendPoint[] {
-  const now = new Date();
-  const months = Array.from({ length: TREND_MONTHS }, (_, index) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - (TREND_MONTHS - 1 - index), 1);
-    return {
-      key: `${date.getFullYear()}-${date.getMonth()}`,
-      label: date.toLocaleString("en-US", { month: "short" }),
-    };
-  });
-
-  const counts = new Map(months.map((month) => [month.key, 0]));
-  for (const specimen of specimens) {
-    const created = new Date(specimen.createdAt);
-    const key = `${created.getFullYear()}-${created.getMonth()}`;
-    if (counts.has(key)) counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
-  return months.map((month) => ({ month: month.label, value: counts.get(month.key) ?? 0 }));
-}
-
-function buildCatalogingQueue(specimens: SpecimenSummary[]): QueueItem[] {
-  return specimens
-    .filter((specimen) => specimen.status === "UNCATALOGED")
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, CATALOGING_QUEUE_LIMIT)
-    .map((specimen) => ({
-      id: specimen.id,
-      accessionNo: specimen.accessionNumber ?? "Unassigned",
-      species: specimen.scientificName ?? specimen.commonName ?? "Unidentified specimen",
-      category: specimen.specimenCategory,
-    }));
-}
-
-async function buildRecentSpecimens(
-  specimens: SpecimenSummary[],
-  storageUnitsResult: PromiseSettledResult<StorageUnit[]>,
-): Promise<RecentSpecimenRow[]> {
-  const recent = [...specimens]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, RECENT_SPECIMENS_LIMIT);
-
-  const labelByUnitId = new Map<string, string>();
-  if (storageUnitsResult.status === "fulfilled") {
-    for (const unit of storageUnitsResult.value) labelByUnitId.set(unit.id, unit.label);
-  }
-
-  const lotsBySpecimen = await Promise.all(
-    recent.map((specimen) => listActiveLots(specimen.id).catch((): SpecimenLot[] => [])),
-  );
-
-  return recent.map((specimen, index) => {
-    const [primaryLot] = lotsBySpecimen[index];
-
-    return {
-      id: specimen.id,
-      accessionNo: specimen.accessionNumber ?? "Unassigned",
-      commonName: specimen.commonName ?? specimen.scientificName ?? "Unnamed specimen",
-      category: specimen.specimenCategory,
-      storageLocation: primaryLot ? (labelByUnitId.get(primaryLot.storageUnitId) ?? "Unknown location") : null,
-      condition: primaryLot?.conditionClass ?? null,
-      catalogStatus: toCatalogStatusLabel(specimen.status),
-      publicStatus: specimen.publicDisplay ? "Public" : "Restricted",
-      lastUpdated: specimen.updatedAt,
-    };
-  });
-}
-
-function toCatalogStatusLabel(status: SpecimenSummary["status"]): SpecimenCatalogStatus {
-  if (status === "CATALOGED") return "Cataloged";
-  if (status === "ARCHIVED") return "Archived";
-  return "Uncataloged";
 }
 
 function buildStorageOverview(items: StorageUnit[]): StorageOverviewItem[] {
@@ -318,46 +99,10 @@ function buildRecentActivity(items: AuditLogEntry[]): ActivityItem[] {
   }));
 }
 
-// The backend list already excludes archived exhibits. A QR page resolves only
-// when the exhibit is published AND its specimen is still eligible: the public
-// endpoint re-checks that the specimen is cataloged and approved for public
-// display, so a published exhibit can still 404 after approval is withdrawn,
-// cataloging is reopened, or the specimen is archived.
-function buildQrReadiness(exhibits: ExhibitSummary[], specimens: SpecimenSummary[]): QrReadiness {
-  const count = (status: ExhibitSummary["status"]) => exhibits.filter((exhibit) => exhibit.status === status).length;
-  const specimenById = new Map(specimens.map((specimen) => [specimen.id, specimen]));
-  const isSpecimenEligible = (specimenId: string) => {
-    const specimen = specimenById.get(specimenId);
-    return specimen?.status === "CATALOGED" && specimen.publicDisplay === true;
-  };
-
-  const published = exhibits.filter((exhibit) => exhibit.status === "PUBLISHED");
-  const live = published.filter((exhibit) => isSpecimenEligible(exhibit.specimenId)).length;
-
-  const pending = exhibits
-    .filter((exhibit) => exhibit.status === "UNPUBLISHED")
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, QR_PENDING_LIMIT)
-    .map((exhibit) => ({ id: exhibit.id, publicSlug: exhibit.publicSlug }));
-
-  return {
-    total: exhibits.length,
-    live,
-    publishedUnavailable: published.length - live,
-    unpublished: count("UNPUBLISHED"),
-    disabled: count("DISABLED"),
-    pending,
-  };
-}
-
 function humanize(value: string): string {
   return value
     .toLowerCase()
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-}
-
-function isSameMonth(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
