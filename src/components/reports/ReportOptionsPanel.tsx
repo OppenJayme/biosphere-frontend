@@ -3,6 +3,7 @@
 import { DownloadIcon, InfoIcon } from "@/components/icons";
 import type { ReportFormState } from "@/features/reports/form";
 import {
+  AUDIT_RESULT_OPTIONS,
   EXHIBIT_STATUS_OPTIONS,
   INQUIRY_STATUS_OPTIONS,
   REPORT_PERIOD_LABELS,
@@ -34,7 +35,19 @@ function TextFilter({
   placeholder,
 }: {
   label: string;
-  name: "category" | "kingdom" | "phylum" | "taxonClass" | "taxonOrder" | "family" | "genus" | "species" | "conditionClass" | "inquiryType";
+  name:
+    | "category"
+    | "kingdom"
+    | "phylum"
+    | "taxonClass"
+    | "taxonOrder"
+    | "family"
+    | "genus"
+    | "species"
+    | "conditionClass"
+    | "inquiryType"
+    | "auditModule"
+    | "auditAction";
   form: ReportFormState;
   update: Update;
   placeholder?: string;
@@ -60,7 +73,7 @@ function EnumFilter({
   update,
 }: {
   label: string;
-  name: "specimenStatus" | "inquiryStatus" | "visitStatus" | "exhibitStatus";
+  name: "specimenStatus" | "inquiryStatus" | "visitStatus" | "exhibitStatus" | "auditResult";
   options: readonly (readonly [string, string])[];
   form: ReportFormState;
   update: Update;
@@ -68,7 +81,7 @@ function EnumFilter({
   return (
     <Field label={label}>
       <select value={form[name]} onChange={(event) => update(name, event.target.value)} className={inputClasses}>
-        <option value="">All statuses</option>
+        <option value="">{name === "auditResult" ? "All results" : "All statuses"}</option>
         {options.map(([value, text]) => (
           <option key={value} value={value}>{text}</option>
         ))}
@@ -248,6 +261,16 @@ export function ReportOptionsPanel({
                 <option value="false">No AR</option>
               </select>
             </Field>
+          </div>
+        )}
+
+        {accepts.has("auditModule") && (
+          <div className="grid grid-cols-2 gap-3">
+            <TextFilter label="Module" name="auditModule" form={form} update={update} placeholder="e.g. auth" />
+            <TextFilter label="Action" name="auditAction" form={form} update={update} placeholder="e.g. LOGIN" />
+            <div className="col-span-2">
+              <EnumFilter label="Result" name="auditResult" options={AUDIT_RESULT_OPTIONS} form={form} update={update} />
+            </div>
           </div>
         )}
 

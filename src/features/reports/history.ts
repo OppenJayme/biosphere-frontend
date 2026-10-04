@@ -1,6 +1,7 @@
 /** Presentation helpers for report-history rows. */
 
 import {
+  AUDIT_RESULT_OPTIONS,
   EXHIBIT_STATUS_OPTIONS,
   INQUIRY_STATUS_OPTIONS,
   REPORT_FILTER_LABELS,
@@ -15,6 +16,7 @@ const ENUM_LABELS = new Map<string, string>(
     ...INQUIRY_STATUS_OPTIONS,
     ...VISIT_STATUS_OPTIONS,
     ...EXHIBIT_STATUS_OPTIONS,
+    ...AUDIT_RESULT_OPTIONS,
   ].map(([value, label]) => [value, label]),
 );
 

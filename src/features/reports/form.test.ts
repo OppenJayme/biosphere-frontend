@@ -167,4 +167,34 @@ describe("report form", () => {
     expect(attachmentFileName("attachment; filename=../../evil.pdf", "report")).toBe(".._.._evil.pdf");
     expect(attachmentFileName(null, "report.pdf")).toBe("report.pdf");
   });
+
+  it("builds an audit-log request with module, action, and result", () => {
+    const audit: ReportDefinition = {
+      type: "AUDIT_LOG",
+      title: "Audit Log Report",
+      description: "",
+      formats: ["PDF", "CSV", "DOCX"],
+      periods: ["MONTHLY", "YEARLY", "CUSTOM", "ALL_TIME"],
+      filters: ["auditModule", "auditAction", "auditResult"],
+      periodAppliesTo: "Date and time the event was recorded.",
+    };
+
+    expect(
+      buildReportRequest(
+        audit,
+        "CSV",
+        state({ period: "ALL_TIME", auditModule: " auth ", auditAction: "LOGIN", auditResult: "DENIED", family: "x" }),
+      ),
+    ).toEqual({
+      ok: true,
+      body: {
+        type: "AUDIT_LOG",
+        format: "CSV",
+        period: "ALL_TIME",
+        auditModule: "auth",
+        auditAction: "LOGIN",
+        auditResult: "DENIED",
+      },
+    });
+  });
 });
