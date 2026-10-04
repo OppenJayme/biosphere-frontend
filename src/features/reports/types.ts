@@ -1,6 +1,7 @@
 /** Runtime contracts for the curator-only reports API (SRS §4.7). */
 
 import { z } from "zod";
+import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
 
 export const REPORT_TYPES = [
   "CONSOLIDATED_OPERATIONS",
@@ -87,11 +88,7 @@ export type ReportHistoryQuery = {
 };
 
 /** A storage unit offered in the Inventory location filter. */
-export type ReportStorageOption = {
-  id: string;
-  pathLabel: string;
-  archived: boolean;
-};
+export type ReportStorageOption = StoragePathOption;
 
 export const REPORT_FORMAT_LABELS: Record<ReportFormat, string> = {
   PDF: "PDF",

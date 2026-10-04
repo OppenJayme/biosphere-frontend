@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SearchIcon } from "@/components/icons";
 import {
+  hasAdvancedSpecimenFilters,
   SORT_DIRECTIONS,
   SPECIMEN_GENDERS,
   SPECIMEN_SORT_FIELDS,
@@ -8,6 +9,7 @@ import {
   type MuseumCollection,
   type SpecimenListQuery,
 } from "@/features/specimens/types";
+import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
 
 const SORT_LABELS: Record<(typeof SPECIMEN_SORT_FIELDS)[number], string> = {
   updatedAt: "Last updated",
@@ -16,7 +18,19 @@ const SORT_LABELS: Record<(typeof SPECIMEN_SORT_FIELDS)[number], string> = {
   scientificName: "Scientific name",
   commonName: "Common name",
   status: "Catalog status",
+  specimenCategory: "Category",
+  family: "Family",
 };
+
+const TAXONOMY_FIELDS = [
+  ["kingdom", "Kingdom"],
+  ["phylum", "Phylum"],
+  ["taxonClass", "Class"],
+  ["taxonOrder", "Order"],
+  ["family", "Family"],
+  ["genus", "Genus"],
+  ["species", "Species"],
+] as const;
 
 function enumLabel(value: string) {
   return value
@@ -34,6 +48,7 @@ function hasNonDefaultFilters(query: SpecimenListQuery) {
     query.specimenCategory.length > 0 ||
     query.gender !== null ||
     query.publicDisplay !== null ||
+    hasAdvancedSpecimenFilters(query) ||
     query.sortBy !== "updatedAt" ||
     query.sortDirection !== "desc"
   );
@@ -46,12 +61,21 @@ export function SpecimenToolbar({
   query,
   collections,
   collectionLookupAvailable,
+  storageOptions,
+  storageLookupAvailable,
+  filterError,
 }: {
   query: SpecimenListQuery;
   collections: MuseumCollection[];
   collectionLookupAvailable: boolean;
+  storageOptions: StoragePathOption[];
+  storageLookupAvailable: boolean;
+  filterError: string | null;
 }) {
   const hasFilters = hasNonDefaultFilters(query);
+  const advancedOpen = hasAdvancedSpecimenFilters(query);
+  const selectedUnitMissing =
+    Boolean(query.storageUnitId) && !storageOptions.some((option) => option.id === query.storageUnitId);
   const selectedCollectionMissing =
     query.collectionId !== null &&
     !collections.some((collection) => collection.id === query.collectionId);
@@ -186,6 +210,115 @@ export function SpecimenToolbar({
           </select>
         </label>
 
+        <details
+          open={advancedOpen}
+          className="rounded-lg border border-black/10 px-3 py-2 sm:col-span-2 xl:col-span-4"
+        >
+          <summary className="cursor-pointer text-xs font-semibold text-zinc-700">
+            More filters: taxonomy, condition, storage location, tag, date added
+          </summary>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 pb-1 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="text-xs font-medium text-zinc-600">
+              Classification status
+              <input
+                name="classificationStatus"
+                defaultValue={query.classificationStatus}
+                maxLength={100}
+                placeholder="e.g. Identified"
+                className={controlClasses}
+              />
+            </label>
+
+            <label className="text-xs font-medium text-zinc-600">
+              Condition (active lot)
+              <input
+                name="conditionClass"
+                defaultValue={query.conditionClass}
+                maxLength={100}
+                placeholder="e.g. Good"
+                className={controlClasses}
+              />
+            </label>
+
+            <label className="text-xs font-medium text-zinc-600">
+              Tag
+              <input
+                name="tag"
+                defaultValue={query.tag}
+                maxLength={100}
+                placeholder="Exact tag name"
+                className={controlClasses}
+              />
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-xs font-medium text-zinc-600">
+                Added from
+                <input type="date" name="createdFrom" defaultValue={query.createdFrom} className={controlClasses} />
+              </label>
+              <label className="text-xs font-medium text-zinc-600">
+                Added to
+                <input type="date" name="createdTo" defaultValue={query.createdTo} className={controlClasses} />
+              </label>
+            </div>
+
+            <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
+              Storage location (active lot)
+              <select
+                name="storageUnitId"
+                defaultValue={query.storageUnitId ?? ""}
+                disabled={!storageLookupAvailable}
+                className={controlClasses}
+              >
+                <option value="">
+                  {storageLookupAvailable ? "All locations" : "Location lookup unavailable"}
+                </option>
+                {selectedUnitMissing && query.storageUnitId && (
+                  <option value={query.storageUnitId}>Selected location unavailable</option>
+                )}
+                {storageOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.pathLabel}
+                    {option.archived ? " (archived)" : ""}
+                  </option>
+                ))}
+              </select>
+              {!storageLookupAvailable && query.storageUnitId && (
+                <input type="hidden" name="storageUnitId" value={query.storageUnitId} />
+              )}
+            </label>
+
+            <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
+              Units inside the location
+              <select
+                name="includeDescendantUnits"
+                defaultValue={query.includeDescendantUnits === false ? "false" : "true"}
+                className={controlClasses}
+              >
+                <option value="true">Include cabinets, drawers, and other units inside it</option>
+                <option value="false">Only lots stored directly in it</option>
+              </select>
+            </label>
+
+            {TAXONOMY_FIELDS.map(([name, label]) => (
+              <label key={name} className="text-xs font-medium text-zinc-600">
+                {label}
+                <input
+                  name={name}
+                  defaultValue={query[name]}
+                  maxLength={100}
+                  placeholder="Exact name"
+                  className={controlClasses}
+                />
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-zinc-500">
+            Text filters match the whole value, ignoring capital letters. Dates follow Philippine time.
+          </p>
+        </details>
+
         <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-3">
           <button
             type="submit"
@@ -203,6 +336,18 @@ export function SpecimenToolbar({
           )}
         </div>
       </form>
+
+      {filterError && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {filterError}
+        </p>
+      )}
+
+      {!storageLookupAvailable && (
+        <p role="status" className="text-xs text-amber-800">
+          Storage locations could not be loaded, so the location filter is unavailable.
+        </p>
+      )}
 
       {!collectionLookupAvailable && (
         <p role="status" className="text-xs text-amber-800">
