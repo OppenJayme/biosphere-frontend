@@ -165,14 +165,22 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
       <Section
         title="Active Lots and Storage"
         action={
-          specimen.status !== "ARCHIVED" ? (
+          <div className="flex flex-wrap gap-2">
             <Link
-              href={`/specimens/${specimen.id}/lots/new`}
-              className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+              href={`/specimens/${specimen.id}/lots`}
+              className="rounded-lg border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
             >
-              Add lot
+              Lot history
             </Link>
-          ) : undefined
+            {specimen.status !== "ARCHIVED" && (
+              <Link
+                href={`/specimens/${specimen.id}/lots/new`}
+                className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+              >
+                Add lot
+              </Link>
+            )}
+          </div>
         }
       >
         {activeLots.length === 0 ? (
@@ -200,6 +208,12 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
                 {lot.storageNotes && (
                   <p className="mt-2 text-xs leading-5 text-zinc-600">{lot.storageNotes}</p>
                 )}
+                <Link
+                  href={`/specimens/${specimen.id}/lots/${lot.id}`}
+                  className="mt-3 inline-flex text-xs font-semibold text-forest-800 hover:underline"
+                >
+                  {specimen.status !== "ARCHIVED" ? "Move, adjust, or view history" : "View lot history"}
+                </Link>
               </article>
             ))}
           </div>
