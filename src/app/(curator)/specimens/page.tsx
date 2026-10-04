@@ -5,9 +5,13 @@ import { SpecimensWorkspace } from "@/components/specimens/SpecimensWorkspace";
 import { listCollections, searchSpecimens } from "@/features/specimens/api";
 import {
   parseSpecimenListQuery,
+  specimenDateRangeError,
+  SPECIMEN_PAGE_LIMIT,
   type MuseumCollection,
   type SpecimenPage,
 } from "@/features/specimens/types";
+import { listStorageLocations } from "@/features/storage-locations/api";
+import { storagePathOptions, type StoragePathOption } from "@/features/storage-locations/hierarchy";
 import { verifySession } from "@/lib/session";
 
 export const metadata: Metadata = {
@@ -23,15 +27,21 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
   if (!user) redirect("/login?from=/specimens");
 
   const query = parseSpecimenListQuery(await searchParams);
-  const [specimenResult, collectionResult] = await Promise.allSettled([
-    searchSpecimens(query),
+  // A reversed date range would be refused by the backend; explain it here instead.
+  const filterError = specimenDateRangeError(query);
+  const emptyPage: SpecimenPage = { items: [], total: 0, page: 1, limit: SPECIMEN_PAGE_LIMIT };
+  const [specimenResult, collectionResult, storageResult] = await Promise.allSettled([
+    filterError ? Promise.resolve(emptyPage) : searchSpecimens(query),
     listCollections(),
+    listStorageLocations("ALL"),
   ]);
-  // Specimen data is essential; collection options degrade independently to preserve catalog access.
+  // Specimen data is essential; collection and location options degrade independently to preserve catalog access.
   const specimenPage: SpecimenPage | null =
     specimenResult.status === "fulfilled" ? specimenResult.value : null;
   const collections: MuseumCollection[] =
     collectionResult.status === "fulfilled" ? collectionResult.value : [];
+  const storageOptions: StoragePathOption[] =
+    storageResult.status === "fulfilled" ? storagePathOptions(storageResult.value) : [];
 
   return (
     <div className="space-y-5">
@@ -48,6 +58,9 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
           query={query}
           collections={collections}
           collectionLookupAvailable={collectionResult.status === "fulfilled"}
+          storageOptions={storageOptions}
+          storageLookupAvailable={storageResult.status === "fulfilled"}
+          filterError={filterError}
           offlineOwnerId={user.id}
         />
       ) : (

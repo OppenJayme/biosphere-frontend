@@ -9,6 +9,8 @@ import {
   removeSpecimenMediaResultSchema,
   replaceSpecimenMediaResultSchema,
   SPECIMEN_PAGE_LIMIT,
+  SPECIMEN_TEXT_FILTERS,
+  specimenCreatedBounds,
   specimenCreateResultSchema,
   specimenDetailSchema,
   specimenDuplicateCheckResultSchema,
@@ -144,6 +146,17 @@ export async function searchSpecimens(query: SpecimenListQuery) {
   if (query.publicDisplay !== null) {
     params.set("publicDisplay", String(query.publicDisplay));
   }
+  for (const key of SPECIMEN_TEXT_FILTERS) {
+    const value = query[key];
+    if (value) params.set(key, value);
+  }
+  if (query.storageUnitId) {
+    params.set("storageUnitId", query.storageUnitId);
+    if (query.includeDescendantUnits === false) params.set("includeDescendantUnits", "false");
+  }
+  const created = specimenCreatedBounds(query);
+  if (created.from) params.set("createdFrom", created.from);
+  if (created.to) params.set("createdTo", created.to);
   params.set("sortBy", query.sortBy);
   params.set("sortDirection", query.sortDirection);
 

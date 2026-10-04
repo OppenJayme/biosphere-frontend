@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { parseSpecimenListQuery, specimenDetailSchema, specimenListHref } from "./types";
+import {
+  hasAdvancedSpecimenFilters,
+  parseSpecimenListQuery,
+  specimenCreatedBounds,
+  specimenDateRangeError,
+  specimenDetailSchema,
+  specimenListHref,
+  specimenPageSchema,
+} from "./types";
+
+const NO_ADVANCED_FILTERS = {
+  classificationStatus: "",
+  kingdom: "",
+  phylum: "",
+  taxonClass: "",
+  taxonOrder: "",
+  family: "",
+  genus: "",
+  species: "",
+  tag: "",
+  conditionClass: "",
+  storageUnitId: null,
+  includeDescendantUnits: true,
+  createdFrom: "",
+  createdTo: "",
+};
+const UNIT_ID = "d0000000-0000-4000-8000-000000000001";
 
 const SPECIMEN_ID = "10000000-0000-4000-8000-000000000001";
 const ACCOUNT_ID = "20000000-0000-4000-8000-000000000001";
@@ -90,6 +116,7 @@ describe("specimen catalog query handling", () => {
       sortBy: "scientificName",
       sortDirection: "asc",
       page: 3,
+      ...NO_ADVANCED_FILTERS,
     });
     expect(specimenListHref(query)).toBe(
       `/specimens?search=Philippine+eagle&status=CATALOGED&collectionId=${COLLECTION_ID}&specimenCategory=Bird&gender=UNKNOWN&publicDisplay=true&sortBy=scientificName&sortDirection=asc&page=3`,
@@ -119,6 +146,7 @@ describe("specimen catalog query handling", () => {
       sortBy: "updatedAt",
       sortDirection: "desc",
       page: 1,
+      ...NO_ADVANCED_FILTERS,
     });
   });
 
@@ -131,6 +159,85 @@ describe("specimen catalog query handling", () => {
         1,
       ),
     ).toBe("/specimens?search=frog&status=UNCATALOGED");
+  });
+});
+
+describe("specimen catalog advanced filters", () => {
+  it("keeps taxonomy, condition, location, tag, and date filters in the URL", () => {
+    const query = parseSpecimenListQuery({
+      family: "  Papilionidae ",
+      genus: "Papilio",
+      classificationStatus: "Identified",
+      conditionClass: "Good",
+      tag: "Type specimen",
+      storageUnitId: UNIT_ID,
+      includeDescendantUnits: "false",
+      createdFrom: "2026-09-01",
+      createdTo: "2026-09-30",
+      sortBy: "family",
+    });
+
+    expect(query).toMatchObject({
+      family: "Papilionidae",
+      genus: "Papilio",
+      storageUnitId: UNIT_ID,
+      includeDescendantUnits: false,
+      createdFrom: "2026-09-01",
+      createdTo: "2026-09-30",
+      sortBy: "family",
+    });
+    expect(hasAdvancedSpecimenFilters(query)).toBe(true);
+    expect(specimenListHref(query)).toBe(
+      `/specimens?classificationStatus=Identified&family=Papilionidae&genus=Papilio&tag=Type+specimen&conditionClass=Good&storageUnitId=${UNIT_ID}&includeDescendantUnits=false&createdFrom=2026-09-01&createdTo=2026-09-30&sortBy=family`,
+    );
+  });
+
+  it("drops malformed locations and dates and keeps sub-locations on by default", () => {
+    const query = parseSpecimenListQuery({
+      storageUnitId: "room-101",
+      includeDescendantUnits: "yes",
+      createdFrom: "2026-02-30",
+      createdTo: "30/09/2026",
+      species: "x".repeat(150),
+    });
+
+    expect(query).toMatchObject({
+      storageUnitId: null,
+      includeDescendantUnits: true,
+      createdFrom: "",
+      createdTo: "",
+      species: "x".repeat(100),
+    });
+    expect(hasAdvancedSpecimenFilters(parseSpecimenListQuery({}))).toBe(false);
+    // The sub-location opt-out only matters with a location.
+    expect(specimenListHref({ ...parseSpecimenListQuery({}), includeDescendantUnits: false })).toBe("/specimens");
+  });
+
+  it("flags a reversed date range and sends museum-time day bounds", () => {
+    const query = parseSpecimenListQuery({ createdFrom: "2026-09-30", createdTo: "2026-09-01" });
+    expect(specimenDateRangeError(query)).toBe("The Date added start must not be after its end.");
+    expect(specimenDateRangeError(parseSpecimenListQuery({ createdFrom: "2026-09-01" }))).toBeNull();
+    expect(specimenCreatedBounds({ createdFrom: "2026-09-01", createdTo: "2026-09-30" })).toEqual({
+      from: "2026-09-01T00:00:00.000+08:00",
+      to: "2026-09-30T23:59:59.999+08:00",
+    });
+  });
+});
+
+describe("specimen catalog page validation", () => {
+  it("accepts search rows with family, quantity, condition, and storage columns", () => {
+    const row = {
+      ...specimenDetailResponse().specimen,
+      family: "Papilionidae",
+      collector: null,
+      totalQuantity: 5,
+      conditionClasses: ["Good"],
+      storageUnits: [{ id: UNIT_ID, label: "Drawer 3", unitType: "Drawer", pathLabel: "Room 101 › Cabinet A › Drawer 3" }],
+    };
+    expect(specimenPageSchema.parse({ items: [row], total: 1, page: 1, limit: 25 }).items[0]).toMatchObject({
+      totalQuantity: 5,
+      storageUnits: [{ pathLabel: "Room 101 › Cabinet A › Drawer 3" }],
+    });
   });
 });
 
