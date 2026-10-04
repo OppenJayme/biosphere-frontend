@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   PawIcon,
   MailIcon,
@@ -64,17 +65,19 @@ export function StatCard({
   note,
   tone,
   icon,
+  href,
 }: {
   label: string;
   value: string;
   note: string;
   tone: keyof typeof NOTE_STYLES;
   icon: keyof typeof ICONS;
+  /** Makes the whole card a link to the related list. */
+  href?: string;
 }) {
   const Icon = ICONS[icon];
-
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-black/10 bg-white p-5">
+  const body = (
+    <>
       <span
         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${ICON_STYLES[icon]}`}
       >
@@ -85,6 +88,18 @@ export function StatCard({
         <p className="truncate text-2xl font-semibold text-zinc-900">{value}</p>
         <p className={`text-xs font-medium ${NOTE_STYLES[tone]}`}>{note}</p>
       </div>
-    </div>
+    </>
+  );
+  const classes = "flex items-center gap-4 rounded-xl border border-black/10 bg-white p-5";
+
+  return href ? (
+    <Link
+      href={href}
+      className={`${classes} transition-colors hover:border-forest-700/40 hover:bg-sage-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <div className={classes}>{body}</div>
   );
 }
