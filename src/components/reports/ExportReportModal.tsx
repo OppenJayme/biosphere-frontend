@@ -1,178 +1,266 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
-  CloseIcon,
-  GridIcon,
-  DocumentTextIcon,
+  AlertTriangleIcon,
   ArchiveIcon,
-  DownloadIcon,
   CheckIcon,
+  CloseIcon,
+  DocumentTextIcon,
+  DownloadIcon,
+  GridIcon,
 } from "@/components/icons";
+import { attachmentFileName, type ReportRequestResult } from "@/features/reports/form";
+import type { ReportDefinition, ReportFormat } from "@/features/reports/types";
 
-export type ExportTarget = {
-  title: string;
-  subtitle: string;
-  recordCount: number;
+const FORMATS: Record<ReportFormat, { label: string; description: string; icon: typeof GridIcon; tint: string }> = {
+  CSV: {
+    label: "CSV",
+    description: "Raw data, best for spreadsheets and further analysis",
+    icon: GridIcon,
+    tint: "bg-amber-50 text-amber-600",
+  },
+  DOCX: {
+    label: "Word document (.docx)",
+    description: "Formatted layout, easy to annotate or share for review",
+    icon: DocumentTextIcon,
+    tint: "bg-sky-50 text-sky-600",
+  },
+  PDF: {
+    label: "PDF",
+    description: "Fixed layout, best for printing or official records",
+    icon: ArchiveIcon,
+    tint: "bg-red-50 text-red-600",
+  },
 };
 
-type FileFormat = "CSV" | "Word" | "PDF";
+// CSV first, then Word, then PDF, as in the SRS export modal.
+const FORMAT_ORDER: ReportFormat[] = ["CSV", "DOCX", "PDF"];
 
-const FORMATS: { value: FileFormat; label: string; description: string; icon: typeof GridIcon }[] = [
-  { value: "CSV", label: "CSV", description: "Raw data, best for spreadsheets and further analysis", icon: GridIcon },
-  { value: "Word", label: "Word document (.docx)", description: "Formatted layout, easy to annotate or share for review", icon: DocumentTextIcon },
-  { value: "PDF", label: "PDF", description: "Fixed layout, best for printing or official records", icon: ArchiveIcon },
-];
+type Status =
+  | { kind: "idle" }
+  | { kind: "generating" }
+  | { kind: "done"; fileName: string }
+  | { kind: "error"; message: string };
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Give the browser a moment to start the download before releasing it.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export function ExportReportModal({ target, onClose }: { target: ExportTarget; onClose: () => void }) {
-  const [format, setFormat] = useState<FileFormat>("CSV");
-  const [progress, setProgress] = useState<number | null>(null);
+async function errorMessage(response: Response) {
+  const body: unknown = await response.json().catch(() => null);
+  if (body && typeof body === "object" && "message" in body && typeof body.message === "string") {
+    return body.message;
+  }
+  return "The report could not be generated. No file was created.";
+}
+
+export function ExportReportModal({
+  definition,
+  scope,
+  buildRequest,
+  onClose,
+  onGenerated,
+}: {
+  definition: ReportDefinition;
+  /** One-line summary of the period and filters, e.g. "September 2026 · 2 filters". */
+  scope: string;
+  buildRequest: (format: ReportFormat) => ReportRequestResult;
+  onClose: () => void;
+  onGenerated: () => void;
+}) {
+  const formats = FORMAT_ORDER.filter((format) => definition.formats.includes(format));
+  const [format, setFormat] = useState<ReportFormat>(formats[0]);
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const generating = status.kind === "generating";
 
   useEffect(() => {
-    if (progress === null || progress >= 100) return;
-    const timer = setTimeout(() => setProgress((p) => Math.min(100, (p ?? 0) + 20)), 150);
-    return () => clearTimeout(timer);
-  }, [progress]);
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    return () => dialog?.close();
+  }, []);
 
-  const exporting = progress !== null;
-  const done = progress === 100;
-  const filename = `${slugify(target.title)}_2025-05-22.${format.toLowerCase() === "word" ? "docx" : format.toLowerCase()}`;
+  function close() {
+    if (!generating) onClose();
+  }
+
+  async function exportReport() {
+    const request = buildRequest(format);
+    if (!request.ok) {
+      setStatus({ kind: "error", message: request.error });
+      return;
+    }
+
+    setStatus({ kind: "generating" });
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request.body),
+      });
+      if (!response.ok) {
+        setStatus({ kind: "error", message: await errorMessage(response) });
+        if (response.status === 400) onGenerated(); // the failed attempt is in the history
+        return;
+      }
+      const fileName = attachmentFileName(
+        response.headers.get("content-disposition"),
+        `${definition.type.toLowerCase()}.${format.toLowerCase()}`,
+      );
+      downloadBlob(await response.blob(), fileName);
+      setStatus({ kind: "done", fileName });
+      onGenerated();
+    } catch {
+      setStatus({
+        kind: "error",
+        message: "The report could not be downloaded. Check your connection and try again.",
+      });
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8 sm:items-center">
-      <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
-        {!exporting ? (
-          <>
-            <div className="flex items-start justify-between gap-3 border-b border-black/10 px-6 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-zinc-900">Export report</h2>
-                <p className="text-xs text-zinc-500">Choose a file format to download this report.</p>
-              </div>
-              <button type="button" onClick={onClose} aria-label="Close" className="shrink-0 text-zinc-400 hover:text-zinc-600">
-                <CloseIcon className="h-5 w-5" />
-              </button>
-            </div>
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      aria-busy={generating}
+      onCancel={(event) => {
+        event.preventDefault();
+        close();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) close();
+      }}
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl border border-black/10 bg-white p-0 text-left text-zinc-900 shadow-xl backdrop:bg-black/40"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-black/10 px-6 py-4">
+        <div>
+          <h2 id={titleId} className="text-base font-semibold text-zinc-900">Export report</h2>
+          <p className="text-xs text-zinc-500">Choose a file format to download this report.</p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          disabled={generating}
+          aria-label="Close"
+          className="shrink-0 text-zinc-400 hover:text-zinc-600 disabled:opacity-40"
+        >
+          <CloseIcon className="h-5 w-5" />
+        </button>
+      </div>
 
-            <div className="space-y-5 px-6 py-6">
-              <div className="flex items-center gap-3 rounded-lg bg-sage-50 px-3.5 py-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-forest-700">
-                  <GridIcon className="h-4.5 w-4.5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-zinc-900">{target.title}</p>
-                  <p className="truncate text-xs text-zinc-500">
-                    {target.subtitle} &middot; {target.recordCount.toLocaleString()} records
-                  </p>
-                </div>
-              </div>
+      <div className="space-y-5 px-6 py-6">
+        <div className="flex items-center gap-3 rounded-lg bg-sage-50 px-3.5 py-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-forest-700">
+            <GridIcon className="h-4.5 w-4.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-zinc-900">{definition.title}</p>
+            <p className="text-xs text-zinc-500">{scope}</p>
+          </div>
+        </div>
 
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">File Format</p>
-                <div className="space-y-2">
-                  {FORMATS.map((f) => (
-                    <button
-                      key={f.value}
-                      type="button"
-                      onClick={() => setFormat(f.value)}
-                      className={`flex w-full items-center gap-3 rounded-lg border p-3.5 text-left transition-colors ${
-                        format === f.value ? "border-forest-700 bg-forest-50" : "border-black/10 hover:bg-sage-50"
+        {status.kind === "done" ? (
+          <div role="status" className="rounded-lg border border-forest-100 bg-sage-50 px-4 py-4 text-center">
+            <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-forest-700 text-white">
+              <CheckIcon className="h-5 w-5" />
+            </span>
+            <p className="mt-3 text-sm font-semibold text-zinc-900">Report downloaded</p>
+            <p className="mt-1 break-all text-xs text-zinc-600">{status.fileName}</p>
+            <p className="mt-2 text-[11px] text-zinc-500">
+              Edits to this file never change BioSphere records. Generate it again for current data.
+            </p>
+          </div>
+        ) : (
+          <fieldset disabled={generating}>
+            <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">File format</legend>
+            <div className="space-y-2">
+              {formats.map((value) => {
+                const option = FORMATS[value];
+                const selected = value === format;
+                return (
+                  <label
+                    key={value}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-lg border p-3.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-forest-700 ${
+                      selected ? "border-forest-700 bg-sage-50" : "border-black/10 hover:bg-sage-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="report-format"
+                      value={value}
+                      checked={selected}
+                      onChange={() => {
+                        setFormat(value);
+                        if (status.kind === "error") setStatus({ kind: "idle" });
+                      }}
+                      className="sr-only"
+                    />
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 ring-black/10 ${option.tint}`}>
+                      <option.icon className="h-4.5 w-4.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-zinc-900">{option.label}</span>
+                      <span className="block text-xs text-zinc-500">{option.description}</span>
+                    </span>
+                    <span
+                      aria-hidden
+                      className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        selected ? "border-forest-700" : "border-black/20"
                       }`}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-forest-700 ring-1 ring-black/10">
-                        <f.icon className="h-4.5 w-4.5" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-zinc-900">{f.label}</span>
-                        <span className="block text-xs text-zinc-500">{f.description}</span>
-                      </span>
-                      <span
-                        className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border-2 ${
-                          format === f.value ? "border-forest-700" : "border-black/20"
-                        }`}
-                      >
-                        {format === f.value && <span className="h-2 w-2 rounded-full bg-forest-700" />}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      {selected && <span className="h-2 w-2 rounded-full bg-forest-700" />}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
+          </fieldset>
+        )}
 
-            <div className="flex items-center justify-end gap-2 border-t border-black/10 px-6 py-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setProgress(0)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800"
-              >
-                <DownloadIcon className="h-3.5 w-3.5" />
-                Export report
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="px-6 py-8 text-center">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-sage-100 text-forest-700">
-              <GridIcon className="h-6 w-6" />
-            </span>
-            <h2 className="mt-4 text-base font-semibold text-zinc-900">
-              {done ? "Export Complete" : `Exporting to ${format}`}
-            </h2>
-            <p className="mt-1 truncate rounded-lg bg-sage-50 px-3 py-1.5 text-xs text-zinc-600">{filename}</p>
-
-            <div className="mt-5">
-              <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-zinc-500">
-                <span>{done ? "Done" : "Exporting…"}</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-sage-100">
-                <div
-                  className="h-full rounded-full bg-forest-700 transition-all duration-150"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-zinc-500">
-              <span className="font-semibold text-zinc-800">{target.recordCount.toLocaleString()}</span> records &middot; ~184 KB
-            </p>
-
-            <button
-              type="button"
-              disabled={!done}
-              onClick={onClose}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-forest-700 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <DownloadIcon className="h-4 w-4" />
-              Download {format}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-2 w-full rounded-lg border border-black/15 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
-            >
-              Cancel
-            </button>
-
-            {done && (
-              <p className="mt-4 flex items-center justify-center gap-1.5 text-xs font-medium text-forest-700">
-                <CheckIcon className="h-3.5 w-3.5" />
-                {target.recordCount.toLocaleString()} records exported &middot; 184 KB
-              </p>
-            )}
-          </div>
+        {status.kind === "error" && (
+          <p role="alert" className="flex gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            <AlertTriangleIcon className="mt-px h-3.5 w-3.5 shrink-0" />
+            <span>{status.message}</span>
+          </p>
         )}
       </div>
-    </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-black/10 px-6 py-4">
+        <button
+          type="button"
+          onClick={close}
+          disabled={generating}
+          className="rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100 disabled:opacity-50"
+        >
+          {status.kind === "done" ? "Close" : "Cancel"}
+        </button>
+        {status.kind !== "done" && (
+          <button
+            type="button"
+            onClick={exportReport}
+            disabled={generating}
+            autoFocus
+            className="inline-flex items-center gap-1.5 rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-wait disabled:opacity-70"
+          >
+            {generating ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />
+            ) : (
+              <DownloadIcon className="h-3.5 w-3.5" />
+            )}
+            {generating ? "Generating…" : "Export report"}
+          </button>
+        )}
+      </div>
+    </dialog>
   );
 }
