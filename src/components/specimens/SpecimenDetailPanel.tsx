@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import { CloseIcon, PawIcon } from "@/components/icons";
+import { CloseIcon } from "@/components/icons";
+import { SpecimenCoverPreview } from "./SpecimenCoverPreview";
 import type { SpecimenSummary } from "@/features/specimens/types";
 
 function displayValue(value: string | null) {
@@ -55,9 +56,11 @@ export function SpecimenDetailPanel({
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="flex aspect-4/3 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
-            <PawIcon className="h-10 w-10" />
-          </div>
+          <SpecimenCoverPreview
+            key={`${specimen.id}:${specimen.updatedAt}`}
+            specimenId={specimen.id}
+            alt={`Cover image of ${specimen.commonName ?? specimen.scientificName ?? "selected specimen"}`}
+          />
 
           <div>
             <p className="text-xs font-medium text-zinc-500">

@@ -56,3 +56,27 @@ changes. No new filters or backend behavior are introduced.
 
 Automated tests verify form identity and default values, not DOM interaction.
 Keep DEF-008 Ready for retest until this browser checklist passes.
+
+## Selected cover image / DEF-007
+
+On `fix/cataloging-cover-preview`, only the selected specimen's marked cover
+is fetched through the existing protected media APIs. No cover is selected
+automatically from other images, and no new database/backend model is added.
+
+1. Mark an uploaded image as cover, return to Cataloging, select the specimen
+   and confirm the image appears after the loading indicator.
+2. Select another specimen with a different cover, then rapidly alternate
+   between them. No previous specimen's image should appear under the new one.
+3. Change the cover, return to Cataloging and refresh; confirm the new cover.
+4. Remove the cover or select a specimen with no marked cover. Expect the
+   placeholder and “No cover image selected,” not an arbitrary image.
+5. Temporarily stop the backend or fail the image request in browser DevTools.
+   Expect a safe error with **Retry cover image**; restore connectivity and
+   retry. Image failures or expired links must not break the specimen details.
+6. Confirm the browser receives only the cover caption and a short-lived HTTPS
+   URL, not storage paths or session/service credentials. Backend authorization
+   still protects both metadata and URL signing.
+
+Automated tests cover the read action's authorization/input/error contracts and
+rendered image/placeholder/error states. Actual image loading, rapid-selection
+race handling and retry interaction require this manual retest.

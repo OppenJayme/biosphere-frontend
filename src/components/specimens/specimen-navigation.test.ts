@@ -5,6 +5,8 @@ import { SpecimenTable } from "./SpecimenTable";
 import { SpecimenDetailPanel } from "./SpecimenDetailPanel";
 import type { SpecimenSearchItem } from "../../features/specimens/types";
 
+vi.mock("@/features/specimens/cover-preview-action", () => ({ getSpecimenCoverPreview: vi.fn() }));
+
 const specimen: SpecimenSearchItem = {
   id: "11111111-1111-4111-8111-111111111111",
   collectionId: null,
