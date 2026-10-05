@@ -34,3 +34,25 @@ the second device to `localhost`. If the host IP changes, restart again.
 
 Do not mark defects Verified until these actual retests pass. Inventory,
 storage management, FAQ and authentication implementation are outside this fix.
+
+## Clear all / DEF-008
+
+On `fix/cataloging-filter-reset`, the filter form resets when its applied query
+changes. No new filters or backend behavior are introduced.
+
+1. Apply search, status, collection, gender, public eligibility and a nondefault
+   sort. Also set at least one advanced filter and visit page 2 if available.
+2. Click **Clear all**. Expect `/specimens`, default result set, page 1, empty
+   search/text/date fields, All status/collection/gender/eligibility selections,
+   Last updated / Descending sort and default descendant scope. More filters
+   should no longer open automatically.
+3. Immediately click **Apply filters**. Previously selected filters must not
+   return. The browser may include explicit default values in the submitted
+   query; the parsed query and results must still be unfiltered.
+4. Use Back/Forward between applied and cleared states. Every visible control
+   must match the results and applied query without a manual page reload.
+5. Type an unfinished search and select another specimen preview without
+   submitting. The same-query rerender must not erase that unfinished input.
+
+Automated tests verify form identity and default values, not DOM interaction.
+Keep DEF-008 Ready for retest until this browser checklist passes.
