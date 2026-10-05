@@ -348,10 +348,10 @@ export async function detachSpecimenTag(specimenId: string, tagId: string) {
 }
 
 /** Read stable media metadata without exposing a permanent public object URL. */
-export async function listSpecimenMedia(specimenId: string) {
+export async function listSpecimenMedia(specimenId: string, signal?: AbortSignal) {
   const response = await apiFetch<unknown>(
     `/specimens/${encodeURIComponent(specimenId)}/media`,
-    { method: "GET", cache: "no-store" },
+    { method: "GET", cache: "no-store", signal },
   );
   const result = specimenMediaSchema.array().safeParse(response);
 
@@ -363,10 +363,10 @@ export async function listSpecimenMedia(specimenId: string) {
 }
 
 /** Request a short-lived private image URL after backend ownership checks. */
-export async function getSpecimenMediaSignedUrl(specimenId: string, mediaId: string) {
+export async function getSpecimenMediaSignedUrl(specimenId: string, mediaId: string, signal?: AbortSignal) {
   const response = await apiFetch<unknown>(
     `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/signed-url`,
-    { method: "GET", cache: "no-store" },
+    { method: "GET", cache: "no-store", signal },
   );
   const result = specimenMediaSignedUrlSchema.safeParse(response);
 
