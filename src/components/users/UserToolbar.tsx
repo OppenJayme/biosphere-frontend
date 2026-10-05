@@ -1,5 +1,5 @@
 import { SearchIcon, ChevronDownIcon } from "@/components/icons";
-import { USER_ROLES, USER_STATUSES, type UserRoleFilter, type UserStatusFilter } from "@/features/user-accounts/types";
+import { USER_STATUSES, type UserStatusFilter } from "@/features/user-accounts/types";
 
 function FilterSelect<T extends string>({
   label,
@@ -36,17 +36,13 @@ function FilterSelect<T extends string>({
 
 export function UserToolbar({
   search,
-  role,
   status,
   onSearchChange,
-  onRoleChange,
   onStatusChange,
 }: {
   search: string;
-  role: UserRoleFilter;
   status: UserStatusFilter;
   onSearchChange: (value: string) => void;
-  onRoleChange: (value: UserRoleFilter) => void;
   onStatusChange: (value: UserStatusFilter) => void;
 }) {
   return (
@@ -62,7 +58,6 @@ export function UserToolbar({
           className="w-full rounded-lg border border-black/15 py-2 pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
         />
       </div>
-      <FilterSelect label="Filter by role" allLabel="All Roles" value={role} options={USER_ROLES} onChange={onRoleChange} />
       <FilterSelect
         label="Filter by status"
         allLabel="All Statuses"

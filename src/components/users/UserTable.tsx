@@ -1,16 +1,11 @@
 "use client";
 
-import type { AccountUser, UserRole, UserStatus } from "@/features/user-accounts/types";
+import type { AccountUser, UserStatus } from "@/features/user-accounts/types";
 
 export const STATUS_STYLES: Record<UserStatus, string> = {
   Active: "bg-forest-100 text-forest-700",
   "Pending Invite": "bg-amber-100 text-amber-700",
   Inactive: "bg-red-100 text-red-600",
-};
-
-export const ROLE_STYLES: Record<UserRole, string> = {
-  Curator: "bg-sage-100 text-forest-700",
-  Developer: "bg-sky-100 text-sky-700",
 };
 
 export function UserTable({
@@ -24,11 +19,10 @@ export function UserTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] text-left text-sm">
+      <table className="w-full min-w-[720px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
             <th className="py-2 pr-3 font-medium">Name</th>
-            <th className="py-2 pr-3 font-medium">Role</th>
             <th className="py-2 pr-3 font-medium">Email</th>
             <th className="py-2 pr-3 font-medium">Status</th>
             <th className="py-2 pr-3 font-medium">Last Sign-in</th>
@@ -66,11 +60,6 @@ export function UserTable({
                       {user.isCurrentUser && <span className="ml-1.5 text-xs font-normal text-zinc-500">(you)</span>}
                     </p>
                   </div>
-                </td>
-                <td className="py-2.5 pr-3">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${ROLE_STYLES[user.role]}`}>
-                    {user.role}
-                  </span>
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{user.email ?? "—"}</td>
                 <td className="py-2.5 pr-3">

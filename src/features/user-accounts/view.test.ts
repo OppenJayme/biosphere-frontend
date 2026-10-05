@@ -7,7 +7,6 @@ function account(overrides: Partial<UserAccount> = {}): UserAccount {
     id: "11111111-1111-4111-8111-111111111111",
     fullName: "Maria Santos",
     email: "maria@usc.edu.ph",
-    role: "CURATOR",
     status: "ACTIVE",
     inviteAccepted: true,
     lastSignInAt: "2026-10-01T02:00:00.000Z",
@@ -34,14 +33,9 @@ describe("toAccountUser", () => {
   it("marks the signed-in user and formats dates in Philippine time", () => {
     const user = toAccountUser(account(), "11111111-1111-4111-8111-111111111111");
     expect(user.isCurrentUser).toBe(true);
-    expect(user.role).toBe("Curator");
     expect(user.initials).toBe("MS");
     expect(user.createdOn).toBe("Sep 1, 2026");
     expect(user.lastSignIn).toBe("Oct 1, 2026, 10:00 AM");
-  });
-
-  it("labels developer accounts", () => {
-    expect(toAccountUser(account({ role: "DEVELOPER" }), null).role).toBe("Developer");
   });
 
   it("keeps a never-signed-in account's last sign-in empty", () => {
@@ -57,22 +51,27 @@ describe("initialsOf", () => {
 });
 
 describe("buildUserStats", () => {
-  it("counts each status, its share of the total, and the role split", () => {
+  it("counts each status and its share of the total", () => {
     const users = [
       account({ id: "11111111-1111-4111-8111-111111111111" }),
       account({ id: "22222222-2222-4222-8222-222222222222", inviteAccepted: false }),
       account({ id: "33333333-3333-4333-8333-333333333333", status: "INACTIVE" }),
-      account({ id: "44444444-4444-4444-8444-444444444444", role: "DEVELOPER" }),
+      account({ id: "44444444-4444-4444-8444-444444444444" }),
     ].map((item) => toAccountUser(item, null));
 
     const stats = buildUserStats(users);
     expect(stats.map((stat) => stat.value)).toEqual(["4", "2", "1", "1"]);
-    expect(stats[0].note).toBe("3 curators · 1 developer");
+    expect(stats.map((stat) => stat.label)).toEqual([
+      "Total Curators",
+      "Active Curators",
+      "Pending Invitations",
+      "Inactive Accounts",
+    ]);
     expect(stats[1].note).toBe("50.0% of total");
   });
 
-  it("does not divide by zero with no users", () => {
-    expect(buildUserStats([])[1].note).toBe("No users yet");
+  it("does not divide by zero with no curators", () => {
+    expect(buildUserStats([])[1].note).toBe("No curators yet");
   });
 });
 
@@ -88,31 +87,16 @@ describe("filterUsers", () => {
       }),
       null,
     ),
-    toAccountUser(
-      account({
-        id: "33333333-3333-4333-8333-333333333333",
-        fullName: "Ada Lovelace",
-        email: "ada@dev.example",
-        role: "DEVELOPER",
-      }),
-      null,
-    ),
   ];
   const names = (list: typeof users) => list.map((u) => u.name);
 
   it("matches name or email, ignoring case and surrounding spaces", () => {
-    expect(names(filterUsers(users, { search: "  RIZAL ", role: "", status: "" }))).toEqual(["Jose Rizal"]);
-    expect(names(filterUsers(users, { search: "maria@", role: "", status: "" }))).toEqual(["Maria Santos"]);
+    expect(names(filterUsers(users, { search: "  RIZAL ", status: "" }))).toEqual(["Jose Rizal"]);
+    expect(names(filterUsers(users, { search: "maria@", status: "" }))).toEqual(["Maria Santos"]);
   });
 
-  it("filters by role", () => {
-    expect(names(filterUsers(users, { search: "", role: "Developer", status: "" }))).toEqual(["Ada Lovelace"]);
-    expect(filterUsers(users, { search: "", role: "Curator", status: "" })).toHaveLength(2);
-  });
-
-  it("combines search, role, and status", () => {
-    expect(names(filterUsers(users, { search: "", role: "", status: "Pending Invite" }))).toEqual(["Jose Rizal"]);
-    expect(filterUsers(users, { search: "maria", role: "", status: "Pending Invite" })).toEqual([]);
-    expect(filterUsers(users, { search: "ada", role: "Curator", status: "" })).toEqual([]);
+  it("combines search with the status filter", () => {
+    expect(names(filterUsers(users, { search: "", status: "Pending Invite" }))).toEqual(["Jose Rizal"]);
+    expect(filterUsers(users, { search: "maria", status: "Pending Invite" })).toEqual([]);
   });
 });

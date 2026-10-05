@@ -34,7 +34,7 @@ export default async function UsersPage() {
     <div className="space-y-5">
       <div>
         <h1 className="font-serif text-2xl font-semibold text-forest-800">Users</h1>
-        <p className="mt-1 text-sm text-zinc-600">View curator and developer accounts, invitation status, and recent activity.</p>
+        <p className="mt-1 text-sm text-zinc-600">View curator accounts, invitation status, and recent activity.</p>
       </div>
 
       {users ? (

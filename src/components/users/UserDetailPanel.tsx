@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ClockIcon, CalendarIcon, ShieldIcon, CheckIcon, ArrowRightIcon, MailIcon, InfoIcon } from "@/components/icons";
 import { getUserRecentActivity } from "@/features/user-accounts/actions";
 import type { AccountUser, RecentActivityResult } from "@/features/user-accounts/types";
-import { ROLE_STYLES, STATUS_STYLES } from "./UserTable";
+import { STATUS_STYLES } from "./UserTable";
 
 function InfoRow({ icon: Icon, label, children }: { icon: typeof ClockIcon; label: string; children: ReactNode }) {
   return (
@@ -106,7 +106,7 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
 
         <div className="mt-3 divide-y divide-black/5 border-t border-black/5">
           <InfoRow icon={ShieldIcon} label="Role">
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${ROLE_STYLES[user.role]}`}>{user.role}</span>
+            Curator
           </InfoRow>
           <InfoRow icon={CheckIcon} label="Status">
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLES[user.status]}`}>{user.status}</span>

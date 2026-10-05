@@ -1,6 +1,6 @@
-/** Pure helpers that turn user accounts into what the Users page renders. */
+/** Pure helpers that turn curator accounts into what the Users page renders. */
 
-import type { AccountUser, UserAccount, UserRole, UserRoleFilter, UserStatus, UserStatusFilter } from "./types";
+import type { AccountUser, UserAccount, UserStatus, UserStatusFilter } from "./types";
 
 const DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "Asia/Manila" });
 const DATE_TIME = new Intl.DateTimeFormat("en-US", {
@@ -17,11 +17,6 @@ const AVATAR_COLORS = [
   "bg-rose-500",
   "bg-forest-900",
 ] as const;
-
-const ROLE_LABELS: Record<UserAccount["role"], UserRole> = {
-  CURATOR: "Curator",
-  DEVELOPER: "Developer",
-};
 
 export function formatDate(iso: string) {
   return DATE.format(new Date(iso));
@@ -55,7 +50,6 @@ export function toAccountUser(account: UserAccount, currentAccountId: string | n
     id: account.id,
     name: account.fullName,
     email: account.email,
-    role: ROLE_LABELS[account.role],
     status: userStatus(account),
     isCurrentUser: account.id === currentAccountId,
     lastSignIn: account.lastSignInAt ? formatDateTime(account.lastSignInAt) : null,
@@ -76,11 +70,7 @@ export type UserStat = {
 };
 
 function shareOf(count: number, total: number) {
-  return total === 0 ? "No users yet" : `${((count / total) * 100).toFixed(1)}% of total`;
-}
-
-function plural(count: number, singular: string) {
-  return `${count.toLocaleString()} ${count === 1 ? singular : `${singular}s`}`;
+  return total === 0 ? "No curators yet" : `${((count / total) * 100).toFixed(1)}% of total`;
 }
 
 export function buildUserStats(users: AccountUser[]): UserStat[] {
@@ -89,17 +79,10 @@ export function buildUserStats(users: AccountUser[]): UserStat[] {
   const active = count("Active");
   const pending = count("Pending Invite");
   const inactive = count("Inactive");
-  const curators = users.filter((user) => user.role === "Curator").length;
 
   return [
-    {
-      label: "Total Users",
-      value: total.toLocaleString(),
-      note: `${plural(curators, "curator")} · ${plural(total - curators, "developer")}`,
-      tone: "neutral",
-      icon: "specimen",
-    },
-    { label: "Active Users", value: active.toLocaleString(), note: shareOf(active, total), tone: "positive", icon: "clock" },
+    { label: "Total Curators", value: total.toLocaleString(), note: "Curator accounts", tone: "neutral", icon: "specimen" },
+    { label: "Active Curators", value: active.toLocaleString(), note: shareOf(active, total), tone: "positive", icon: "clock" },
     {
       label: "Pending Invitations",
       value: pending.toLocaleString(),
@@ -117,12 +100,11 @@ export function buildUserStats(users: AccountUser[]): UserStat[] {
   ];
 }
 
-export type UserFilters = { search: string; role: UserRoleFilter; status: UserStatusFilter };
+export type UserFilters = { search: string; status: UserStatusFilter };
 
-export function filterUsers(users: AccountUser[], { search, role, status }: UserFilters) {
+export function filterUsers(users: AccountUser[], { search, status }: UserFilters) {
   const needle = search.trim().toLowerCase();
   return users.filter((user) => {
-    if (role && user.role !== role) return false;
     if (status && user.status !== status) return false;
     if (!needle) return true;
     return user.name.toLowerCase().includes(needle) || (user.email?.toLowerCase().includes(needle) ?? false);

@@ -9,20 +9,18 @@ import {
   USER_PAGE_SIZES,
   type AccountUser,
   type UserPageSize,
-  type UserRoleFilter,
   type UserStatusFilter,
 } from "@/features/user-accounts/types";
 import { filterUsers } from "@/features/user-accounts/view";
 
 export function UsersWorkspace({ users }: { users: AccountUser[] }) {
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<UserRoleFilter>("");
   const [status, setStatus] = useState<UserStatusFilter>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<UserPageSize>(USER_PAGE_SIZES[0]);
   const [selectedId, setSelectedId] = useState<string | null>(users[0]?.id ?? null);
 
-  const filtered = useMemo(() => filterUsers(users, { search, role, status }), [users, search, role, status]);
+  const filtered = useMemo(() => filterUsers(users, { search, status }), [users, search, status]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const start = (currentPage - 1) * pageSize;
@@ -34,14 +32,9 @@ export function UsersWorkspace({ users }: { users: AccountUser[] }) {
     <div className="space-y-4">
       <UserToolbar
         search={search}
-        role={role}
         status={status}
         onSearchChange={(value) => {
           setSearch(value);
-          setPage(1);
-        }}
-        onRoleChange={(value) => {
-          setRole(value);
           setPage(1);
         }}
         onStatusChange={(value) => {
@@ -56,7 +49,7 @@ export function UsersWorkspace({ users }: { users: AccountUser[] }) {
             <UserTable users={visible} selectedId={selectedId} onSelect={setSelectedId} />
           ) : (
             <p className="py-10 text-center text-sm text-zinc-500">
-              {users.length === 0 ? "No user accounts yet." : "No users match your search or filter."}
+              {users.length === 0 ? "No curator accounts yet." : "No users match your search or filter."}
             </p>
           )}
 
