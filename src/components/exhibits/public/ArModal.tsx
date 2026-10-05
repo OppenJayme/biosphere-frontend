@@ -80,7 +80,25 @@ export function ArModal({
   }, []);
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") return onClose();
+      if (event.key !== "Tab") return;
+
+      // Keep Tab inside the dialog so keyboard focus cannot reach the page behind it.
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>("button, a[href], model-viewer"));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === dialog)) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
