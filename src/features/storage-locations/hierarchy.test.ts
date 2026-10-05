@@ -4,6 +4,7 @@ import {
   filterStorageUnits,
   storageDescendantIds,
   storagePath,
+  storagePathOptions,
 } from "./hierarchy";
 import type { StorageUnit } from "./types";
 
@@ -69,5 +70,21 @@ describe("storage hierarchy helpers", () => {
     expect(storageDescendantIds([root, child, grandchild], root.id)).toEqual(
       new Set([child.id, grandchild.id]),
     );
+  });
+});
+
+describe("storage path options", () => {
+  it("lists every unit with its full path in hierarchy order and marks archived units", () => {
+    const room = unit("00000000-0000-4000-8000-000000000001", "Room 101");
+    const cabinet = unit("00000000-0000-4000-8000-000000000002", "Cabinet A", room.id);
+    const drawer = { ...unit("00000000-0000-4000-8000-000000000003", "Drawer 3", cabinet.id), archivedAt: "2026-09-30T00:00:00.000Z" };
+    const other = unit("00000000-0000-4000-8000-000000000004", "Annex");
+
+    expect(storagePathOptions([drawer, other, cabinet, room])).toEqual([
+      { id: other.id, pathLabel: "Annex", archived: false },
+      { id: room.id, pathLabel: "Room 101", archived: false },
+      { id: cabinet.id, pathLabel: "Room 101 › Cabinet A", archived: false },
+      { id: drawer.id, pathLabel: "Room 101 › Cabinet A › Drawer 3", archived: true },
+    ]);
   });
 });

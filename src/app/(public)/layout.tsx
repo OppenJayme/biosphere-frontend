@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { PublicFooter } from "@/components/layout/PublicFooter";
+import { FaqAssistantWidget } from "@/components/faq/FaqAssistantWidget";
 import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 import "../globals.css";
 
@@ -53,6 +54,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <PublicFooter />
+        <FaqAssistantWidget />
       </body>
     </html>
   );

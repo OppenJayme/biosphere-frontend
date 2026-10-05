@@ -93,3 +93,24 @@ export function storageDescendantIds(units: StorageUnit[], selectedId: string): 
   }
   return descendants;
 }
+
+/** A storage unit offered in a location filter, labelled by its full path. */
+export type StoragePathOption = {
+  id: string;
+  pathLabel: string;
+  archived: boolean;
+};
+
+/** Every unit as a root-to-unit path ("Room 101 › Cabinet A"), in hierarchy order. */
+export function storagePathOptions(units: StorageUnit[]): StoragePathOption[] {
+  const options: StoragePathOption[] = [];
+  const visit = (nodes: StorageTreeNode[], parents: string[]) => {
+    for (const node of nodes) {
+      const path = [...parents, node.label];
+      options.push({ id: node.id, pathLabel: path.join(" › "), archived: node.archivedAt !== null });
+      visit(node.children, path);
+    }
+  };
+  visit(buildStorageHierarchy(units), []);
+  return options;
+}

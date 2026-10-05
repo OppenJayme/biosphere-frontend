@@ -10,6 +10,7 @@ import { RecentSpecimensTable } from "@/components/dashboard/RecentSpecimensTabl
 import { StorageOverview } from "@/components/dashboard/StorageOverview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { PublicQrReadiness } from "@/components/dashboard/PublicQrReadiness";
+import { OfflineSyncStatus } from "@/components/dashboard/OfflineSyncStatus";
 import { DotsIcon } from "@/components/icons";
 import { getDashboardData } from "@/features/dashboard/api";
 import { verifySession } from "@/lib/session";
@@ -43,13 +44,21 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {data.stats.status === "ok" ? (
           data.stats.data.map((stat) => (
-            <StatCard key={stat.key} label={stat.label} value={stat.value} note={stat.note} tone={stat.tone} icon={stat.icon} />
+            <StatCard
+              key={stat.key}
+              label={stat.label}
+              value={stat.value}
+              note={stat.note}
+              tone={stat.tone}
+              icon={stat.icon}
+              href={stat.href}
+            />
           ))
         ) : (
-          <div className="sm:col-span-2 xl:col-span-4">
+          <div className="sm:col-span-2 xl:col-span-3">
             <SectionError message="Stats are temporarily unavailable." />
           </div>
         )}
@@ -106,9 +115,14 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[240px_1fr_320px]">
-        <Panel title="Quick Actions">
-          <QuickActions />
-        </Panel>
+        <div className="space-y-4">
+          <Panel title="Quick Actions">
+            <QuickActions />
+          </Panel>
+          <Panel title="Offline Drafts">
+            <OfflineSyncStatus ownerId={user.id} />
+          </Panel>
+        </div>
 
         <Panel title="Recent Specimen Records" viewAllHref="/specimens">
           {data.recentSpecimens.status === "ok" ? (

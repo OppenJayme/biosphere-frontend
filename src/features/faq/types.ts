@@ -33,6 +33,7 @@ export type FaqEntryPage = z.infer<typeof faqEntryPageSchema>;
 export type FaqListQuery = {
   status: FaqStatus | "";
   category: string;
+  search: string;
   page: number;
   limit: typeof FAQ_PAGE_LIMIT;
 };

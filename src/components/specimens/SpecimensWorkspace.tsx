@@ -11,6 +11,7 @@ import {
   type SpecimenListQuery,
   type SpecimenPage,
 } from "@/features/specimens/types";
+import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
 import { OfflineSpecimenPanel } from "@/features/offline/components/OfflineSpecimenPanel";
 
 export function SpecimensWorkspace({
@@ -18,12 +19,18 @@ export function SpecimensWorkspace({
   query,
   collections,
   collectionLookupAvailable,
+  storageOptions,
+  storageLookupAvailable,
+  filterError,
   offlineOwnerId,
 }: {
   specimenPage: SpecimenPage;
   query: SpecimenListQuery;
   collections: MuseumCollection[];
   collectionLookupAvailable: boolean;
+  storageOptions: StoragePathOption[];
+  storageLookupAvailable: boolean;
+  filterError: string | null;
   offlineOwnerId: string;
 }) {
   const { items, limit, page, total } = specimenPage;
@@ -40,6 +47,9 @@ export function SpecimensWorkspace({
         query={query}
         collections={collections}
         collectionLookupAvailable={collectionLookupAvailable}
+        storageOptions={storageOptions}
+        storageLookupAvailable={storageLookupAvailable}
+        filterError={filterError}
       />
 
       <OfflineSpecimenPanel ownerId={offlineOwnerId} />

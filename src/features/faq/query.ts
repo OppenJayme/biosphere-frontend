@@ -27,6 +27,7 @@ export function parseFaqListQuery(searchParams: SearchParams): FaqListQuery {
   return {
     status: parseStatus(firstValue(searchParams.status)),
     category: (firstValue(searchParams.category) ?? "").trim().slice(0, 100),
+    search: (firstValue(searchParams.search) ?? "").trim().slice(0, 200),
     page: parsePage(firstValue(searchParams.page)),
     limit: FAQ_PAGE_LIMIT,
   };
@@ -36,6 +37,7 @@ export function faqKnowledgeHref(query: FaqListQuery, page = query.page) {
   const params = new URLSearchParams();
   if (query.status) params.set("status", query.status);
   if (query.category) params.set("category", query.category);
+  if (query.search) params.set("search", query.search);
   if (page > 1) params.set("page", String(page));
   const serialized = params.toString();
   return serialized ? `/faq-knowledge?${serialized}` : "/faq-knowledge";

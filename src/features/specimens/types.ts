@@ -10,6 +10,8 @@ export const SPECIMEN_SORT_FIELDS = [
   "scientificName",
   "commonName",
   "status",
+  "specimenCategory",
+  "family",
 ] as const;
 export const SORT_DIRECTIONS = ["asc", "desc"] as const;
 
@@ -79,8 +81,24 @@ export const specimenDuplicateCheckResultSchema = z.object(duplicateCheckFields)
 /** POST /specimens: the created record plus the post-save duplicate warning result. */
 export const specimenCreateResultSchema = specimenSummarySchema.extend(duplicateCheckFields);
 
+/** Catalog search row: the specimen plus the columns the curator table shows. */
+export const specimenSearchItemSchema = specimenSummarySchema.extend({
+  family: z.string().nullable(),
+  collector: z.string().nullable(),
+  totalQuantity: z.number().int().nonnegative(),
+  conditionClasses: z.array(z.string()),
+  storageUnits: z.array(
+    z.object({
+      id: z.uuid(),
+      label: z.string(),
+      unitType: z.string(),
+      pathLabel: z.string(),
+    }),
+  ),
+});
+
 export const specimenPageSchema = z.object({
-  items: z.array(specimenSummarySchema),
+  items: z.array(specimenSearchItemSchema),
   total: z.number().int().nonnegative(),
   page: z.number().int().positive(),
   limit: z.number().int().positive(),
@@ -245,6 +263,7 @@ export type PossibleDuplicate = z.infer<typeof possibleDuplicateSchema>;
 export type SpecimenDuplicateCheckResult = z.infer<typeof specimenDuplicateCheckResultSchema>;
 export type SpecimenCreateResult = z.infer<typeof specimenCreateResultSchema>;
 export type SpecimenPage = z.infer<typeof specimenPageSchema>;
+export type SpecimenSearchItem = z.infer<typeof specimenSearchItemSchema>;
 export type SpecimenDetail = z.infer<typeof specimenDetailSchema>;
 export type MuseumCollection = z.infer<typeof museumCollectionSchema>;
 export type CollectionPage = z.infer<typeof collectionPageSchema>;
@@ -267,7 +286,55 @@ export type SpecimenListQuery = {
   sortBy: SpecimenSortField;
   sortDirection: SortDirection;
   page: number;
+} & Partial<SpecimenAdvancedFilters>;
+
+/**
+ * Narrower catalog filters (REQ-4.7-02). Optional on SpecimenListQuery so
+ * callers that only need the basic filters can leave them out.
+ */
+export type SpecimenAdvancedFilters = {
+  classificationStatus: string;
+  kingdom: string;
+  phylum: string;
+  taxonClass: string;
+  taxonOrder: string;
+  family: string;
+  genus: string;
+  species: string;
+  tag: string;
+  conditionClass: string;
+  storageUnitId: string | null;
+  includeDescendantUnits: boolean;
+  /** Inclusive museum-time dates, YYYY-MM-DD. */
+  createdFrom: string;
+  createdTo: string;
 };
+
+export const SPECIMEN_TEXT_FILTERS = [
+  "classificationStatus",
+  "kingdom",
+  "phylum",
+  "taxonClass",
+  "taxonOrder",
+  "family",
+  "genus",
+  "species",
+  "tag",
+  "conditionClass",
+] as const;
+
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MUSEUM_UTC_OFFSET = "+08:00";
+
+function dateOnly(value: string | undefined) {
+  if (!value || !DATE_ONLY_PATTERN.test(value)) return "";
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== value ? "" : value;
+}
+
+function boundedText(value: string | undefined) {
+  return (value ?? "").trim().slice(0, 100);
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -312,6 +379,11 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
     ? (rawSortDirection as SortDirection)
     : "desc";
 
+  const rawStorageUnitId = firstValue(searchParams.storageUnitId);
+  const storageUnitId = z.uuid().safeParse(rawStorageUnitId).success
+    ? (rawStorageUnitId ?? null)
+    : null;
+
   return {
     search,
     status,
@@ -322,6 +394,45 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
     sortBy,
     sortDirection,
     page: parsePage(firstValue(searchParams.page)),
+    classificationStatus: boundedText(firstValue(searchParams.classificationStatus)),
+    kingdom: boundedText(firstValue(searchParams.kingdom)),
+    phylum: boundedText(firstValue(searchParams.phylum)),
+    taxonClass: boundedText(firstValue(searchParams.taxonClass)),
+    taxonOrder: boundedText(firstValue(searchParams.taxonOrder)),
+    family: boundedText(firstValue(searchParams.family)),
+    genus: boundedText(firstValue(searchParams.genus)),
+    species: boundedText(firstValue(searchParams.species)),
+    tag: boundedText(firstValue(searchParams.tag)),
+    conditionClass: boundedText(firstValue(searchParams.conditionClass)),
+    storageUnitId,
+    // Sub-locations are included unless the curator opts out.
+    includeDescendantUnits: firstValue(searchParams.includeDescendantUnits) !== "false",
+    createdFrom: dateOnly(firstValue(searchParams.createdFrom)),
+    createdTo: dateOnly(firstValue(searchParams.createdTo)),
+  };
+}
+
+/** True when any narrower filter is set, so the toolbar opens that section. */
+export function hasAdvancedSpecimenFilters(query: SpecimenListQuery) {
+  return (
+    SPECIMEN_TEXT_FILTERS.some((key) => Boolean(query[key])) ||
+    Boolean(query.storageUnitId) ||
+    Boolean(query.createdFrom) ||
+    Boolean(query.createdTo)
+  );
+}
+
+export function specimenDateRangeError(query: SpecimenListQuery) {
+  return query.createdFrom && query.createdTo && query.createdFrom > query.createdTo
+    ? "The Date added start must not be after its end."
+    : null;
+}
+
+/** Museum-time day bounds for the backend's ISO 8601 date-added filters. */
+export function specimenCreatedBounds(query: Pick<SpecimenListQuery, "createdFrom" | "createdTo">) {
+  return {
+    from: query.createdFrom ? `${query.createdFrom}T00:00:00.000${MUSEUM_UTC_OFFSET}` : undefined,
+    to: query.createdTo ? `${query.createdTo}T23:59:59.999${MUSEUM_UTC_OFFSET}` : undefined,
   };
 }
 
@@ -335,6 +446,16 @@ export function specimenListHref(query: SpecimenListQuery, page = query.page) {
   if (query.publicDisplay !== null) {
     params.set("publicDisplay", String(query.publicDisplay));
   }
+  for (const key of SPECIMEN_TEXT_FILTERS) {
+    const value = query[key];
+    if (value) params.set(key, value);
+  }
+  if (query.storageUnitId) {
+    params.set("storageUnitId", query.storageUnitId);
+    if (query.includeDescendantUnits === false) params.set("includeDescendantUnits", "false");
+  }
+  if (query.createdFrom) params.set("createdFrom", query.createdFrom);
+  if (query.createdTo) params.set("createdTo", query.createdTo);
   if (query.sortBy !== "updatedAt") params.set("sortBy", query.sortBy);
   if (query.sortDirection !== "desc") params.set("sortDirection", query.sortDirection);
   if (page > 1) params.set("page", String(page));

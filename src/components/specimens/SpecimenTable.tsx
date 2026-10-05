@@ -1,7 +1,7 @@
 "use client";
 
 import { PawIcon } from "@/components/icons";
-import type { SpecimenSummary } from "@/features/specimens/types";
+import type { SpecimenSearchItem, SpecimenSummary } from "@/features/specimens/types";
 
 const STATUS_STYLES: Record<SpecimenSummary["status"], string> = {
   UNCATALOGED: "bg-zinc-100 text-zinc-700",
@@ -27,7 +27,7 @@ export function SpecimenTable({
   selectedId,
   onSelect,
 }: {
-  specimens: SpecimenSummary[];
+  specimens: SpecimenSearchItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -41,17 +41,21 @@ export function SpecimenTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1020px] text-left text-sm">
+      <table className="w-full min-w-[1320px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
             <th className="py-2 pr-3 font-medium">Record</th>
             <th className="py-2 pr-3 font-medium">Accession No.</th>
             <th className="py-2 pr-3 font-medium">Common Name</th>
             <th className="py-2 pr-3 font-medium">Scientific Name</th>
+            <th className="py-2 pr-3 font-medium">Family</th>
             <th className="py-2 pr-3 font-medium">Category</th>
             <th className="py-2 pr-3 font-medium">Gender</th>
             <th className="py-2 pr-3 font-medium">Classification</th>
             <th className="py-2 pr-3 font-medium">Catalog Status</th>
+            <th className="py-2 pr-3 text-right font-medium">Active Qty</th>
+            <th className="py-2 pr-3 font-medium">Condition</th>
+            <th className="py-2 pr-3 font-medium">Storage Location</th>
             <th className="py-2 pr-0 font-medium">Last Updated</th>
           </tr>
         </thead>
@@ -80,6 +84,9 @@ export function SpecimenTable({
                   {displayValue(specimen.scientificName)}
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">
+                  {displayValue(specimen.family)}
+                </td>
+                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">
                   {displayValue(specimen.specimenCategory)}
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">
@@ -94,6 +101,19 @@ export function SpecimenTable({
                   >
                     {statusLabel(specimen.status)}
                   </span>
+                </td>
+                <td className="py-2.5 pr-3 text-right whitespace-nowrap text-zinc-700">
+                  {specimen.totalQuantity.toLocaleString()}
+                </td>
+                <td className="py-2.5 pr-3 text-zinc-600">
+                  {specimen.conditionClasses.length > 0 ? specimen.conditionClasses.join(", ") : "—"}
+                </td>
+                <td className="max-w-64 py-2.5 pr-3 text-xs text-zinc-600">
+                  {specimen.storageUnits.length > 0
+                    ? specimen.storageUnits.map((unit) => (
+                        <span key={unit.id} className="block">{unit.pathLabel}</span>
+                      ))
+                    : "—"}
                 </td>
                 <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">
                   {formatDate(specimen.updatedAt)}

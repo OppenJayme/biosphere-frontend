@@ -62,6 +62,17 @@ export function FaqKnowledgeWorkspace({
     <div className="space-y-4">
       <section className="rounded-xl border border-black/10 bg-white p-4">
         <form action="/faq-knowledge" className="flex flex-col gap-3 md:flex-row md:items-end">
+          <label className="min-w-0 flex-[2] text-xs font-medium text-zinc-700">
+            Search
+            <input
+              type="search"
+              name="search"
+              defaultValue={query.search}
+              maxLength={200}
+              placeholder="Question, answer, category, or keyword"
+              className={`${inputClasses} mt-1 w-full`}
+            />
+          </label>
           <label className="text-xs font-medium text-zinc-700">
             Status
             <select name="status" defaultValue={query.status} className={`${inputClasses} mt-1 block min-w-44`}>
@@ -84,7 +95,7 @@ export function FaqKnowledgeWorkspace({
           <button type="submit" className="rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800">
             Apply filters
           </button>
-          {(query.status || query.category) && (
+          {(query.status || query.category || query.search) && (
             <Link href="/faq-knowledge" className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-forest-800 hover:bg-forest-50">
               Clear
             </Link>
@@ -142,7 +153,7 @@ export function FaqKnowledgeWorkspace({
       <FaqKnowledgeManagement selected={selected} />
 
       <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-950">
-        Public FAQ matching is not enabled yet. Matching rules, thresholds, ambiguity handling, and fallback wording still require approval.
+        Only active entries are used by the public FAQ Assistant. Visitors are matched on the question, alternative wording, and keywords; unmatched questions are sent to the General Inquiry form.
       </div>
     </div>
   );

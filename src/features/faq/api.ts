@@ -17,6 +17,7 @@ export async function listFaqEntries(query: FaqListQuery): Promise<FaqEntryPage>
   });
   if (query.status) params.set("status", query.status);
   if (query.category) params.set("category", query.category);
+  if (query.search) params.set("search", query.search);
 
   const response = await apiFetch<unknown>(`/faq/entries?${params}`, {
     method: "GET",
