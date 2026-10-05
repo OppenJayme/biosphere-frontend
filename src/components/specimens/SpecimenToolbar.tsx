@@ -105,7 +105,13 @@ export function SpecimenToolbar({
         </div>
       </div>
 
-      <form action="/specimens" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Reset uncontrolled fields only when the applied query changes. This
+          keeps Clear all and Back/Forward aligned with the displayed results. */}
+      <form
+        key={JSON.stringify(query)}
+        action="/specimens"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
         <label className="relative sm:col-span-2 xl:col-span-2">
           <span className="text-xs font-medium text-zinc-600">Search</span>
           <SearchIcon className="pointer-events-none absolute bottom-3 left-3.5 h-4 w-4 text-zinc-400" />
