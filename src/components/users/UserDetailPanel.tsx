@@ -124,7 +124,7 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
 
         <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
           <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
-          Curator onboarding and enabling or disabling access are handled by the developer when formally authorized.
+          Inviting curators, activating or deactivating accounts, and handover aren&rsquo;t available here yet.
         </p>
       </div>
 
