@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { MouseEvent } from "react";
 import { CloseIcon, PawIcon } from "@/components/icons";
 import type { SpecimenSummary } from "@/features/specimens/types";
 
@@ -16,25 +17,37 @@ function formatDate(value: string) {
 export function SpecimenDetailPanel({
   specimen,
   onClear,
+  clearHref,
 }: {
   specimen: SpecimenSummary | null;
-  onClear: () => void;
+  onClear: (event: MouseEvent<HTMLAnchorElement>) => void;
+  clearHref: string;
 }) {
   return (
-    <aside className="rounded-xl border border-black/10 bg-white p-4">
+    <aside
+      id="selected-specimen"
+      className="scroll-mt-4 rounded-xl border border-black/10 bg-white p-4"
+    >
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-900">Selected Specimen</h3>
         {specimen && (
-          <button
-            type="button"
+          <Link
+            href={clearHref}
+            prefetch={false}
             onClick={onClear}
             aria-label="Clear selection"
             className="text-zinc-400 hover:text-zinc-600"
           >
             <CloseIcon className="h-4 w-4" />
-          </button>
+          </Link>
         )}
       </div>
+
+      <p role="status" className="sr-only">
+        {specimen
+          ? `Selected ${specimen.commonName ?? specimen.accessionNumber ?? "specimen"}`
+          : "Selection cleared"}
+      </p>
 
       {!specimen ? (
         <p className="py-6 text-center text-xs text-zinc-500">
@@ -53,9 +66,7 @@ export function SpecimenDetailPanel({
             <p className="mt-1 text-sm font-semibold text-zinc-900">
               {displayValue(specimen.commonName)}
             </p>
-            <p className="text-xs italic text-zinc-500">
-              {displayValue(specimen.scientificName)}
-            </p>
+            <p className="text-xs italic text-zinc-500">{displayValue(specimen.scientificName)}</p>
           </div>
 
           <dl className="space-y-2 text-xs">
@@ -65,7 +76,9 @@ export function SpecimenDetailPanel({
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-zinc-400">Category</dt>
-              <dd className="text-right text-zinc-800">{displayValue(specimen.specimenCategory)}</dd>
+              <dd className="text-right text-zinc-800">
+                {displayValue(specimen.specimenCategory)}
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-zinc-400">Gender</dt>
