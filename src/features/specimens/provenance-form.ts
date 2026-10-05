@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { museumToday } from "../../lib/museum-date";
 import type { SpecimenProvenance } from "./types";
 
 export const PROVENANCE_FORM_FIELDS = [
@@ -41,6 +42,12 @@ const nullableDate = z
   .refine((value) => value === "" || z.iso.date().safeParse(value).success, {
     message: "Enter a valid date in YYYY-MM-DD format.",
   })
+  .refine(
+    (value) => value === "" || !z.iso.date().safeParse(value).success || value <= museumToday(),
+    {
+      message: "Collection date cannot be later than today (museum time).",
+    },
+  )
   .transform((value) => value || null);
 
 export const provenanceFormSchema = z.object({
@@ -54,7 +61,9 @@ export const provenanceFormSchema = z.object({
 
 const provenanceCreateFormSchema = provenanceFormSchema.refine(
   (provenance) => Object.values(provenance).some((value) => value !== null),
-  { message: "Enter at least one provenance or preservation value before creating the record." },
+  {
+    message: "Enter at least one provenance or preservation value before creating the record.",
+  },
 );
 
 export type ProvenanceMutationInput = z.output<typeof provenanceFormSchema>;

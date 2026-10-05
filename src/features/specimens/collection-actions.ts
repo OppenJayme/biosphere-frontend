@@ -11,10 +11,7 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { createCollection, updateCollection } from "./api";
-import {
-  readCollectionForm,
-  type CollectionFormState,
-} from "./collection-management";
+import { readCollectionForm, type CollectionFormState } from "./collection-management";
 
 function collectionError(error: unknown, operation: "create" | "rename") {
   if (error instanceof ApiError) {
@@ -27,6 +24,10 @@ function collectionError(error: unknown, operation: "create" | "rename") {
     if (error.status === 403) return "You do not have permission to manage collections.";
     if (error.status === 404) return "This collection no longer exists. Reload the list.";
     if (error.status === 409) {
+      const body = z.object({ code: z.string().optional() }).safeParse(error.body);
+      if (body.success && body.data.code === "COLLECTION_NAME_TAKEN") {
+        return "A collection with this name already exists. Choose a different name.";
+      }
       return "The collection changed at the same time. Reload and try again.";
     }
   }
@@ -52,7 +53,8 @@ export async function createCollectionAction(
   if (!parsed.result.success) {
     return {
       value: parsed.value,
-      error: parsed.result.error.flatten().fieldErrors.collectionName?.[0] ??
+      error:
+        parsed.result.error.flatten().fieldErrors.collectionName?.[0] ??
         "Enter a valid collection name.",
     };
   }
@@ -86,7 +88,8 @@ export async function renameCollectionAction(
   if (!parsed.result.success) {
     return {
       value: parsed.value,
-      error: parsed.result.error.flatten().fieldErrors.collectionName?.[0] ??
+      error:
+        parsed.result.error.flatten().fieldErrors.collectionName?.[0] ??
         "Enter a valid collection name.",
     };
   }

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { museumToday } from "../../lib/museum-date";
 import {
   provenanceFormSchema,
   provenanceToFormValues,
@@ -6,6 +7,35 @@ import {
 } from "./provenance-form";
 
 describe("specimen provenance form validation", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("accepts today in museum time and rejects tomorrow at the UTC day boundary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-04T16:30:00Z"));
+    expect(museumToday()).toBe("2026-10-05");
+    const fields = {
+      collector: "",
+      donor: "",
+      collectionLocation: "",
+      preservationType: "",
+      preservationMethod: "",
+    };
+    expect(
+      provenanceFormSchema.safeParse({
+        ...fields,
+        collectionDate: "2026-10-05",
+      }).success,
+    ).toBe(true);
+    const result = provenanceFormSchema.safeParse({
+      ...fields,
+      collectionDate: "2026-10-06",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success)
+      expect(result.error.flatten().fieldErrors.collectionDate).toEqual([
+        "Collection date cannot be later than today (museum time).",
+      ]);
+  });
   it("trims text, keeps a date-only value, and converts blanks to null", () => {
     expect(
       provenanceFormSchema.parse({

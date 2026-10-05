@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import type { MouseEvent } from "react";
 import { PawIcon } from "@/components/icons";
 import type { SpecimenSearchItem, SpecimenSummary } from "@/features/specimens/types";
 
@@ -26,10 +28,12 @@ export function SpecimenTable({
   specimens,
   selectedId,
   onSelect,
+  previewHref,
 }: {
   specimens: SpecimenSearchItem[];
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (event: MouseEvent<HTMLElement>, id: string) => void;
+  previewHref: (id: string) => string;
 }) {
   if (specimens.length === 0) {
     return (
@@ -66,19 +70,35 @@ export function SpecimenTable({
             return (
               <tr
                 key={specimen.id}
-                onClick={() => onSelect(specimen.id)}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("a,button")) return;
+                  onSelect(event, specimen.id);
+                }}
                 className={`cursor-pointer transition-colors ${selected ? "bg-forest-50" : "hover:bg-sage-50"}`}
               >
                 <td className="py-2.5 pr-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
+                  <Link
+                    href={`/specimens/${specimen.id}`}
+                    prefetch={false}
+                    aria-label={`View details for ${specimen.commonName ?? specimen.accessionNumber ?? "specimen"}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-sage-100 text-forest-700 hover:bg-sage-200 focus-visible:outline-2 focus-visible:outline-forest-700"
+                  >
                     <PawIcon className="h-4.5 w-4.5" />
-                  </span>
+                  </Link>
                 </td>
                 <td className="py-2.5 pr-3 font-medium whitespace-nowrap text-zinc-900">
                   {displayValue(specimen.accessionNumber)}
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-700">
-                  {displayValue(specimen.commonName)}
+                  <Link
+                    href={previewHref(specimen.id)}
+                    prefetch={false}
+                    onClick={(event) => onSelect(event, specimen.id)}
+                    aria-current={selected ? "true" : undefined}
+                    className="underline decoration-forest-300 underline-offset-4 hover:text-forest-800 focus-visible:outline-2 focus-visible:outline-forest-700"
+                  >
+                    {specimen.commonName ?? specimen.accessionNumber ?? "Preview specimen"}
+                  </Link>
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap italic text-zinc-600">
                   {displayValue(specimen.scientificName)}
@@ -106,12 +126,16 @@ export function SpecimenTable({
                   {specimen.totalQuantity.toLocaleString()}
                 </td>
                 <td className="py-2.5 pr-3 text-zinc-600">
-                  {specimen.conditionClasses.length > 0 ? specimen.conditionClasses.join(", ") : "—"}
+                  {specimen.conditionClasses.length > 0
+                    ? specimen.conditionClasses.join(", ")
+                    : "—"}
                 </td>
                 <td className="max-w-64 py-2.5 pr-3 text-xs text-zinc-600">
                   {specimen.storageUnits.length > 0
                     ? specimen.storageUnits.map((unit) => (
-                        <span key={unit.id} className="block">{unit.pathLabel}</span>
+                        <span key={unit.id} className="block">
+                          {unit.pathLabel}
+                        </span>
                       ))
                     : "—"}
                 </td>

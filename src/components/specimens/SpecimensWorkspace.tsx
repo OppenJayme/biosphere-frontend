@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import type { MouseEvent } from "react";
+import { selectedSpecimenId, specimenSelectionHref } from "@/features/specimens/selection";
 import { SpecimenDetailPanel } from "./SpecimenDetailPanel";
 import { SpecimenTable } from "./SpecimenTable";
 import { SpecimenToolbar } from "./SpecimenToolbar";
@@ -34,7 +36,20 @@ export function SpecimensWorkspace({
   offlineOwnerId: string;
 }) {
   const { items, limit, page, total } = specimenPage;
-  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
+  const searchParams = useSearchParams();
+  const selectedId = selectedSpecimenId(searchParams.get("selected"), items);
+
+  // Native history updates Next's search parameters without refetching this
+  // already-loaded page. Modified clicks retain ordinary link navigation.
+  function selectSpecimen(event: MouseEvent<HTMLElement>, id: string | null) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
+    event.preventDefault();
+    window.history.pushState(null, "", specimenSelectionHref(query, id));
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      document.getElementById("selected-specimen")?.scrollIntoView({ block: "start" });
+    }
+  }
 
   const selected = items.find((specimen) => specimen.id === selectedId) ?? null;
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -63,7 +78,10 @@ export function SpecimensWorkspace({
                 : `Showing ${firstRecord}–${lastRecord} of ${total} specimen records`}
             </p>
             {totalPages > 1 && (
-              <nav aria-label="Specimen catalog pages" className="flex items-center gap-1.5 text-sm">
+              <nav
+                aria-label="Specimen catalog pages"
+                className="flex items-center gap-1.5 text-sm"
+              >
                 {page > 1 ? (
                   <Link
                     href={specimenListHref(query, page - 1)}
@@ -87,16 +105,27 @@ export function SpecimensWorkspace({
                     Next
                   </Link>
                 ) : (
-                  <span className="rounded-md border border-black/10 px-3 py-1.5 text-zinc-400">Next</span>
+                  <span className="rounded-md border border-black/10 px-3 py-1.5 text-zinc-400">
+                    Next
+                  </span>
                 )}
               </nav>
             )}
           </div>
 
-          <SpecimenTable specimens={items} selectedId={selectedId} onSelect={setSelectedId} />
+          <SpecimenTable
+            specimens={items}
+            selectedId={selectedId}
+            previewHref={(id) => specimenSelectionHref(query, id)}
+            onSelect={selectSpecimen}
+          />
         </div>
 
-        <SpecimenDetailPanel specimen={selected} onClear={() => setSelectedId(null)} />
+        <SpecimenDetailPanel
+          specimen={selected}
+          clearHref={specimenSelectionHref(query, null)}
+          onClear={(event) => selectSpecimen(event, null)}
+        />
       </div>
     </div>
   );

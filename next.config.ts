@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
+import { networkInterfaces } from "node:os";
+
+// Allow this computer's exact private LAN hosts to load development chunks.
+// No wildcard origins; Next applies this option only to the development server.
+const privateLanHosts = Object.values(networkInterfaces()).flatMap((interfaces) =>
+  (interfaces ?? [])
+    .filter(
+      (address) =>
+        address.family === "IPv4" &&
+        !address.internal &&
+        /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(address.address),
+    )
+    .map((address) => address.address),
+);
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [...new Set(privateLanHosts)],
   images: {
     remotePatterns: [new URL("https://images.unsplash.com/**")],
   },

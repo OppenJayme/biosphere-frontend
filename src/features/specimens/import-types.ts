@@ -5,13 +5,16 @@ import { specimenSummarySchema } from "./types";
 
 export const MAX_SPECIMEN_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
 
+// Preview values are raw CSV input, including invalid values the curator must
+// see alongside row errors. Business-valid create/commit contracts stay strict.
+const rawPreviewText = z.string().max(MAX_SPECIMEN_IMPORT_FILE_BYTES).nullable().optional();
 const importSpecimenDataSchema = z.object({
-  collectionId: z.uuid().nullable().optional(),
+  collectionId: rawPreviewText,
   accessionNumber: z.string().nullable().optional(),
   specimenCategory: z.string().nullable().optional(),
   scientificName: z.string().nullable().optional(),
   commonName: z.string().nullable().optional(),
-  gender: z.enum(["MALE", "FEMALE", "UNKNOWN", "NOT_APPLICABLE"]).nullable().optional(),
+  gender: rawPreviewText,
   classificationStatus: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
   rowNumber: z.number().int().positive().optional(),
@@ -54,9 +57,7 @@ export type SpecimenImportPreviewRow = z.infer<typeof specimenImportPreviewRowSc
 export type SpecimenImportPreview = z.infer<typeof specimenImportPreviewSchema>;
 export type SpecimenImportCommit = z.infer<typeof specimenImportCommitSchema>;
 
-export type ImportActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; message: string };
+export type ImportActionResult<T> = { ok: true; data: T } | { ok: false; message: string };
 
 export function validateImportFileMetadata(file: { name: string; size: number }) {
   if (file.size === 0) return "Choose a non-empty CSV file to preview.";

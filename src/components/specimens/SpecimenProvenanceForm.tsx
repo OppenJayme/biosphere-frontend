@@ -13,6 +13,7 @@ import {
   type ProvenanceFormValues,
 } from "@/features/specimens/provenance-form";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { museumToday } from "@/lib/museum-date";
 
 type SpecimenProvenanceFormProps = {
   specimenId: string;
@@ -25,7 +26,11 @@ const textFields: Array<{
   label: string;
   placeholder: string;
 }> = [
-  { name: "collector", label: "Collector", placeholder: "Enter the recorded collector" },
+  {
+    name: "collector",
+    label: "Collector",
+    placeholder: "Enter the recorded collector",
+  },
   { name: "donor", label: "Donor", placeholder: "Enter the recorded donor" },
   {
     name: "collectionLocation",
@@ -62,14 +67,13 @@ export function SpecimenProvenanceForm({
   mode,
   initialValues,
 }: SpecimenProvenanceFormProps) {
-  const action: (
-    state: ProvenanceFormState,
-    formData: FormData,
-  ) => Promise<ProvenanceFormState> =
+  const action: (state: ProvenanceFormState, formData: FormData) => Promise<ProvenanceFormState> =
     mode === "create"
       ? createProvenanceAction.bind(null, specimenId)
       : updateProvenanceAction.bind(null, specimenId);
-  const [state, formAction, pending] = useActionState(action, { values: initialValues });
+  const [state, formAction, pending] = useActionState(action, {
+    values: initialValues,
+  });
 
   return (
     <form action={formAction} className="space-y-6">
@@ -116,6 +120,7 @@ export function SpecimenProvenanceForm({
               id="collectionDate"
               name="collectionDate"
               type="date"
+              max={museumToday()}
               defaultValue={state.values.collectionDate}
               aria-invalid={Boolean(state.errors?.collectionDate?.length)}
               aria-describedby={
