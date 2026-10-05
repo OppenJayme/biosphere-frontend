@@ -1,11 +1,16 @@
 "use client";
 
-import type { CuratorUser, UserStatus } from "@/lib/dummy-data/users";
+import type { AccountUser, UserRole, UserStatus } from "@/features/user-accounts/types";
 
-const STATUS_STYLES: Record<UserStatus, string> = {
+export const STATUS_STYLES: Record<UserStatus, string> = {
   Active: "bg-forest-100 text-forest-700",
   "Pending Invite": "bg-amber-100 text-amber-700",
   Inactive: "bg-red-100 text-red-600",
+};
+
+export const ROLE_STYLES: Record<UserRole, string> = {
+  Curator: "bg-sage-100 text-forest-700",
+  Developer: "bg-sky-100 text-sky-700",
 };
 
 export function UserTable({
@@ -13,13 +18,13 @@ export function UserTable({
   selectedId,
   onSelect,
 }: {
-  users: CuratorUser[];
+  users: AccountUser[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[880px] text-left text-sm">
+      <table className="w-full min-w-[820px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
             <th className="py-2 pr-3 font-medium">Name</th>
@@ -37,7 +42,15 @@ export function UserTable({
               <tr
                 key={user.id}
                 onClick={() => onSelect(user.id)}
-                className={`cursor-pointer border-l-4 transition-colors ${
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(user.id);
+                  }
+                }}
+                tabIndex={0}
+                aria-selected={selected}
+                className={`cursor-pointer border-l-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 ${
                   selected ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
                 }`}
               >
@@ -48,14 +61,18 @@ export function UserTable({
                     >
                       {user.initials}
                     </span>
-                    <div className="min-w-0">
-                      <p className="whitespace-nowrap font-medium text-zinc-900">{user.name}</p>
-                      <p className="truncate text-xs text-zinc-500">{user.email}</p>
-                    </div>
+                    <p className="whitespace-nowrap font-medium text-zinc-900">
+                      {user.name}
+                      {user.isCurrentUser && <span className="ml-1.5 text-xs font-normal text-zinc-500">(you)</span>}
+                    </p>
                   </div>
                 </td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-700">{user.role}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{user.email}</td>
+                <td className="py-2.5 pr-3">
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${ROLE_STYLES[user.role]}`}>
+                    {user.role}
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{user.email ?? "—"}</td>
                 <td className="py-2.5 pr-3">
                   <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${STATUS_STYLES[user.status]}`}>
                     {user.status}

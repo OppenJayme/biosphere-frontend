@@ -12,6 +12,8 @@ import {
 type ListAuditLogsParams = {
   page: number;
   limit: number;
+  /** Only entries performed by this user_account id. */
+  actorId?: string;
 } & Partial<Omit<AuditLogListQuery, "page" | "limit">>;
 
 export async function listAuditLogs(params: ListAuditLogsParams): Promise<AuditLogPage> {
@@ -31,6 +33,7 @@ export async function listAuditLogs(params: ListAuditLogsParams): Promise<AuditL
   if (params.affectedRecordType) {
     query.set("affectedRecordType", params.affectedRecordType);
   }
+  if (params.actorId) query.set("actorId", params.actorId);
   if (from) query.set("from", from);
   if (to) query.set("to", to);
 

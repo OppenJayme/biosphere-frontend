@@ -1,78 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
 import { UserToolbar } from "./UserToolbar";
 import { UserTable } from "./UserTable";
 import { UserDetailPanel } from "./UserDetailPanel";
-import { AddCuratorModal } from "./AddCuratorModal";
-import type { CuratorUser, USER_FILTERS } from "@/lib/dummy-data/users";
+import {
+  USER_PAGE_SIZES,
+  type AccountUser,
+  type UserPageSize,
+  type UserRoleFilter,
+  type UserStatusFilter,
+} from "@/features/user-accounts/types";
+import { filterUsers } from "@/features/user-accounts/view";
 
-const PAGE_SIZES = ["10 / page", "25 / page", "50 / page"];
-const TOTAL_USERS = 48;
-const PAGE_COUNT = 6;
-
-export function UsersWorkspace({
-  users,
-  filters,
-}: {
-  users: CuratorUser[];
-  filters: typeof USER_FILTERS;
-}) {
+export function UsersWorkspace({ users }: { users: AccountUser[] }) {
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState<UserRoleFilter>("");
+  const [status, setStatus] = useState<UserStatusFilter>("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<UserPageSize>(USER_PAGE_SIZES[0]);
   const [selectedId, setSelectedId] = useState<string | null>(users[0]?.id ?? null);
-  const [modalOpen, setModalOpen] = useState(false);
+
+  const filtered = useMemo(() => filterUsers(users, { search, role, status }), [users, search, role, status]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * pageSize;
+  const visible = filtered.slice(start, start + pageSize);
 
   const selected = users.find((u) => u.id === selectedId) ?? null;
 
   return (
     <div className="space-y-4">
-      <UserToolbar filters={filters} onAddClick={() => setModalOpen(true)} />
+      <UserToolbar
+        search={search}
+        role={role}
+        status={status}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        onRoleChange={(value) => {
+          setRole(value);
+          setPage(1);
+        }}
+        onStatusChange={(value) => {
+          setStatus(value);
+          setPage(1);
+        }}
+      />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
-          <UserTable users={users} selectedId={selectedId} onSelect={setSelectedId} />
+          {visible.length > 0 ? (
+            <UserTable users={visible} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : (
+            <p className="py-10 text-center text-sm text-zinc-500">
+              {users.length === 0 ? "No user accounts yet." : "No users match your search or filter."}
+            </p>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
             <p>
-              Showing 1 to {users.length} of {TOTAL_USERS} users
+              {filtered.length === 0
+                ? "Showing 0 users"
+                : `Showing ${start + 1} to ${start + visible.length} of ${filtered.length} users`}
             </p>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 aria-label="Previous page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
+                disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
               >
                 <ChevronLeftIcon className="h-3.5 w-3.5" />
               </button>
-              {[1, 2, 3, 4, 5].map((page) => (
+              {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
                 <button
-                  key={page}
+                  key={number}
                   type="button"
+                  aria-current={number === currentPage ? "page" : undefined}
+                  onClick={() => setPage(number)}
                   className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
-                    page === 1 ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
+                    number === currentPage ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
                   }`}
                 >
-                  {page}
+                  {number}
                 </button>
               ))}
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                {PAGE_COUNT}
-              </button>
               <button
                 type="button"
                 aria-label="Next page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
+                disabled={currentPage === pageCount}
+                onClick={() => setPage(currentPage + 1)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
               >
                 <ChevronRightIcon className="h-3.5 w-3.5" />
               </button>
             </div>
             <div className="relative">
               <select
-                defaultValue={PAGE_SIZES[0]}
+                value={pageSize}
+                aria-label="Users per page"
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value) as UserPageSize);
+                  setPage(1);
+                }}
                 className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
               >
-                {PAGE_SIZES.map((size) => (
-                  <option key={size}>{size}</option>
+                {USER_PAGE_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size} / page
+                  </option>
                 ))}
               </select>
               <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
@@ -82,8 +122,6 @@ export function UsersWorkspace({
 
         <UserDetailPanel user={selected} />
       </div>
-
-      <AddCuratorModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }
