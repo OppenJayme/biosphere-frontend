@@ -42,6 +42,9 @@ type Notice = { tone: "success" | "warning" | "error"; message: string };
 const inputClasses =
   "mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
 
+// Keep both native file pickers consistent without replacing browser behavior.
+const fileInputClasses = `${inputClasses} file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-sage-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-forest-800 file:transition-colors enabled:hover:file:bg-forest-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-60 disabled:file:cursor-not-allowed disabled:file:bg-zinc-200 disabled:file:text-zinc-500`;
+
 async function responseMessage(response: Response) {
   try {
     const body: unknown = await response.json();
@@ -128,7 +131,7 @@ function UploadForm({ specimenId }: { specimenId: string }) {
             accept={SPECIMEN_MEDIA_ACCEPT}
             required
             disabled={pending}
-            className={`${inputClasses} file:mr-3 file:rounded-md file:border-0 file:bg-sage-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-forest-800`}
+            className={fileInputClasses}
           />
         </label>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -264,7 +267,7 @@ function ReplaceFileForm({ specimenId, mediaId }: { specimenId: string; mediaId:
     <form ref={formRef} onSubmit={submit} className="space-y-2 border-t border-black/5 pt-4">
       <label className="block text-xs font-medium text-zinc-700">
         Replace image file
-        <input type="file" name="file" accept={SPECIMEN_MEDIA_ACCEPT} required disabled={pending} className={inputClasses} />
+        <input type="file" name="file" accept={SPECIMEN_MEDIA_ACCEPT} required disabled={pending} className={fileInputClasses} />
       </label>
       <ConfirmButton
         label="Replace file"

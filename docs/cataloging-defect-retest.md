@@ -80,3 +80,21 @@ automatically from other images, and no new database/backend model is added.
 Automated tests cover the read action's authorization/input/error contracts and
 rendered image/placeholder/error states. Actual image loading, rapid-selection
 race handling and retry interaction require this manual retest.
+
+## Native file-picker feedback / DEF-004
+
+On `fix/cataloging-media-file-feedback`, upload and replacement file inputs
+share interaction styles. The native file picker and validation are unchanged.
+
+1. Open an active specimen's Media page. Hover the upload and replacement
+   pickers; both file buttons should darken consistently.
+2. Tab to each picker. A visible focus outline must appear; use the keyboard
+   to open the native picker and select a supported image.
+3. Submit a valid upload/replacement. During pending work, verify the picker
+   is disabled, looks disabled and does not show enabled hover feedback.
+4. Confirm required-file and image type/size validation still work, and that
+   the successful file change persists after refresh.
+5. Open archived read-only media and confirm no upload/replacement picker exists.
+
+Rendering tests check class/attribute contracts, not browser visuals or native
+picker interaction. Keep DEF-004 Ready for retest until these checks pass.
