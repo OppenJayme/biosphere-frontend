@@ -98,3 +98,26 @@ share interaction styles. The native file picker and validation are unchanged.
 
 Rendering tests check class/attribute contracts, not browser visuals or native
 picker interaction. Keep DEF-004 Ready for retest until these checks pass.
+
+## Visible reusable tag suggestions / DEF-005
+
+On `fix/cataloging-visible-tag-suggestions`, the existing search results are
+visible buttons. Choosing one fills and focuses Tag name; it does not save until
+**Attach tag** is clicked. Existing APIs, duplicate checks and vocabulary remain.
+
+1. Create a tag on specimen A, open specimen B and search its reusable vocabulary.
+   Confirm the matching names are visible, not only a count.
+2. Choose a result using pointer, Tab + Enter/Space, and touch if available.
+   Tag name should receive the exact name and focus; no attachment should yet occur.
+3. Click Attach tag. Confirm persistence after refresh and revision history;
+   the attached tag must disappear from suggestions for this specimen.
+4. Confirm case-insensitive duplicates still fail and detaching preserves the
+   shared tag for reuse on other specimens.
+5. Search for a nonexistent tag; expect an explicit no-results message. Clear
+   the search; the search field and results should both reset.
+6. During attachment, choices and Tag name must be disabled. Archived records
+   must remain read-only. A failed save should show the existing validation error.
+
+Automated checks cover rendering, selection callback, pending/read-only states
+and preserved form contracts. Browser focus, search navigation and persistence
+still need this retest; DEF-005 is not yet Verified.
