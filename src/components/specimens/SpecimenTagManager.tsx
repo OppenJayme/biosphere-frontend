@@ -6,7 +6,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   attachSpecimenTagAction,
@@ -152,6 +152,43 @@ function TagRow({
   );
 }
 
+/** Visible, keyboard-accessible vocabulary choices; selecting never saves a tag. */
+export function ReusableTagSuggestions({
+  tags,
+  pending,
+  onSelect,
+}: {
+  tags: SpecimenTag[];
+  pending: boolean;
+  onSelect: (name: string) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <p role="status" className="text-xs text-zinc-500">
+        {tags.length === 0
+          ? "No reusable tags match this search. You can still enter a new approved name above."
+          : `${tags.length} reusable tag suggestion${tags.length === 1 ? "" : "s"}. Choose a name, then click Attach tag to save.`}
+      </p>
+      {tags.length > 0 && (
+        <ul aria-label="Reusable tag suggestions" className="mt-3 flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <li key={tag.id}>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onSelect(tag.name)}
+                className="rounded-full border border-forest-700 px-3 py-2 text-sm font-medium text-forest-800 enabled:hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {tag.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function SpecimenTagManager({
   specimenId,
   currentTags,
@@ -160,6 +197,7 @@ export function SpecimenTagManager({
   readOnly,
 }: SpecimenTagManagerProps) {
   const attachAction = attachSpecimenTagAction.bind(null, specimenId);
+  const tagInputRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState<TagFormState, FormData>(
     attachAction,
     { values: { tagName: "" } },
@@ -199,12 +237,14 @@ export function SpecimenTagManager({
             <label className="min-w-64 flex-1 text-xs font-medium text-zinc-700">
               Tag name
               <input
+                ref={tagInputRef}
                 type="text"
                 name="tagName"
                 list="available-specimen-tags"
                 defaultValue={state.values.tagName}
                 maxLength={100}
                 required
+                disabled={pending}
                 placeholder="Example: Endemic"
                 aria-invalid={Boolean(state.errors?.tagName?.length)}
                 aria-describedby={state.errors?.tagName?.length ? "tagName-error" : undefined}
@@ -238,7 +278,7 @@ export function SpecimenTagManager({
           )}
 
           <div className="mt-6 border-t border-black/5 pt-4">
-            <form action={`/specimens/${specimenId}/tags`} className="flex flex-wrap items-end gap-2">
+            <form key={search} action={`/specimens/${specimenId}/tags`} className="flex flex-wrap items-end gap-2">
               <label className="min-w-56 flex-1 text-xs font-medium text-zinc-700">
                 Search reusable vocabulary
                 <input
@@ -265,11 +305,16 @@ export function SpecimenTagManager({
                 </Link>
               )}
             </form>
-            <p className="mt-3 text-xs text-zinc-500">
-              {availableTags.length === 0
-                ? "No reusable tags match this search. You can still enter a new approved name above."
-                : `${availableTags.length} reusable tag suggestion${availableTags.length === 1 ? "" : "s"} available in the tag-name field.`}
-            </p>
+            <ReusableTagSuggestions
+              tags={availableTags}
+              pending={pending}
+              onSelect={(name) => {
+                // Keep the native uncontrolled form/reset behavior; the existing action saves.
+                if (pending || !tagInputRef.current) return;
+                tagInputRef.current.value = name;
+                tagInputRef.current.focus();
+              }}
+            />
           </div>
         </section>
       )}
