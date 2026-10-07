@@ -4,6 +4,7 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { FaqAssistantWidget } from "@/components/faq/FaqAssistantWidget";
 import { PwaRegistration } from "@/components/pwa/PwaRegistration";
+import { InviteLinkRedirect } from "@/components/auth/InviteLinkRedirect";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -49,6 +50,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <PwaRegistration />
+        <InviteLinkRedirect />
         <PublicHeader />
         <main id="main" className="flex-1">
           {children}
