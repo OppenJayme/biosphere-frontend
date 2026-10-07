@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_COOKIE_NAME } from "@/lib/session";
 import { getSafeRedirect } from "@/lib/safe-redirect";
-import { login, type LoginResponse } from "./api";
+import { completeOnboarding, login, type LoginResponse } from "./api";
+import { LoginError } from "./login-error";
 import { emailSchema, otpSchema, newPasswordSchema } from "./schema";
 
 export async function signIn(formData: FormData) {
@@ -20,8 +21,9 @@ export async function signIn(formData: FormData) {
   let session: LoginResponse;
   try {
     session = await login(email, password);
-  } catch {
-    redirect(`/login?error=invalid_credentials`);
+  } catch (error) {
+    const code = error instanceof LoginError ? error.code : "server_unavailable";
+    redirect(`/login?error=${code}`);
   }
 
   // Hand the backend-issued tokens to Supabase's own session management —
@@ -51,6 +53,12 @@ export async function signIn(formData: FormData) {
   );
 
   redirect(redirectTo);
+}
+
+/** Finishes curator onboarding after the invite's password is set; see completeOnboarding. */
+export async function completeOnboardingAction(accessToken: string): Promise<boolean> {
+  if (typeof accessToken !== "string" || !accessToken) return false;
+  return completeOnboarding(accessToken);
 }
 
 export async function signOut() {

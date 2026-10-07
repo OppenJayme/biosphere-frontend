@@ -1,14 +1,9 @@
 "use client";
 
-import { ChevronDownIcon, MenuIcon } from "@/components/icons";
+import { MenuIcon } from "@/components/icons";
+import { AccountMenu } from "./AccountMenu";
 import { NotificationBell } from "./NotificationBell";
 import { useSyncStatus } from "@/features/offline/use-sync-status";
-
-function initialsFor(fullName: string) {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return (parts[0][0] + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
-}
 
 function formatLastSynced(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -70,20 +65,7 @@ export function CuratorTopbar({
 
         <NotificationBell />
 
-        <button type="button" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-700 text-xs font-semibold text-white">
-            {profile ? initialsFor(profile.fullName) : "?"}
-          </span>
-          <span className="hidden flex-col items-start leading-tight sm:flex">
-            <span className="text-[11px] text-zinc-500">
-              {profile ? profile.role.charAt(0) + profile.role.slice(1).toLowerCase() : "Signed in"}
-            </span>
-            <span className="text-sm font-semibold text-forest-900">
-              {profile ? profile.fullName : "Curator account unavailable"}
-            </span>
-          </span>
-          <ChevronDownIcon className="hidden h-4 w-4 text-zinc-400 sm:block" />
-        </button>
+        <AccountMenu profile={profile} />
       </div>
     </header>
   );

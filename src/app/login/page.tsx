@@ -16,6 +16,8 @@ export const metadata: Metadata = {
 const ERROR_MESSAGES: Record<string, string> = {
   missing_fields: "Enter your email and password.",
   invalid_credentials: "Incorrect email or password.",
+  too_many_attempts: "Too many sign-in attempts. Wait a minute, then try again.",
+  server_unavailable: "BioSphere can't be reached right now. Check your connection and try again in a moment.",
 };
 
 const SUCCESS_MESSAGES: Record<string, string> = {

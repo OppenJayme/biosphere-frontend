@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AlertTriangleIcon } from "@/components/icons";
 import { StatCard } from "@/components/ui/StatCard";
+import { InviteCuratorDialog } from "@/components/users/InviteCuratorDialog";
 import { UsersWorkspace } from "@/components/users/UsersWorkspace";
 import { listUserAccounts } from "@/features/user-accounts/api";
 import type { UserAccount } from "@/features/user-accounts/types";
@@ -32,9 +33,14 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Users</h1>
-        <p className="mt-1 text-sm text-zinc-600">View curator accounts, invitation status, and recent activity.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-2xl font-semibold text-forest-800">Users</h1>
+          <p className="mt-1 text-sm text-zinc-600">
+            View and invite curator accounts, and check invitation status and recent activity.
+          </p>
+        </div>
+        <InviteCuratorDialog />
       </div>
 
       {users ? (
