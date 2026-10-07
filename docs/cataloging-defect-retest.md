@@ -142,3 +142,23 @@ inputs, validation, pending disabling and save actions are unchanged.
 
 Rendering tests check native input and class contracts; generated production
 CSS and real-browser hover/focus must also be checked before marking Verified.
+
+## Already-attached tag feedback / DEF-014
+
+On `fix/cataloging-duplicate-tag-notice`, an existing relationship shows an amber
+status notice headed Already attached — no changes saved. New attachments,
+changes and detachments keep green success feedback. No backend or mutation
+logic changes, and an existing valid tag is not styled as erroneous.
+
+1. Attach a tag to an active test specimen; confirm green success feedback.
+2. Submit that same name with different capitalization. Confirm the amber notice
+   and explicit no-change wording appear just above the tag management section.
+3. Refresh and confirm only one relationship exists and no new attachment
+   revision was created for the duplicate attempt.
+4. Detach/reuse and change a tag; confirm their success messages remain distinct.
+5. Confirm the status text is understandable without color and available to
+   keyboard/screen-reader users. Unknown query outcomes must show no status notice.
+
+Automated page checks cover outcome styling/text, allowlisted query handling
+and the existing session boundary. Live duplicate/revision and accessibility
+retesting remains required before marking Verified.
