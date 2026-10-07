@@ -1,6 +1,7 @@
 import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import { env } from "@/lib/env";
+import { LoginError, loginErrorCode } from "./login-error";
 import { currentUserProfileSchema, type CurrentUserProfile } from "./types";
 
 export type LoginResponse = {
@@ -19,14 +20,20 @@ export type LoginResponse = {
 const API_URL = process.env.API_URL ?? env.NEXT_PUBLIC_API_URL;
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    // Network failure: the backend (or the tunnel in front of it) is unreachable.
+    throw new LoginError("server_unavailable");
+  }
 
   if (!res.ok) {
-    throw new Error("Invalid credentials");
+    throw new LoginError(loginErrorCode(res.status));
   }
 
   return res.json();
