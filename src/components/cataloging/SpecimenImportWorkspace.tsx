@@ -25,6 +25,7 @@ import {
   type SpecimenImportPreviewRow,
 } from "@/features/specimens/import-types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { CATALOGING_FILE_FEEDBACK_CLASSES } from "@/features/specimens/control-styles";
 
 function rowIdentity(row: SpecimenImportPreviewRow) {
   return (
@@ -191,7 +192,7 @@ export function SpecimenImportWorkspace() {
               accept=".csv,text/csv"
               required
               disabled={isPreviewing || isCommitting}
-              className="block w-full rounded-lg border border-black/15 bg-white text-sm text-zinc-700 file:mr-3 file:border-0 file:border-r file:border-black/10 file:bg-sage-50 file:px-3 file:py-2.5 file:font-semibold file:text-forest-800"
+              className={`block w-full rounded-lg border border-black/15 bg-white text-sm text-zinc-700 file:mr-3 file:border-0 file:border-r file:border-black/10 file:bg-sage-50 file:px-3 file:py-2.5 file:font-semibold file:text-forest-800 ${CATALOGING_FILE_FEEDBACK_CLASSES}`}
             />
           </label>
           <button

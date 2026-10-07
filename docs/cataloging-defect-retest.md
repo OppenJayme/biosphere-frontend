@@ -121,3 +121,24 @@ visible buttons. Choosing one fills and focuses Tag name; it does not save until
 Automated checks cover rendering, selection callback, pending/read-only states
 and preserved form contracts. Browser focus, search navigation and persistence
 still need this retest; DEF-005 is not yet Verified.
+
+## Media buttons and CSV picker feedback / DEF-012 and DEF-013
+
+On `fix/cataloging-control-hover-feedback`, Save metadata and Set as cover use
+the defined forest-100 hover color, enabled-only feedback and keyboard outlines.
+The CSV picker shares the existing media pickers' interaction styles; native
+inputs, validation, pending disabling and save actions are unchanged.
+
+1. On active specimen Media, hover Save metadata and a non-cover image's Set as
+   cover button. Each should visibly darken. Tab to both and confirm an outline.
+2. Save metadata and set a cover. During saving confirm pending controls cannot
+   be activated; refresh and confirm persisted values and revision history.
+3. On Cataloging Import, hover and Tab to Choose file. Confirm visible feedback
+   and select a CSV using the native picker.
+4. Preview a mixed valid/invalid file, then import only selected valid rows.
+   Confirm preview/import disable the picker and preserve validation/persistence.
+5. Recheck media upload/replacement file hover/focus (DEF-004) and archived
+   read-only media to ensure existing behavior remains intact.
+
+Rendering tests check native input and class contracts; generated production
+CSS and real-browser hover/focus must also be checked before marking Verified.
