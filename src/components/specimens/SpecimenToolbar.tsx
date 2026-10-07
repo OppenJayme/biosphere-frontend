@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SearchIcon } from "@/components/icons";
+import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
 import {
   hasAdvancedSpecimenFilters,
   SORT_DIRECTIONS,
@@ -332,14 +333,7 @@ export function SpecimenToolbar({
           >
             Apply filters
           </button>
-          {hasFilters && (
-            <Link
-              href="/specimens"
-              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50"
-            >
-              Clear all
-            </Link>
-          )}
+          {hasFilters && <ClearSpecimenFiltersLink />}
         </div>
       </form>
 

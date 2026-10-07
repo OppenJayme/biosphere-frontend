@@ -2,6 +2,7 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 import { SpecimenToolbar } from "./SpecimenToolbar";
+import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
 import { parseSpecimenListQuery, type SpecimenListQuery } from "../../features/specimens/types";
 
 type ControlProps = {
@@ -63,13 +64,13 @@ describe("Cataloging filter reset", () => {
     const cleared = toolbar(clearedQuery);
     expect(before.form.key).not.toBe(cleared.form.key);
     expect(before.controls.status).toBe("CATALOGED");
-    expect(before.nodes.some((node) => node.props.href === "/specimens")).toBe(true);
+    expect(before.nodes.some((node) => node.type === ClearSpecimenFiltersLink)).toBe(true);
     for (const [name, value] of Object.entries(cleared.controls)) {
       const expected = clearedQuery[name as keyof SpecimenListQuery];
       expect(value).toBe(expected === null ? "" : String(expected));
     }
     expect(cleared.nodes.find((node) => node.type === "details")?.props.open).toBe(false);
-    expect(cleared.nodes.some((node) => node.props.href === "/specimens")).toBe(false);
+    expect(cleared.nodes.some((node) => node.type === ClearSpecimenFiltersLink)).toBe(false);
     expect(clearedQuery.page).toBe(1);
   });
 

@@ -162,3 +162,42 @@ logic changes, and an existing valid tag is not styled as erroneous.
 Automated page checks cover outcome styling/text, allowlisted query handling
 and the existing session boundary. Live duplicate/revision and accessibility
 retesting remains required before marking Verified.
+
+## Clear all pending feedback / DEF-011 (partial repair)
+
+On `fix/cataloging-clear-filter-feedback`, Clear all changes to Clearing filters…
+and shows an accessible Loading unfiltered specimen results… status during its
+navigation transition. Feedback is non-modal so a stalled network does not
+trap the curator. The fixed native href and Next Link's modified-click behavior
+remain; the query-keyed form resets only when new results commit, not prematurely.
+Existing catalog-unavailable and optional-lookup fallbacks are unchanged.
+
+1. Apply collection/gender filters, then Clear all. With browser Network
+   throttling enabled, confirm immediate pending text before results arrive.
+2. Confirm busy/disabled semantics and that clicking Clear again while pending
+   does not start another navigation. Other navigation remains available.
+3. When loading completes, confirm all controls/results reset together and
+   pending feedback disappears. Apply again and use Back/Forward.
+4. Use keyboard Enter, Ctrl/Cmd-click and, separately, disable JavaScript.
+   Normal links must still reach /specimens without filters.
+5. Temporarily interrupt the backend and clear filters; existing unavailable
+   feedback/retry must remain usable, without a blocking loading dialog.
+
+### Performance evidence still needed
+
+The source already verifies the session before three parallel reads (specimen
+search, collections, storage filter options). This is inspection, not timing
+evidence; no new query, authentication bypass or cache is introduced.
+
+In an authenticated browser, record tested frontend/backend commits, record
+count, cold vs warm navigation and at least three unthrottled Clear all timings.
+Capture the relevant document/RSC request's Network Timing, with tokens/cookies
+and sensitive payloads omitted. Compare next dev against next build + next start
+on the same data/backend. Record time to pending feedback separately from time
+to updated results. Do not use artificial throttling for performance baselines.
+If server time dominates, measure the three backend reads; if transfer/rendering
+dominates, inspect payload/render work. Only optimize a demonstrated bottleneck.
+
+Automated tests cover href/navigation/pending/repeat-click contracts and existing
+filter-form reset tests. Actual browser timings and failure/history interaction
+are pending; DEF-011 remains In progress, not a claimed speed improvement.
