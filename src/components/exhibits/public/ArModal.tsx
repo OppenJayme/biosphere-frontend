@@ -1,27 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type DetailedHTMLProps, type HTMLAttributes } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ModelViewerElement } from "@google/model-viewer";
-import { CloseIcon, CubeIcon, InfoIcon } from "@/components/icons";
+import { CloseIcon, CollapseIcon, CubeIcon, ExpandIcon, InfoIcon, RotateCcwIcon } from "@/components/icons";
 import type { PublicArModels } from "@/features/exhibits-qr/types";
-
-declare module "react" {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      "model-viewer": DetailedHTMLProps<HTMLAttributes<ModelViewerElement>, ModelViewerElement> & {
-        src?: string;
-        "ios-src"?: string;
-        alt?: string;
-        ar?: boolean;
-        "ar-modes"?: string;
-        "camera-controls"?: boolean;
-        "touch-action"?: string;
-        "shadow-intensity"?: string;
-      };
-    }
-  }
-}
 
 type ViewerState = "loading" | "ready" | "error";
 
@@ -39,6 +21,32 @@ function Notice({ dark, children }: { dark: boolean; children: string }) {
       <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-500" />
       {children}
     </p>
+  );
+}
+
+function ViewerButton({
+  dark,
+  label,
+  onClick,
+  children,
+}: {
+  dark: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`rounded-full p-2 shadow-sm backdrop-blur focus-visible:outline-none focus-visible:ring-2 ${
+        dark ? "bg-forest-900/80 text-white focus-visible:ring-emerald-400" : "bg-white/90 text-forest-800 focus-visible:ring-forest-700"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -67,6 +75,10 @@ export function ArModal({
   const [arFailed, setArFailed] = useState(false);
   const [quickLook] = useState(supportsQuickLook);
   const [posterFailed, setPosterFailed] = useState(false);
+  // Download progress of the model, 0 to 1; large models can take a while on mobile data.
+  const [progress, setProgress] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const poster = posterUrl && !posterFailed ? posterUrl : undefined;
   // Without a `glb` there is nothing to show in the page; the model only opens in AR.
   const heading = models.glb ? "3D Model" : "View in AR";
 
@@ -115,9 +127,13 @@ export function ArModal({
     const onArStatus = (event: Event) => {
       if ((event as CustomEvent<{ status: string }>).detail.status === "failed") setArFailed(true);
     };
+    const onProgress = (event: Event) => {
+      setProgress((event as CustomEvent<{ totalProgress: number }>).detail.totalProgress);
+    };
     viewer.addEventListener("load", onLoad);
     viewer.addEventListener("error", onError);
     viewer.addEventListener("ar-status", onArStatus);
+    viewer.addEventListener("progress", onProgress);
 
     // The viewer is large, so it is only downloaded once a visitor opens it.
     import("@google/model-viewer").catch(onError);
@@ -126,8 +142,20 @@ export function ArModal({
       viewer.removeEventListener("load", onLoad);
       viewer.removeEventListener("error", onError);
       viewer.removeEventListener("ar-status", onArStatus);
+      viewer.removeEventListener("progress", onProgress);
     };
   }, []);
+
+  /** Puts the camera back where it started after the visitor has rotated or zoomed away. */
+  function resetView() {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    viewer.cameraOrbit = "auto auto auto";
+    viewer.cameraTarget = "auto auto auto";
+    viewer.fieldOfView = "auto";
+    viewer.resetTurntableRotation();
+    viewer.jumpCameraToGoal();
+  }
 
   const muted = dark ? "text-white/60" : "text-zinc-500";
   const primaryButton = `w-full rounded-lg py-2.5 text-sm font-semibold ${
@@ -136,7 +164,7 @@ export function ArModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
+      className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${expanded ? "items-stretch" : "items-end sm:items-center sm:p-4"}`}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -145,7 +173,9 @@ export function ArModal({
         aria-modal="true"
         aria-label={`3D model of ${title}`}
         tabIndex={-1}
-        className={`w-full max-w-sm rounded-t-2xl p-5 sm:rounded-2xl focus:outline-none ${dark ? "bg-forest-900 text-white" : "bg-white text-zinc-900"}`}
+        className={`w-full p-5 focus:outline-none ${
+          expanded ? "flex h-full flex-col" : "max-w-sm rounded-t-2xl sm:rounded-2xl"
+        } ${dark ? "bg-forest-900 text-white" : "bg-white text-zinc-900"}`}
       >
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-serif text-lg font-semibold">{heading}</h2>
@@ -154,29 +184,77 @@ export function ArModal({
           </button>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className={`mt-4 space-y-3 ${expanded ? "flex min-h-0 flex-1 flex-col" : ""}`}>
           {models.glb ? (
             <>
-              <div className={`relative aspect-square overflow-hidden rounded-xl ${dark ? "bg-black/30" : "bg-sage-50"}`} hidden={state === "error"}>
+              <div
+                className={`relative overflow-hidden rounded-xl ${expanded ? "min-h-0 flex-1" : "aspect-square"} ${
+                  dark ? "bg-black/30" : "bg-sage-50"
+                }`}
+                hidden={state === "error"}
+              >
                 <model-viewer
                   ref={viewerRef}
                   src={models.glb}
                   ios-src={models.usdz ?? undefined}
+                  poster={poster}
                   alt={`3D model of ${title}`}
                   ar
                   ar-modes="webxr scene-viewer quick-look"
                   camera-controls
+                  // A slow turn shows the model is 3D; it stops while the visitor drags it.
+                  auto-rotate
+                  auto-rotate-delay="1500"
+                  rotation-per-second="20deg"
                   touch-action="pan-y"
                   shadow-intensity="1"
                   style={{ width: "100%", height: "100%" }}
                 >
                   {/* Replaces the built-in AR button; AR starts from the labelled button below. */}
                   <span slot="ar-button" />
+                  {/* Replaces the built-in progress bar with the labelled one below. */}
+                  <span slot="progress-bar" />
                 </model-viewer>
+                {/* The exhibit photo stays in place if it fails; the cube placeholder takes over. */}
+                {poster && state === "loading" && (
+                  // eslint-disable-next-line @next/next/no-img-element -- probe only, never shown
+                  <img src={poster} alt="" hidden onError={() => setPosterFailed(true)} />
+                )}
                 {state === "loading" && (
-                  <div className={`pointer-events-none absolute inset-0 flex flex-col items-center justify-center ${muted}`}>
-                    <CubeIcon className="h-10 w-10 animate-pulse" />
-                    <p className="mt-2.5 text-xs">Loading 3D model…</p>
+                  <div className={`pointer-events-none absolute inset-0 flex flex-col items-center p-4 ${poster ? "justify-end" : "justify-center"} ${muted}`}>
+                    {!poster && <CubeIcon className="h-10 w-10 animate-pulse" />}
+                    <div
+                      className={`w-full max-w-48 rounded-lg px-3 py-2 ${poster ? (dark ? "bg-forest-900/85" : "bg-white/85") : "mt-2.5"}`}
+                    >
+                      <p className="text-center text-xs">Loading 3D model… {Math.round(progress * 100)}%</p>
+                      <div
+                        role="progressbar"
+                        aria-label="3D model download"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(progress * 100)}
+                        className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${dark ? "bg-white/15" : "bg-black/10"}`}
+                      >
+                        <div
+                          className={`h-full rounded-full transition-[width] duration-200 ${dark ? "bg-emerald-400" : "bg-forest-700"}`}
+                          style={{ width: `${Math.max(progress * 100, 4)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {state === "ready" && (
+                  <div className="absolute right-2 top-2 flex gap-1.5">
+                    <ViewerButton dark={dark} label="Reset view" onClick={resetView}>
+                      <RotateCcwIcon className="h-4 w-4" />
+                    </ViewerButton>
+                    <ViewerButton
+                      dark={dark}
+                      label={expanded ? "Exit full screen" : "Full screen"}
+                      onClick={() => setExpanded((value) => !value)}
+                    >
+                      {expanded ? <CollapseIcon className="h-4 w-4" /> : <ExpandIcon className="h-4 w-4" />}
+                    </ViewerButton>
                   </div>
                 )}
               </div>
