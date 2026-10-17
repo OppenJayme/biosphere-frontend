@@ -26,6 +26,7 @@ import {
   type SpecimenMedia,
 } from "@/features/specimens/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { CATALOGING_FILE_FEEDBACK_CLASSES } from "@/features/specimens/control-styles";
 
 export type SpecimenMediaWithPreview = SpecimenMedia & {
   signedUrl: string | null;
@@ -43,7 +44,11 @@ const inputClasses =
   "mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
 
 // Keep both native file pickers consistent without replacing browser behavior.
-const fileInputClasses = `${inputClasses} file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-sage-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-forest-800 file:transition-colors enabled:hover:file:bg-forest-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-60 disabled:file:cursor-not-allowed disabled:file:bg-zinc-200 disabled:file:text-zinc-500`;
+const fileInputClasses = `${inputClasses} file:mr-3 file:rounded-md file:border-0 file:bg-sage-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-forest-800 ${CATALOGING_FILE_FEEDBACK_CLASSES}`;
+
+// Use a defined theme color and visible keyboard focus, not the missing forest-50 token.
+const mediaActionButtonClasses =
+  "rounded-md border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 transition-colors enabled:hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 disabled:cursor-not-allowed disabled:opacity-60";
 
 async function responseMessage(response: Response) {
   try {
@@ -205,7 +210,7 @@ function MetadataForm({ specimenId, item }: { specimenId: string; item: Specimen
           {state.errors?.displayOrder?.[0] && <span className="mt-1 block text-xs text-red-700">{state.errors.displayOrder[0]}</span>}
         </label>
       </div>
-      <button type="submit" disabled={pending} className="rounded-md border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:opacity-60">
+      <button type="submit" disabled={pending} className={mediaActionButtonClasses}>
         Save metadata
       </button>
       <PendingOverlay pending={pending} label="Saving image details…" />
@@ -290,7 +295,7 @@ function CoverControl({ specimenId, mediaId }: { specimenId: string; mediaId: st
   const [state, formAction, pending] = useActionState<MediaCommandState, FormData>(action, {});
   return (
     <form action={formAction}>
-      <button type="submit" disabled={pending} className="rounded-md border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:opacity-60">
+      <button type="submit" disabled={pending} className={mediaActionButtonClasses}>
         Set as cover
       </button>
       <PendingOverlay pending={pending} label="Setting cover image…" />

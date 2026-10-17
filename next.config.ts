@@ -15,7 +15,8 @@ const privateLanHosts = Object.values(networkInterfaces()).flatMap((interfaces) 
 );
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: [...new Set(privateLanHosts)],
+  // Local only: also allow the localhost.run tunnel.
+  allowedDevOrigins: [...new Set(privateLanHosts), "*.lhr.life"],
   images: {
     remotePatterns: [new URL("https://images.unsplash.com/**")],
   },

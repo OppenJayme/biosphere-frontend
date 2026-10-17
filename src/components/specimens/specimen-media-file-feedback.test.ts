@@ -25,17 +25,30 @@ const item: SpecimenMediaWithPreview = {
   signedUrl: null,
 };
 
-function markup(readOnly = false) {
+function markup(readOnly = false, isCover = true) {
   return renderToStaticMarkup(
     createElement(SpecimenMediaManager, {
       specimenId,
-      media: [item],
+      media: [{ ...item, isCover }],
       readOnly,
     }),
   );
 }
 
 describe("Cataloging native file feedback", () => {
+  it("gives metadata/cover submit buttons working hover, focus and disabled feedback", () => {
+    const html = markup(false, false);
+    for (const label of ["Save metadata", "Set as cover"]) {
+      const button = html.match(new RegExp(`<button\\b[^>]*>\\s*${label}\\s*</button>`))?.[0];
+      expect(button).toBeDefined();
+      expect(button).toContain('type="submit"');
+      expect(button).toContain("enabled:hover:bg-forest-100");
+      expect(button).toContain("focus-visible:outline-2");
+      expect(button).toContain("disabled:cursor-not-allowed");
+      expect(button).not.toContain("hover:bg-forest-50");
+    }
+  });
+
   it("uses identical hover, keyboard-focus and disabled styling for both pickers", () => {
     const inputs = markup().match(/<input\b[^>]*type="file"[^>]*>/g) ?? [];
     expect(inputs).toHaveLength(2);

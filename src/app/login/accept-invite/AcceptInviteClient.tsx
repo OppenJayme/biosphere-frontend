@@ -6,6 +6,7 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
+import { completeOnboardingAction } from "@/features/auth/actions";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type Status = "checking" | "ready" | "invalid" | "submitting";
@@ -79,6 +80,12 @@ export function AcceptInviteClient() {
       setStatus("ready");
       return;
     }
+
+    // The backend keeps the account out of protected APIs until it records that the
+    // password is set. If this call fails, the first sign-in with the new password
+    // completes onboarding instead, so the user is not blocked.
+    const { data } = await supabase.auth.getSession();
+    if (data.session) await completeOnboardingAction(data.session.access_token);
 
     // Don't leave this session live — require a fresh, normal login next.
     await supabase.auth.signOut();

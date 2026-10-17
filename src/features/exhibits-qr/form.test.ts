@@ -10,7 +10,14 @@ import {
   readUpdateExhibitForm,
   suggestSlug,
 } from "./form";
-import { exhibitLayout, publicExhibitSchema, sortExhibitMedia, splitFacts, titleFromSlug } from "./types";
+import {
+  exhibitLayout,
+  publicArModels,
+  publicExhibitSchema,
+  sortExhibitMedia,
+  splitFacts,
+  titleFromSlug,
+} from "./types";
 
 const SPECIMEN_ID = "ac6f699b-08bf-4931-990d-b975b16b46bc";
 
@@ -191,5 +198,18 @@ describe("public exhibit helpers", () => {
     });
     expect(parsed).not.toHaveProperty("storageLocation");
     expect(parsed).not.toHaveProperty("accessionNumber");
+  });
+
+  it("offers AR models only while AR is available and a usable model exists", () => {
+    const models = [
+      { format: "GLB", url: "https://files.test/beetle.glb" },
+      { format: "usdz", url: "https://files.test/beetle.usdz" },
+    ];
+    expect(publicArModels({ available: true, models })).toEqual({
+      glb: "https://files.test/beetle.glb",
+      usdz: "https://files.test/beetle.usdz",
+    });
+    expect(publicArModels({ available: false, models })).toBeNull();
+    expect(publicArModels({ available: true, models: [] })).toBeNull();
   });
 });

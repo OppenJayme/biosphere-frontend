@@ -72,14 +72,17 @@ export default async function SpecimenTagsPage({
   );
   const specimenName =
     specimen.accessionNumber ?? specimen.scientificName ?? specimen.commonName ?? "Unnamed specimen";
+  const tagOutcome = firstValue(rawSearchParams.tag);
+  // A duplicate-safe no-op is not a new success; the backend still owns the outcome.
+  const alreadyAttached = tagOutcome === "existing";
   const notice =
-    firstValue(rawSearchParams.tag) === "attached"
+    tagOutcome === "attached"
       ? "The tag was attached and recorded in revision history."
-      : firstValue(rawSearchParams.tag) === "existing"
-        ? "That tag was already attached; no duplicate relationship was created."
-        : firstValue(rawSearchParams.tag) === "changed"
+      : alreadyAttached
+        ? "This specimen already has that tag. No duplicate relationship was created."
+        : tagOutcome === "changed"
           ? "The tag was changed for this specimen. Other specimens keep their tags."
-          : firstValue(rawSearchParams.tag) === "detached"
+          : tagOutcome === "detached"
           ? "The tag was detached from this specimen. The shared vocabulary was retained."
           : null;
 
@@ -99,8 +102,19 @@ export default async function SpecimenTagsPage({
       </header>
 
       {notice && (
-        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-          {notice}
+        <div
+          role="status"
+          aria-atomic="true"
+          className={`rounded-lg border px-4 py-3 text-sm font-medium ${
+            alreadyAttached
+              ? "border-amber-200 bg-amber-50 text-amber-950"
+              : "border-emerald-200 bg-emerald-50 text-emerald-900"
+          }`}
+        >
+          {alreadyAttached && (
+            <p className="font-semibold">Already attached — no changes saved</p>
+          )}
+          <p className={alreadyAttached ? "mt-1" : undefined}>{notice}</p>
         </div>
       )}
 

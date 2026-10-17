@@ -94,6 +94,12 @@ export const publicExhibitMediaSchema = z.object({
   isCover: z.boolean(),
 });
 
+/** A developer-deployed model: `glb` feeds the 3D viewer and Android AR, `usdz` feeds iOS AR. */
+export const publicArModelSchema = z.object({
+  format: z.string().min(1),
+  url: z.string().min(1),
+});
+
 /** Public QR page content: only curator-approved fields (REQ-4.12-08). */
 export const publicExhibitSchema = z.object({
   publicSlug: z.string().min(1),
@@ -103,10 +109,23 @@ export const publicExhibitSchema = z.object({
   diet: nullableText,
   layoutType: nullableText,
   media: z.array(publicExhibitMediaSchema),
+  // `available` is true only while the curator has AR on and an active model exists (REQ-4.13-04).
+  ar: z
+    .object({ available: z.boolean(), models: z.array(publicArModelSchema) })
+    .default({ available: false, models: [] }),
 });
 
 export type PublicExhibit = z.infer<typeof publicExhibitSchema>;
 export type PublicExhibitMedia = z.infer<typeof publicExhibitMediaSchema>;
+export type PublicArModels = { glb: string | null; usdz: string | null };
+
+/** The signed model links by format, or null when AR is off or no usable model is deployed. */
+export function publicArModels(ar: PublicExhibit["ar"]): PublicArModels | null {
+  if (!ar.available) return null;
+  const url = (format: string) => ar.models.find((model) => model.format.toLowerCase() === format)?.url ?? null;
+  const models = { glb: url("glb"), usdz: url("usdz") };
+  return models.glb || models.usdz ? models : null;
+}
 
 /**
  * The public endpoint does not return the specimen name, so the page title comes from the

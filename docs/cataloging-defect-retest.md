@@ -143,3 +143,83 @@ Raw immutable evidence remains unchanged in the protected API/database.
 Automated helper/rendering checks verify labels, empty states, suppression of
 raw media IDs/paths and unchanged input evidence. Live acceptance testing is
 still required; DEF-006 remains Ready for retest rather than Verified.
+
+## Media buttons and CSV picker feedback / DEF-012 and DEF-013
+
+On `fix/cataloging-control-hover-feedback`, Save metadata and Set as cover use
+the defined forest-100 hover color, enabled-only feedback and keyboard outlines.
+The CSV picker shares the existing media pickers' interaction styles; native
+inputs, validation, pending disabling and save actions are unchanged.
+
+1. On active specimen Media, hover Save metadata and a non-cover image's Set as
+   cover button. Each should visibly darken. Tab to both and confirm an outline.
+2. Save metadata and set a cover. During saving confirm pending controls cannot
+   be activated; refresh and confirm persisted values and revision history.
+3. On Cataloging Import, hover and Tab to Choose file. Confirm visible feedback
+   and select a CSV using the native picker.
+4. Preview a mixed valid/invalid file, then import only selected valid rows.
+   Confirm preview/import disable the picker and preserve validation/persistence.
+5. Recheck media upload/replacement file hover/focus (DEF-004) and archived
+   read-only media to ensure existing behavior remains intact.
+
+Rendering tests check native input and class contracts; generated production
+CSS and real-browser hover/focus must also be checked before marking Verified.
+
+## Already-attached tag feedback / DEF-014
+
+On `fix/cataloging-duplicate-tag-notice`, an existing relationship shows an amber
+status notice headed Already attached — no changes saved. New attachments,
+changes and detachments keep green success feedback. No backend or mutation
+logic changes, and an existing valid tag is not styled as erroneous.
+
+1. Attach a tag to an active test specimen; confirm green success feedback.
+2. Submit that same name with different capitalization. Confirm the amber notice
+   and explicit no-change wording appear just above the tag management section.
+3. Refresh and confirm only one relationship exists and no new attachment
+   revision was created for the duplicate attempt.
+4. Detach/reuse and change a tag; confirm their success messages remain distinct.
+5. Confirm the status text is understandable without color and available to
+   keyboard/screen-reader users. Unknown query outcomes must show no status notice.
+
+Automated page checks cover outcome styling/text, allowlisted query handling
+and the existing session boundary. Live duplicate/revision and accessibility
+retesting remains required before marking Verified.
+
+## Clear all pending feedback / DEF-011 (partial repair)
+
+On `fix/cataloging-clear-filter-feedback`, Clear all changes to Clearing filters…
+and shows an accessible Loading unfiltered specimen results… status during its
+navigation transition. Feedback is non-modal so a stalled network does not
+trap the curator. The fixed native href and Next Link's modified-click behavior
+remain; the query-keyed form resets only when new results commit, not prematurely.
+Existing catalog-unavailable and optional-lookup fallbacks are unchanged.
+
+1. Apply collection/gender filters, then Clear all. With browser Network
+   throttling enabled, confirm immediate pending text before results arrive.
+2. Confirm busy/disabled semantics and that clicking Clear again while pending
+   does not start another navigation. Other navigation remains available.
+3. When loading completes, confirm all controls/results reset together and
+   pending feedback disappears. Apply again and use Back/Forward.
+4. Use keyboard Enter, Ctrl/Cmd-click and, separately, disable JavaScript.
+   Normal links must still reach /specimens without filters.
+5. Temporarily interrupt the backend and clear filters; existing unavailable
+   feedback/retry must remain usable, without a blocking loading dialog.
+
+### Performance evidence still needed
+
+The source already verifies the session before three parallel reads (specimen
+search, collections, storage filter options). This is inspection, not timing
+evidence; no new query, authentication bypass or cache is introduced.
+
+In an authenticated browser, record tested frontend/backend commits, record
+count, cold vs warm navigation and at least three unthrottled Clear all timings.
+Capture the relevant document/RSC request's Network Timing, with tokens/cookies
+and sensitive payloads omitted. Compare next dev against next build + next start
+on the same data/backend. Record time to pending feedback separately from time
+to updated results. Do not use artificial throttling for performance baselines.
+If server time dominates, measure the three backend reads; if transfer/rendering
+dominates, inspect payload/render work. Only optimize a demonstrated bottleneck.
+
+Automated tests cover href/navigation/pending/repeat-click contracts and existing
+filter-form reset tests. Actual browser timings and failure/history interaction
+are pending; DEF-011 remains In progress, not a claimed speed improvement.
