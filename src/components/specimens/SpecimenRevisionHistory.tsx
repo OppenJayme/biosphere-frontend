@@ -6,6 +6,8 @@
 import Link from "next/link";
 import {
   revisionFieldLabel,
+  revisionEventLabel,
+  revisionDisplayValue,
   specimenRevisionHistoryHref,
   type SpecimenRevisionQuery,
 } from "@/features/specimens/revision-history";
@@ -27,20 +29,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   timeStyle: "short",
   timeZone: "Asia/Manila",
 });
-
-function displayValue(
-  value: string | null,
-  fieldChanged: string,
-  side: "previous" | "new",
-) {
-  if (value !== null && value.length > 0) return value;
-  // Tag entries record one side only: attaching has no previous tag, detaching has no new one.
-  if (fieldChanged === "specimen_tags") {
-    return side === "previous" ? "None (tag added)" : "None (tag removed)";
-  }
-  // Keep null visibly different from an empty table cell without inventing catalog data.
-  return "Not recorded";
-}
 
 export function SpecimenRevisionHistory({
   specimenId,
@@ -167,7 +155,7 @@ export function SpecimenRevisionHistory({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-zinc-900">
-                      {revisionFieldLabel(revision.fieldChanged)}
+                      {revisionEventLabel(revision.fieldChanged, revision.oldValue, revision.newValue)}
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
                       {revisionFieldLabel(revision.sourceSection)} · Changed by{" "}
@@ -191,7 +179,7 @@ export function SpecimenRevisionHistory({
                       Previous value
                     </dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-700">
-                      {displayValue(revision.oldValue, revision.fieldChanged, "previous")}
+                      {revisionDisplayValue(revision.oldValue, revision.fieldChanged, "previous")}
                     </dd>
                   </div>
                   <div className="rounded-lg bg-sage-50 p-3">
@@ -199,7 +187,7 @@ export function SpecimenRevisionHistory({
                       New value
                     </dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-800">
-                      {displayValue(revision.newValue, revision.fieldChanged, "new")}
+                      {revisionDisplayValue(revision.newValue, revision.fieldChanged, "new")}
                     </dd>
                   </div>
                 </dl>

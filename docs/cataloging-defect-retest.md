@@ -122,6 +122,28 @@ Automated checks cover rendering, selection callback, pending/read-only states
 and preserved form contracts. Browser focus, search navigation and persistence
 still need this retest; DEF-005 is not yet Verified.
 
+## Readable media revision history / DEF-006
+
+On `fix/cataloging-readable-media-history`, media history uses event labels and
+neutral image/file/cover descriptions instead of UUIDs and storage paths.
+Historical filenames are not available in these records, so none are guessed.
+Raw immutable evidence remains unchanged in the protected API/database.
+
+1. Upload and remove an image. Expect Image added / Image removed with readable
+   previous/new states rather than media IDs.
+2. Replace an image file. Expect Image file replaced, Previous image file and
+   Replacement image file, with no storage path or clickable image URL.
+3. Switch cover images, including initially selecting one. Expect Cover image
+   changed and clear selected/no-cover states, not UUIDs.
+4. Edit/remove a caption and change display order to zero. Confirm actual caption
+   text, Not recorded for removed captions, and numeric order values still show.
+5. Confirm actor, timestamp, reason, filters and pagination still work, and that
+   tag/core/taxonomy/provenance histories retain their previous formatting.
+
+Automated helper/rendering checks verify labels, empty states, suppression of
+raw media IDs/paths and unchanged input evidence. Live acceptance testing is
+still required; DEF-006 remains Ready for retest rather than Verified.
+
 ## Media buttons and CSV picker feedback / DEF-012 and DEF-013
 
 On `fix/cataloging-control-hover-feedback`, Save metadata and Set as cover use
