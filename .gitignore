@@ -13,6 +13,15 @@
 # testing
 /coverage
 
+# Isolated browser tooling: dependencies and potentially sensitive run artifacts.
+/tools/browser/node_modules/
+/tools/browser/artifacts/
+/tools/browser/.playwright/
+/tools/browser/.playwright-cli/
+/tools/browser/auth.json
+/tools/browser/storage-state*.json
+/tools/browser/*profile*/
+
 # next.js
 /.next/
 /out/
