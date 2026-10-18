@@ -184,9 +184,10 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
   const [file, setFile] = useState<File | null>(null);
   const [format, setFormat] = useState<ArModelFormat>("glb");
   const [exhibitId, setExhibitId] = useState("");
-  const exhibitHasGlb = exhibits
+  // Only an active GLB reaches visitors; an inactive one does not cover Android and desktop.
+  const exhibitHasActiveGlb = exhibits
     .find((exhibit) => exhibit.id === exhibitId)
-    ?.assets.some((asset) => asset.modelFormat === "glb");
+    ?.assets.some((asset) => asset.modelFormat === "glb" && asset.isEnabled);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -263,11 +264,11 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
               className={fileInputClasses}
             />
           </label>
-          {format === "usdz" && exhibitId && !exhibitHasGlb && (
+          {format === "usdz" && exhibitId && !exhibitHasActiveGlb && (
             <div className="sm:col-span-2">
               <UsdzOnlyWarning>
-                This exhibit has no GLB model. A USDZ file only opens on iPhone and iPad, so Android and
-                desktop visitors will not see a 3D model. Upload a GLB version as well.
+                This exhibit has no active GLB model. A USDZ file only opens on iPhone and iPad, so Android and
+                desktop visitors will not see a 3D model. Upload or activate a GLB version as well.
               </UsdzOnlyWarning>
             </div>
           )}
