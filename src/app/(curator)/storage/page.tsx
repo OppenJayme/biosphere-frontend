@@ -9,6 +9,7 @@ import {
   listStorageLocations,
 } from "@/features/storage-locations/api";
 import type { StorageMovement, StorageUnit } from "@/features/storage-locations/types";
+import { storageBrowserView } from "@/features/storage-locations/browser-view";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 
@@ -44,6 +45,8 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
   let movementError: string | undefined;
 
   try {
+    // Keep the existing complete, protected read for history paths and parent validation.
+    // Visibility is a presentation filter, never a change to stored hierarchy or inventory.
     units = await listStorageLocations("ALL");
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
@@ -56,10 +59,8 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
   }
 
   const requestedId = selectedResult.success ? selectedResult.data : undefined;
-  const selectedId =
-    requestedId && units.some((unit) => unit.id === requestedId)
-      ? requestedId
-      : units[0]?.id;
+  const view = storageBrowserView(units, { selectedId: requestedId, archived: firstValue(params.archived) });
+  const selectedId = view.selected?.id;
 
   if (!errorMessage && selectedId) {
     try {
@@ -79,7 +80,7 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
     <div className="space-y-5">
       <div>
         <h1 className="font-serif text-2xl font-semibold text-forest-800">Location</h1>
-        <p className="mt-1 text-sm text-zinc-600">Browse the museum&rsquo;s live storage and display hierarchy.</p>
+        <p className="mt-1 text-sm text-zinc-600">Browse active storage locations, or include archived records for historical lookup.</p>
       </div>
 
       {notice && (
@@ -93,6 +94,7 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
         units={units}
         errorMessage={errorMessage}
         initialSelectedId={selectedId}
+        showArchived={view.showArchived}
         movements={movements}
         movementError={movementError}
       />

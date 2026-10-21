@@ -1,4 +1,4 @@
-/** Interactive, read-only view of storage units already managed by the backend. */
+/** Storage browser: active-first navigation with explicit, read-only archived history. */
 
 "use client";
 
@@ -12,14 +12,17 @@ import {
   storagePath,
 } from "@/features/storage-locations/hierarchy";
 import type { StorageMovement, StorageUnit } from "@/features/storage-locations/types";
+import { storageBrowserHref, storageBrowserView } from "@/features/storage-locations/browser-view";
 import { LocationTree } from "./LocationTree";
 import { StorageLocationManagement } from "./StorageLocationManagement";
 import { StorageMovementHistory } from "./StorageMovementHistory";
+import { StorageLifecycleBadge } from "./StorageLifecycleBadge";
 
 type LocationWorkspaceProps = {
   units: StorageUnit[];
   errorMessage?: string;
   initialSelectedId?: string;
+  showArchived: boolean;
   movements: StorageMovement[];
   movementError?: string;
 };
@@ -34,34 +37,40 @@ export function LocationWorkspace({
   units,
   errorMessage,
   initialSelectedId,
+  showArchived,
   movements,
   movementError,
 }: LocationWorkspaceProps) {
   const router = useRouter();
   const [selectionPending, startSelectionTransition] = useTransition();
-  const hierarchy = useMemo(() => buildStorageHierarchy(units), [units]);
-  const unitById = useMemo(() => new Map(units.map((unit) => [unit.id, unit])), [units]);
-  const [selectedId, setSelectedId] = useState(
-    initialSelectedId && unitById.has(initialSelectedId)
-      ? initialSelectedId
-      : hierarchy[0]?.id ?? units[0]?.id ?? "",
+  const [selectedId, setSelectedId] = useState(initialSelectedId ?? "");
+  const view = useMemo(
+    () => storageBrowserView(units, { selectedId, archived: showArchived ? "1" : "0" }),
+    [units, selectedId, showArchived],
   );
+  const hierarchy = useMemo(() => buildStorageHierarchy(view.visibleUnits), [view.visibleUnits]);
   const [query, setQuery] = useState("");
 
-  const selected = unitById.get(selectedId) ?? hierarchy[0] ?? units[0];
-  const matches = useMemo(() => filterStorageUnits(units, query), [query, units]);
+  const selected = view.selected;
+  const matches = useMemo(() => filterStorageUnits(view.visibleUnits, query), [query, view.visibleUnits]);
   const path = selected ? storagePath(units, selected.id) : [];
-  const children = selected
-    ? units
-        .filter((unit) => unit.parentId === selected.id)
-        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
-    : [];
 
   const selectUnit = (id: string) => {
-    if (id === selectedId) return;
+    if (id === selectedId || selectionPending) return;
+    const target = units.find(unit => unit.id === id);
+    if (!target) return;
     setSelectedId(id);
     startSelectionTransition(() => {
-      router.replace(`/storage?selected=${encodeURIComponent(id)}`, { scroll: false });
+      router.replace(storageBrowserHref(id, showArchived || Boolean(target.archivedAt)), { scroll: false });
+    });
+  };
+
+  // Hiding history chooses an active fallback rather than leaving a hidden selection in details.
+  const toggleArchived = (next: boolean) => {
+    if (selectionPending) return;
+    const nextView = storageBrowserView(units, { selectedId, archived: next ? "1" : "0" });
+    startSelectionTransition(() => {
+      router.replace(storageBrowserHref(nextView.selected?.id, next), { scroll: false });
     });
   };
 
@@ -77,10 +86,15 @@ export function LocationWorkspace({
   if (!selected) {
     return (
       <div className="space-y-5">
+        <ArchiveVisibilityToggle showArchived={showArchived} pending={selectionPending} onChange={toggleArchived} />
         <div className="rounded-xl border border-black/10 bg-white p-8 text-center">
           <ArchiveIcon className="mx-auto h-8 w-8 text-zinc-300" />
-          <p className="mt-3 text-sm font-semibold text-zinc-900">No storage locations yet</p>
-          <p className="mt-1 text-sm text-zinc-500">Create the first top-level storage location below.</p>
+          <p className="mt-3 text-sm font-semibold text-zinc-900">
+            {units.length ? "No active storage locations" : "No storage locations yet"}
+          </p>
+          <p className="mt-1 text-sm text-zinc-500">
+            {units.length ? "Enable Show archived locations to review historical records." : "Create the first top-level storage location below."}
+          </p>
         </div>
         <StorageLocationManagement units={units} />
       </div>
@@ -97,6 +111,7 @@ export function LocationWorkspace({
         <p className="mb-3 rounded-lg bg-sage-50 px-3 py-2.5 text-xs text-zinc-600">
           Types and parent relationships are curator-managed; this view does not assume a fixed hierarchy.
         </p>
+        <ArchiveVisibilityToggle showArchived={showArchived} pending={selectionPending} onChange={toggleArchived} />
         <label className="relative mb-3 block">
           <span className="sr-only">Search storage locations</span>
           <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -124,6 +139,7 @@ export function LocationWorkspace({
                     }`}
                   >
                     <span className="truncate">{unit.label}</span>
+                    <StorageLifecycleBadge archived={Boolean(unit.archivedAt)} />
                     <span className="shrink-0 text-[10px] text-zinc-400">{unit.unitType}</span>
                   </button>
                 </li>
@@ -146,9 +162,10 @@ export function LocationWorkspace({
               <button
                 type="button"
                 onClick={() => selectUnit(unit.id)}
-                className={index === path.length - 1 ? "font-medium text-forest-700" : "hover:text-forest-700"}
+                className={`inline-flex items-center gap-1 ${index === path.length - 1 ? "font-medium text-forest-700" : "hover:text-forest-700"}`}
               >
                 {unit.label}
+                <StorageLifecycleBadge archived={Boolean(unit.archivedAt)} />
               </button>
             </span>
           ))}
@@ -162,7 +179,7 @@ export function LocationWorkspace({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-semibold text-zinc-900">{selected.label}</h2>
-                <LifecycleBadge archived={Boolean(selected.archivedAt)} />
+                <StorageLifecycleBadge archived={Boolean(selected.archivedAt)} showActive />
               </div>
               <p className="mt-1 text-sm text-zinc-500">
                 {selected.unitType} &middot; {selected.storageType}
@@ -173,36 +190,28 @@ export function LocationWorkspace({
           <dl className="mt-5 grid gap-4 border-t border-black/10 pt-5 sm:grid-cols-2 lg:grid-cols-3">
             <Detail label="Parent" value={path.length > 1 ? path[path.length - 2].label : "Top level"} />
             <Detail label="Size" value={selected.size ?? "Not specified"} />
-            <Detail label="Direct children" value={String(children.length)} />
+            <Detail label="Active direct children" value={String(view.activeChildren.length)} />
+            {showArchived && <Detail label="Archived direct children" value={String(view.archivedChildren.length)} />}
             <Detail label="Can hold specimens" value={selected.holdsSpecimens ? "Yes" : "No"} />
             <Detail label="Capacity" value={selected.capacity === null ? "Not set" : String(selected.capacity)} />
           </dl>
         </section>
 
         <section className="rounded-xl border border-black/10 bg-white p-5">
-          <h3 className="text-sm font-semibold text-zinc-900">Direct child locations</h3>
-          {children.length > 0 ? (
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {children.map((child) => (
-                <li key={child.id}>
-                  <button
-                    type="button"
-                    onClick={() => selectUnit(child.id)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-black/10 p-3 text-left hover:border-forest-300 hover:bg-sage-50"
-                  >
-                    <ArchiveIcon className="h-4 w-4 shrink-0 text-forest-700" />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-zinc-900">{child.label}</span>
-                      <span className="block truncate text-xs text-zinc-500">{child.unitType}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <h3 className="text-sm font-semibold text-zinc-900">Active child locations</h3>
+          {view.activeChildren.length > 0 ? (
+            <ChildLocationList units={view.activeChildren} onSelect={selectUnit} />
           ) : (
-            <p className="mt-3 text-sm text-zinc-500">This location has no direct child units.</p>
+            <p className="mt-3 text-sm text-zinc-500">This location has no active child units.</p>
           )}
         </section>
+
+        {showArchived && view.archivedChildren.length > 0 && (
+          <section className="rounded-xl border border-black/10 bg-white p-5">
+            <h3 className="text-sm font-semibold text-zinc-900">Archived child locations</h3>
+            <ChildLocationList units={view.archivedChildren} onSelect={selectUnit} />
+          </section>
+        )}
 
         <StorageMovementHistory
           movements={movements}
@@ -234,15 +243,40 @@ export function LocationWorkspace({
   );
 }
 
-function LifecycleBadge({ archived }: { archived: boolean }) {
+function ArchiveVisibilityToggle({ showArchived, pending, onChange }: {
+  showArchived: boolean; pending: boolean; onChange: (value: boolean) => void;
+}) {
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-        archived ? "bg-zinc-100 text-zinc-600" : "bg-emerald-50 text-emerald-700"
-      }`}
-    >
-      {archived ? "Archived" : "Active"}
-    </span>
+    <div className="mb-3 text-xs text-zinc-600" aria-busy={pending}>
+      <label className="flex cursor-pointer items-center gap-2">
+        <input type="checkbox" checked={showArchived} disabled={pending}
+          onChange={event => onChange(event.target.checked)}
+          className="h-4 w-4 accent-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700" />
+        Show archived locations
+      </label>
+      <p className="mt-1">{showArchived ? "Includes read-only historical locations." : "Showing active locations only."}</p>
+      {pending && <p role="status" className="mt-1">Updating location view…</p>}
+    </div>
+  );
+}
+
+function ChildLocationList({ units, onSelect }: { units: StorageUnit[]; onSelect: (id: string) => void }) {
+  return (
+    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+      {units.map(child => (
+        <li key={child.id}>
+          <button type="button" onClick={() => onSelect(child.id)}
+            className={`flex w-full items-center gap-3 rounded-lg border border-black/10 p-3 text-left hover:border-forest-300 hover:bg-sage-50 ${child.archivedAt ? "bg-zinc-50" : ""}`}>
+            <ArchiveIcon className="h-4 w-4 shrink-0 text-forest-700" />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-zinc-900">{child.label}</span>
+              <span className="block truncate text-xs text-zinc-500">{child.unitType}</span>
+            </span>
+            <StorageLifecycleBadge archived={Boolean(child.archivedAt)} />
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
