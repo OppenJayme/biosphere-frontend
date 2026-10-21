@@ -1,5 +1,5 @@
 /**
- * Cataloging controls for public eligibility and archive-not-delete behavior.
+ * Cataloging controls for public eligibility, archival, and revalidated restoration.
  * Active lot information is display-only; inventory resolution remains outside this module.
  */
 
@@ -9,15 +9,17 @@ import { useActionState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   archiveSpecimenAction,
+  restoreSpecimenAction,
   setSpecimenPublicDisplayAction,
   type LifecycleActionState,
 } from "@/features/specimens/lifecycle-actions";
 import { archiveBlockReason, publicDisplayCommand } from "@/features/specimens/lifecycle";
-import type { SpecimenSummary } from "@/features/specimens/types";
+import type { CatalogReadiness, SpecimenSummary } from "@/features/specimens/types";
 
 type SpecimenLifecyclePanelProps = {
   specimen: SpecimenSummary;
   activeLotCount: number;
+  readiness?: CatalogReadiness | null;
 };
 
 function PublicDisplayControl({ specimen }: { specimen: SpecimenSummary }) {
@@ -80,8 +82,8 @@ function ArchiveControl({ specimen, activeLotCount }: SpecimenLifecyclePanelProp
     <div className="border-t border-black/5 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
       <p className="text-sm font-semibold text-zinc-900">Archive record</p>
       <p className="mt-1 text-sm text-zinc-600">
-        Archiving preserves history and disables public eligibility. There is no restore workflow
-        yet, so verify the record before continuing.
+        Archiving preserves history and disables public eligibility. Restoring later revalidates
+        the record against current Cataloging requirements.
       </p>
       {blockedReason ? (
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
@@ -93,7 +95,7 @@ function ArchiveControl({ specimen, activeLotCount }: SpecimenLifecyclePanelProp
             label="Archive specimen"
             question="Archive this specimen?"
             confirmLabel="Yes, archive"
-            detail="History is preserved, but there is currently no restore workflow."
+            detail="History is preserved and public eligibility is disabled. Active inventory must be resolved separately."
             tone="danger"
             pending={pending}
             pendingLabel="Archiving specimen…"
@@ -106,9 +108,57 @@ function ArchiveControl({ specimen, activeLotCount }: SpecimenLifecyclePanelProp
   );
 }
 
+/** The preview is advisory: restoration rechecks the same requirements inside its transaction. */
+function RestoreControl({ specimen, readiness }: Pick<SpecimenLifecyclePanelProps, "specimen" | "readiness">) {
+  const [state, formAction, pending] = useActionState<LifecycleActionState, FormData>(
+    restoreSpecimenAction.bind(null, specimen.id),
+    {},
+  );
+
+  return (
+    <div className="border-t border-black/5 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+      <p className="text-sm font-semibold text-zinc-900">Restore archived record</p>
+      <p className="mt-1 text-sm text-zinc-600">
+        Restores this same record as Cataloged only if every current requirement passes;
+        otherwise as Uncataloged. Public display stays off. Lots, quantities, and storage are not changed.
+      </p>
+      {readiness ? (
+        <div className="mt-3 rounded-lg border border-black/10 bg-zinc-50 px-3 py-2.5 text-xs text-zinc-700">
+          <p>{readiness.requirementsMet
+            ? "Currently meets all requirements: would restore as Cataloged."
+            : "Would currently restore as Uncataloged. Missing requirements:"}</p>
+          {readiness.missingRequirements.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              {readiness.missingRequirements.map((label) => <li key={label}>{label}</li>)}
+            </ul>
+          )}
+          <p className="mt-2">Requirements are checked again when you confirm.</p>
+        </div>
+      ) : (
+        <p className="mt-3 text-xs text-amber-900">
+          The readiness preview is unavailable. The backend will still revalidate before restoring.
+        </p>
+      )}
+      <form action={formAction} className="mt-3">
+        <ConfirmButton
+          label="Restore specimen"
+          question="Restore this specimen?"
+          confirmLabel="Yes, restore"
+          detail="Current requirements determine Cataloged or Uncataloged status. Public display stays off; inventory and original history are preserved."
+          pending={pending}
+          pendingLabel="Restoring specimen…"
+          className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60"
+        />
+      </form>
+      {state.message && <p role="alert" className="mt-2 text-xs text-red-700">{state.message}</p>}
+    </div>
+  );
+}
+
 export function SpecimenLifecyclePanel({
   specimen,
   activeLotCount,
+  readiness,
 }: SpecimenLifecyclePanelProps) {
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5">
@@ -120,7 +170,9 @@ export function SpecimenLifecyclePanel({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
         <PublicDisplayControl specimen={specimen} />
-        <ArchiveControl specimen={specimen} activeLotCount={activeLotCount} />
+        {specimen.status === "ARCHIVED"
+          ? <RestoreControl specimen={specimen} readiness={readiness} />
+          : <ArchiveControl specimen={specimen} activeLotCount={activeLotCount} />}
       </div>
     </section>
   );
