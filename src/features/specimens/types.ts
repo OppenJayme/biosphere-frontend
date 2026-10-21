@@ -42,6 +42,12 @@ export const specimenSummarySchema = z.object({
   updatedAt: z.string().min(1),
 });
 
+/** Server-assessed restoration; never infer a successful mutation from a generic specimen response. */
+export const specimenRestoreResultSchema = specimenSummarySchema.extend({
+  restored: z.boolean(),
+  missingRequirements: z.array(z.string()),
+});
+
 export const DUPLICATE_MATCH_FIELDS = [
   "ACCESSION_NUMBER",
   "SCIENTIFIC_NAME",
