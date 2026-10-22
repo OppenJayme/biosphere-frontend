@@ -5,7 +5,9 @@
   "description": "Optional isolated browser diagnostics; not a BioSphere application dependency.",
   "scripts": {
     "cli": "node cli.mjs",
-    "smoke": "node smoke.mjs"
+    "smoke": "node smoke.mjs",
+    "isolation:unit": "node --test isolation-server.test.mjs",
+    "isolation:check": "node isolation-check.mjs"
   },
   "engines": {
     "node": ">=22"
