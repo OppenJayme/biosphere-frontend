@@ -1,0 +1,18 @@
+{
+  "name": "biosphere-browser-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Optional isolated browser diagnostics; not a BioSphere application dependency.",
+  "scripts": {
+    "cli": "node cli.mjs",
+    "smoke": "node smoke.mjs",
+    "isolation:unit": "node --test isolation-server.test.mjs",
+    "isolation:check": "node isolation-check.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@playwright/cli": "0.1.22"
+  }
+}

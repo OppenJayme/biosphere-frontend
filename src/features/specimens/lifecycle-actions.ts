@@ -14,6 +14,7 @@ import {
   archiveSpecimen,
   completeCataloging,
   reopenCataloging,
+  restoreSpecimen,
   setSpecimenPublicDisplay,
 } from "./api";
 import { REOPEN_REASON_MAX } from "./lifecycle";
@@ -35,9 +36,10 @@ export type ReopenActionState = {
   values?: { reason: string };
 };
 
-function lifecycleError(error: unknown, operation: "archive" | "public-display") {
+function lifecycleError(error: unknown, operation: "archive" | "restore" | "public-display") {
   if (error instanceof ApiError) {
     if (error.status === 400) {
+      if (operation === "restore") return "The specimen could not be restored. Reload its current details before trying again.";
       return operation === "archive"
         ? "Archiving is blocked while active specimen lots exist. Resolve them through the inventory workflow and reload."
         : "Only Cataloged specimens can be marked eligible for public display.";
@@ -116,6 +118,39 @@ export async function archiveSpecimenAction(
 
   refreshSpecimenPaths(safeId.data);
   redirect(`/specimens/${safeId.data}?lifecycle=archived`);
+}
+
+/** Restore is a command, not a status form: the server revalidates current requirements. */
+export async function restoreSpecimenAction(
+  specimenId: string,
+  _previousState: LifecycleActionState,
+  _formData: FormData,
+): Promise<LifecycleActionState> {
+  void _previousState;
+  void _formData;
+  if (!(await verifySession())) {
+    redirect(`/login?from=${encodeURIComponent(`/specimens/${specimenId}`)}`);
+  }
+  const safeId = z.uuid().safeParse(specimenId);
+  if (!safeId.success) {
+    return { message: "The specimen identifier is invalid. Return to the catalog and try again." };
+  }
+
+  let result;
+  try {
+    result = await restoreSpecimen(safeId.data);
+  } catch (error) {
+    return { message: lifecycleError(error, "restore") };
+  }
+
+  refreshSpecimenPaths(safeId.data);
+  revalidatePath("/cataloging");
+  revalidatePath(`/specimens/${safeId.data}/history`);
+  revalidatePath("/audit-logs");
+  const notice = result.restored
+    ? result.status === "CATALOGED" ? "restored-cataloged" : "restored-uncataloged"
+    : "restore-unchanged";
+  redirect(`/specimens/${safeId.data}?lifecycle=${notice}`);
 }
 
 export async function catalogSpecimenAction(

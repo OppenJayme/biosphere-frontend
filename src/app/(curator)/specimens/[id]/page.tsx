@@ -29,6 +29,9 @@ function specimenNotice(params: Record<string, string | string[] | undefined>) {
   if (lifecycle === "public-enabled") return "The specimen is now eligible for public display.";
   if (lifecycle === "public-disabled") return "Public-display eligibility was removed.";
   if (lifecycle === "archived") return "The specimen was archived and public eligibility was disabled.";
+  if (lifecycle === "restored-cataloged") return "The specimen was restored as Cataloged after revalidation. Public display is off.";
+  if (lifecycle === "restored-uncataloged") return "The specimen was restored as Uncataloged. Public display is off. Complete the missing requirements below.";
+  if (lifecycle === "restore-unchanged") return "This specimen was already active. Restoration did not change its status, public eligibility, or history.";
   if (lifecycle === "cataloged") {
     return "The specimen is now Cataloged and can be marked eligible for public display.";
   }
@@ -78,10 +81,10 @@ export default async function SpecimenDetailsPage({
     );
   }
 
-  // Readiness drives the Uncataloged checklist. It is advisory: if it fails to load, the
+  // Readiness drives the Uncataloged checklist and archived restore preview. It is advisory: if it fails to load, the
   // panel still renders and the backend re-checks every requirement on submit.
   const readiness =
-    detail.specimen.status === "UNCATALOGED"
+    detail.specimen.status !== "CATALOGED"
       ? await getCatalogReadiness(id).catch(() => null)
       : null;
 
@@ -156,6 +159,7 @@ export default async function SpecimenDetailsPage({
       <SpecimenLifecyclePanel
         specimen={detail.specimen}
         activeLotCount={detail.lotOverview.activeLotCount}
+        readiness={readiness}
       />
 
       <SpecimenFullDetails detail={detail} />

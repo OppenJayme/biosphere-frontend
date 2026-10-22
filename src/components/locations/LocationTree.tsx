@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDownIcon, ArchiveIcon } from "@/components/icons";
 import type { StorageTreeNode } from "@/features/storage-locations/hierarchy";
+import { StorageLifecycleBadge } from "./StorageLifecycleBadge";
 
 function TreeNode({
   node,
@@ -42,6 +43,7 @@ function TreeNode({
           <span className={`truncate text-sm ${selected ? "font-semibold text-forest-800" : "text-zinc-700"}`}>
             {node.label}
           </span>
+          <StorageLifecycleBadge archived={Boolean(node.archivedAt)} />
           <span className="ml-auto shrink-0 rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
             {node.unitType}
           </span>

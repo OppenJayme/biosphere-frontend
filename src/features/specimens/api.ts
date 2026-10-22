@@ -18,6 +18,7 @@ import {
   specimenPageSchema,
   specimenProvenanceSchema,
   specimenRevisionPageSchema,
+  specimenRestoreResultSchema,
   specimenMediaSchema,
   specimenMediaSignedUrlSchema,
   specimenSummarySchema,
@@ -529,6 +530,19 @@ export async function archiveSpecimen(id: string) {
     throw new Error("The backend returned an invalid archived specimen response.");
   }
 
+  return result.data;
+}
+
+/** Restore the same record; NestJS decides its status without changing any inventory. */
+export async function restoreSpecimen(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/restore`,
+    { method: "PATCH" },
+  );
+  const result = specimenRestoreResultSchema.safeParse(response);
+  if (!result.success) {
+    throw new Error("The backend returned an invalid restored specimen response.");
+  }
   return result.data;
 }
 
