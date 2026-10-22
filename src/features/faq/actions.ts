@@ -8,6 +8,7 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { changeFaqStatus, createFaqEntry, updateFaqEntry } from "./api";
+import { reviewUnansweredQuestion } from "./unanswered";
 import {
   firstFaqValidationMessage,
   readFaqForm,
@@ -115,4 +116,19 @@ export async function changeFaqStatusAction(
 
   refreshFaqConsumers();
   redirect(`/faq-knowledge?selected=${parsed.data.id}&notice=${parsed.data.command}d`);
+}
+
+export async function reviewUnansweredQuestionAction(formData: FormData): Promise<void> {
+  await requireFaqSession();
+  const parsed = z.uuid().safeParse(formData.get("id"));
+  if (!parsed.success) redirect("/faq-knowledge?notice=unanswered-invalid");
+
+  try {
+    await reviewUnansweredQuestion(parsed.data);
+  } catch {
+    redirect("/faq-knowledge?notice=unanswered-failed");
+  }
+
+  revalidatePath("/faq-knowledge");
+  redirect("/faq-knowledge?notice=unanswered-reviewed");
 }

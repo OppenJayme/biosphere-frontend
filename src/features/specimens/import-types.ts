@@ -1,4 +1,4 @@
-/** Runtime contracts for the reviewed, two-phase specimen CSV import flow. */
+/** Runtime contracts for the reviewed, two-phase specimen CSV/Excel import flow. */
 
 import { z } from "zod";
 import { specimenSummarySchema } from "./types";
@@ -26,6 +26,8 @@ export const specimenImportPreviewRowSchema = z.object({
   errors: z.array(z.string()),
   duplicateWarnings: z.array(z.string()),
   valid: z.boolean(),
+  // Older backends omit it; a blank number is generated at commit.
+  accessionNumberWillBeGenerated: z.boolean().optional(),
 });
 
 export const specimenImportPreviewSchema = z.object({
@@ -59,13 +61,17 @@ export type SpecimenImportCommit = z.infer<typeof specimenImportCommitSchema>;
 
 export type ImportActionResult<T> = { ok: true; data: T } | { ok: false; message: string };
 
+export const SPECIMEN_IMPORT_ACCEPT =
+  ".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 export function validateImportFileMetadata(file: { name: string; size: number }) {
-  if (file.size === 0) return "Choose a non-empty CSV file to preview.";
-  if (!file.name.toLowerCase().endsWith(".csv")) {
-    return "Only .csv specimen import files are supported.";
+  if (file.size === 0) return "Choose a non-empty CSV or Excel file to preview.";
+  const name = file.name.toLowerCase();
+  if (!name.endsWith(".csv") && !name.endsWith(".xlsx")) {
+    return "Only .csv and Excel .xlsx specimen import files are supported. Save older .xls files as .xlsx first.";
   }
   if (file.size > MAX_SPECIMEN_IMPORT_FILE_BYTES) {
-    return "The CSV exceeds the 5 MB upload limit.";
+    return "The file exceeds the 5 MB upload limit.";
   }
   return null;
 }

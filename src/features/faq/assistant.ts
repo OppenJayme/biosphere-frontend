@@ -26,7 +26,7 @@ const suggestionListSchema = z.object({
 });
 
 const assistantResponseSchema = z.object({
-  outcome: z.enum(["ANSWERED", "NO_MATCH", "VISIT_REQUEST_REDIRECT"]),
+  outcome: z.enum(["ANSWERED", "CLARIFY", "NO_MATCH", "VISIT_REQUEST_REDIRECT"]),
   answer: publicQuestionSchema.extend({ answer: z.string().min(1) }).nullable(),
   related: z.array(publicQuestionSchema),
   message: z.string().nullable(),

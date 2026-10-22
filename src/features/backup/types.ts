@@ -42,3 +42,21 @@ export type BackupHistoryListQuery = {
   page: number;
   limit: BackupPageSize;
 };
+
+export const backupPolicySchema = z.object({
+  timeZone: z.string(),
+  scheduleHours: z.array(z.number().int().min(0).max(23)),
+  scheduleEnabled: z.boolean(),
+  nextScheduledAt: z.string().nullable(),
+  retention: z.object({
+    keepAllHours: z.number().int().positive(),
+    dailyDays: z.number().int().positive(),
+    weeklyWeeks: z.number().int().positive(),
+  }),
+  targets: z.object({
+    recoveryPointHours: z.number().positive(),
+    recoveryTimeHours: z.number().positive(),
+  }),
+});
+
+export type BackupPolicy = z.infer<typeof backupPolicySchema>;

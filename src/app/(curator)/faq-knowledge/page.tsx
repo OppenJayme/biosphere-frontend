@@ -4,9 +4,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { FaqKnowledgeWorkspace } from "@/components/faq/FaqKnowledgeWorkspace";
+import { UnansweredQuestionsPanel } from "@/components/faq/UnansweredQuestionsPanel";
 import { listFaqEntries } from "@/features/faq/api";
 import { faqKnowledgeHref, parseFaqListQuery } from "@/features/faq/query";
 import type { FaqEntryPage } from "@/features/faq/types";
+import { listUnansweredQuestions, type UnansweredQuestionPage } from "@/features/faq/unanswered";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 
@@ -22,6 +24,9 @@ const notices: Record<string, string> = {
   activated: "The FAQ knowledge entry was activated.",
   deactivated: "The FAQ knowledge entry was deactivated.",
   archived: "The FAQ knowledge entry was archived.",
+  "unanswered-reviewed": "The unanswered question was marked reviewed.",
+  "unanswered-failed": "The unanswered question could not be marked reviewed. Try again.",
+  "unanswered-invalid": "The unanswered question identifier is invalid. Reload and try again.",
 };
 
 function firstValue(value: string | string[] | undefined) {
@@ -37,6 +42,14 @@ export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePag
   const notice = notices[firstValue(params.notice) ?? ""];
   let page: FaqEntryPage | null = null;
   let errorMessage: string | undefined;
+  let unanswered: UnansweredQuestionPage | null = null;
+  let unansweredError: string | undefined;
+
+  try {
+    unanswered = await listUnansweredQuestions("OPEN");
+  } catch {
+    unansweredError = "Unanswered visitor questions are temporarily unavailable.";
+  }
 
   try {
     page = await listFaqEntries(query);
@@ -78,6 +91,8 @@ export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePag
         errorMessage={errorMessage}
         initialSelectedId={selectedResult.success ? selectedResult.data : undefined}
       />
+
+      <UnansweredQuestionsPanel page={unanswered} errorMessage={unansweredError} />
     </div>
   );
 }

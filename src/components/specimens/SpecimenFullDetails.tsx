@@ -56,8 +56,25 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
   const { specimen, collection, taxonomy, provenance, activeLots, lotOverview, media, tags } =
     detail;
 
+  const zeroReason = lotOverview.zeroQuantityReason;
+
   return (
     <div className="space-y-4">
+      {lotOverview.totalQuantity === 0 && zeroReason && (
+        <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">No specimens are currently in active inventory.</p>
+          <p className="mt-1">
+            {zeroReason.adjustmentType
+              ? `${zeroReason.adjustmentType.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())}`
+              : "Quantity reduced"}
+            {zeroReason.reason ? `: ${zeroReason.reason}` : ""} (recorded{" "}
+            {new Date(zeroReason.recordedAt).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}).
+          </p>
+          <p className="mt-1 text-xs text-amber-800">
+            The record keeps its {specimen.status === "CATALOGED" ? "Cataloged status and " : ""}accession number. If the same specimen returns, add it back to this record instead of creating a new one.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Collection", value: collection?.collectionName ?? "Not assigned" },

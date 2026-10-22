@@ -1,4 +1,4 @@
-/** Interactive review surface for the backend's retry-safe specimen CSV import. */
+/** Interactive review surface for the backend's retry-safe specimen CSV/Excel import. */
 
 "use client";
 
@@ -18,6 +18,7 @@ import {
   MAX_SPECIMEN_IMPORT_FILE_BYTES,
   selectedWarningCount,
   specimenImportPreviewSchema,
+  SPECIMEN_IMPORT_ACCEPT,
   validateImportFileMetadata,
   validImportRowNumbers,
   type SpecimenImportCommit,
@@ -32,7 +33,7 @@ function rowIdentity(row: SpecimenImportPreviewRow) {
     row.data.accessionNumber ??
     row.data.commonName ??
     row.data.scientificName ??
-    `CSV row ${row.rowNumber}`
+    `Row ${row.rowNumber}`
   );
 }
 
@@ -71,7 +72,7 @@ export function SpecimenImportWorkspace() {
     const file = formData.get("file");
     const fileError = file instanceof File
       ? validateImportFileMetadata(file)
-      : "Choose a non-empty CSV file to preview.";
+      : "Choose a non-empty CSV or Excel file to preview.";
     setMessage(null);
     setPreview(null);
     setCommitResult(null);
@@ -91,7 +92,7 @@ export function SpecimenImportWorkspace() {
           body: formData,
         });
       } catch {
-        setMessage("The CSV preview is unavailable. Check your connection and try again.");
+        setMessage("The import preview is unavailable. Check your connection and try again.");
         return;
       }
 
@@ -110,7 +111,7 @@ export function SpecimenImportWorkspace() {
             ? candidate
             : Array.isArray(candidate) && candidate.every((item) => typeof item === "string")
               ? candidate.join(" ")
-              : "The CSV could not be previewed. Check the file and try again.",
+              : "The file could not be previewed. Check the file and try again.",
         );
         return;
       }
@@ -173,7 +174,7 @@ export function SpecimenImportWorkspace() {
         <h2 className="text-sm font-semibold text-zinc-900">1. Upload and validate</h2>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-zinc-500">
-            CSV only, up to 5 MB and 500 data rows. Previewing does not save records.
+            CSV or Excel (.xlsx, first sheet), up to 5 MB and 500 data rows. Previewing does not save records. Rows without an accession number get the next USC-BM number when imported; imported records stay Uncataloged until reviewed.
           </p>
           <a
             href="/templates/specimen-import-template.csv"
@@ -185,11 +186,11 @@ export function SpecimenImportWorkspace() {
         </div>
         <form onSubmit={handlePreview} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1">
-            <span className="mb-1 block text-xs font-medium text-zinc-600">Specimen CSV</span>
+            <span className="mb-1 block text-xs font-medium text-zinc-600">Specimen file (CSV or Excel)</span>
             <input
               name="file"
               type="file"
-              accept=".csv,text/csv"
+              accept={SPECIMEN_IMPORT_ACCEPT}
               required
               disabled={isPreviewing || isCommitting}
               className={`block w-full rounded-lg border border-black/15 bg-white text-sm text-zinc-700 file:mr-3 file:border-0 file:border-r file:border-black/10 file:bg-sage-50 file:px-3 file:py-2.5 file:font-semibold file:text-forest-800 ${CATALOGING_FILE_FEEDBACK_CLASSES}`}
@@ -201,9 +202,9 @@ export function SpecimenImportWorkspace() {
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:pointer-events-none disabled:opacity-50"
           >
             <UploadIcon className="h-4 w-4" />
-            Preview CSV
+            Preview file
           </button>
-          <PendingOverlay pending={isPreviewing} label="Validating CSV rows…" />
+          <PendingOverlay pending={isPreviewing} label="Validating import rows…" />
         </form>
         <p className="mt-2 text-[11px] text-zinc-400">
           Maximum upload: {(MAX_SPECIMEN_IMPORT_FILE_BYTES / 1024 / 1024).toFixed(0)} MB. The file itself is not retained by this page.
@@ -258,12 +259,19 @@ export function SpecimenImportWorkspace() {
                 {preview.rows.map((row) => (
                   <tr key={row.rowNumber} className={row.valid ? "hover:bg-sage-50/60" : "bg-red-50/40"}>
                     <td className="px-3 py-3 align-top">
-                      <input type="checkbox" aria-label={`Select CSV row ${row.rowNumber}`} checked={selected.has(row.rowNumber)} onChange={() => toggleRow(row.rowNumber)} disabled={!row.valid || isCommitting} />
+                      <input type="checkbox" aria-label={`Select row ${row.rowNumber}`} checked={selected.has(row.rowNumber)} onChange={() => toggleRow(row.rowNumber)} disabled={!row.valid || isCommitting} />
                     </td>
                     <td className="px-3 py-3 align-top font-medium text-zinc-700">{row.rowNumber}</td>
                     <td className="px-3 py-3 align-top">
                       <p className="font-medium text-zinc-900">{rowIdentity(row)}</p>
                       <p className="mt-0.5 text-xs text-zinc-500">{row.data.scientificName ?? "Scientific name not provided"}</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        {row.data.accessionNumber
+                          ? `Accession ${row.data.accessionNumber}`
+                          : row.accessionNumberWillBeGenerated
+                            ? "Accession number assigned on import"
+                            : "No accession number"}
+                      </p>
                     </td>
                     <td className="px-3 py-3 align-top text-zinc-600">{row.data.specimenCategory ?? "Not provided"}</td>
                     <td className="px-3 py-3 align-top text-zinc-600">{row.data.classificationStatus ?? "Not provided"}</td>

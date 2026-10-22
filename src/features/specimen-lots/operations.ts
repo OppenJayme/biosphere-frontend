@@ -257,6 +257,7 @@ const ADJUSTMENT_LABELS: Record<QuantityAdjustmentType, string> = {
   DEACCESSION: "Deaccession",
   MISSING_LOSS: "Missing / loss",
   DESTRUCTION: "Destruction",
+  TEMPORARY_ABSENCE: "Temporary absence (loan, conservation)",
   DATA_CORRECTION: "Data correction",
 };
 

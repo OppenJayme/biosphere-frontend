@@ -15,9 +15,9 @@ describe("Cataloging CSV picker feedback", () => {
     const input = html.match(/<input\b[^>]*type="file"[^>]*>/)?.[0];
     expect(input).toBeDefined();
     expect(input).toContain(CATALOGING_FILE_FEEDBACK_CLASSES);
-    expect(input).toContain('accept=".csv,text/csv"');
+    expect(input).toContain('accept=".csv,text/csv,.xlsx,');
     expect(input).toContain('required=""');
     expect(input).toContain('name="file"');
-    expect(html).toContain("Preview CSV");
+    expect(html).toContain("Preview file");
   });
 });

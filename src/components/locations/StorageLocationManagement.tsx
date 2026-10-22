@@ -10,6 +10,10 @@ import {
   moveStorageLocationAction,
   updateStorageLocationAction,
 } from "@/features/storage-locations/actions";
+import {
+  STORAGE_ARRANGEMENT_HINT,
+  STORAGE_UNIT_TYPE_SUGGESTIONS,
+} from "@/features/storage-locations/arrangement";
 import { storageDescendantIds } from "@/features/storage-locations/hierarchy";
 import type {
   StorageLocationCommandState,
@@ -63,7 +67,12 @@ function StorageFields({
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Location label" name="label" defaultValue={values.label} required />
-      <Field label="Unit type" name="unitType" defaultValue={values.unitType} required />
+      <Field label="Unit type" name="unitType" defaultValue={values.unitType} required list="storage-unit-type-suggestions" />
+      <datalist id="storage-unit-type-suggestions">
+        {STORAGE_UNIT_TYPE_SUGGESTIONS.map((type) => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
       <Field label="Storage type" name="storageType" defaultValue={values.storageType} required />
       <Field label="Size (optional)" name="size" defaultValue={values.size} />
       <Field label="Capacity (optional)" name="capacity" defaultValue={values.capacity} type="number" min="1" />
@@ -100,6 +109,7 @@ function Field({
   required = false,
   type = "text",
   min,
+  list,
 }: {
   label: string;
   name: string;
@@ -107,6 +117,7 @@ function Field({
   required?: boolean;
   type?: "text" | "number";
   min?: string;
+  list?: string;
 }) {
   return (
     <label className="text-xs font-medium text-zinc-700">
@@ -115,6 +126,7 @@ function Field({
         name={name}
         type={type}
         min={min}
+        list={list}
         step={type === "number" ? "1" : undefined}
         defaultValue={defaultValue}
         required={required}
@@ -136,7 +148,7 @@ function CreateStorageLocationForm({ units, parentId }: { units: StorageUnit[]; 
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Add storage location</summary>
       <form action={action} className="mt-4">
         <p className="mb-3 text-xs text-zinc-500">
-          Unit and storage types remain curator-managed text; no fixed type hierarchy is imposed here.
+          {STORAGE_ARRANGEMENT_HINT} Capacity is optional; actual quantities are tracked from specimen lots either way.
         </p>
         <StorageFields values={state.values} parents={activeParents} includeParent />
         <button

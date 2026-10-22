@@ -104,7 +104,8 @@ describe("specimen import contracts", () => {
   it("rejects empty, non-CSV, and oversized uploads before sending them", () => {
     expect(validateImportFileMetadata({ name: "specimens.csv", size: 10 })).toBeNull();
     expect(validateImportFileMetadata({ name: "specimens.csv", size: 0 })).toMatch(/non-empty/i);
-    expect(validateImportFileMetadata({ name: "specimens.xlsx", size: 10 })).toMatch(/\.csv/i);
+    expect(validateImportFileMetadata({ name: "specimens.xlsx", size: 10 })).toBeNull();
+    expect(validateImportFileMetadata({ name: "specimens.xls", size: 10 })).toMatch(/\.xlsx/i);
     expect(
       validateImportFileMetadata({
         name: "specimens.csv",
