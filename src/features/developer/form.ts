@@ -110,17 +110,22 @@ export function readArAssetActivateForm(formData: FormData) {
     .safeParse({ authorizationReference: formString(formData, "authorizationReference") });
 }
 
+/** The size limits shared by upload and local preview; undefined when the file is within them. */
+export function arFileSizeMessage(file: unknown) {
+  if (!isFile(file) || file.size === 0) return "Choose a non-empty AR model file.";
+  if (file.size > AR_ASSET_MAX_BYTES) return "The AR model must be 50 MB or smaller.";
+  return undefined;
+}
+
 function arFileSchema(format: ArModelFormat | undefined) {
   return z
     .unknown()
     .superRefine((value, context) => {
-      if (!isFile(value) || value.size === 0) {
-        context.addIssue({ code: "custom", message: "Choose a non-empty AR model file." });
-        return;
+      const sizeMessage = arFileSizeMessage(value);
+      if (sizeMessage) {
+        context.addIssue({ code: "custom", message: sizeMessage });
       }
-      if (value.size > AR_ASSET_MAX_BYTES) {
-        context.addIssue({ code: "custom", message: "The AR model must be 50 MB or smaller." });
-      }
+      if (!isFile(value) || value.size === 0) return;
       const extension = fileExtension(value.name);
       if (!(AR_MODEL_FORMATS as readonly string[]).includes(extension)) {
         context.addIssue({ code: "custom", message: "Use a single-file .glb or .usdz model." });

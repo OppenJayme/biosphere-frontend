@@ -3,34 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import type { ModelViewerElement } from "@google/model-viewer";
 import { CubeIcon, InfoIcon } from "@/components/icons";
-
-type PreviewState = "loading" | "ready" | "error";
+import { previewStateFor, startModelPreview, type PreviewStatus } from "@/features/developer/model-preview";
 
 /**
  * Local preview of a model file before it is uploaded, so the developer can check it renders
- * (orientation, scale, textures) before deploying it. Nothing leaves the browser.
+ * (orientation, scale, textures) before deploying it. The file is size-checked and must be a
+ * self-contained GLB before the viewer gets a source, so the model never leaves the browser.
  */
 export function ModelFilePreview({ file }: { file: File }) {
   const isGlb = file.name.toLowerCase().endsWith(".glb");
-  const [state, setState] = useState<PreviewState>("loading");
+  const [status, setStatus] = useState<PreviewStatus | null>(null);
   const viewerRef = useRef<ModelViewerElement>(null);
+  // Status is tied to the file it was reported for, so a replaced file starts from "validating".
+  const { state, message } = previewStateFor(status, file);
 
-  // Callers key this component by file, so the state above starts fresh for each one.
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || !isGlb) return;
-    const objectUrl = URL.createObjectURL(file);
-    const onLoad = () => setState("ready");
-    const onError = () => setState("error");
-    viewer.addEventListener("load", onLoad);
-    viewer.addEventListener("error", onError);
-    viewer.src = objectUrl;
-    import("@google/model-viewer").catch(onError);
-    return () => {
-      viewer.removeEventListener("load", onLoad);
-      viewer.removeEventListener("error", onError);
-      URL.revokeObjectURL(objectUrl);
-    };
+    return startModelPreview(viewer, file, setStatus, { loadViewer: () => import("@google/model-viewer") });
   }, [file, isGlb]);
 
   if (!isGlb) {
@@ -55,15 +45,15 @@ export function ModelFilePreview({ file }: { file: File }) {
           shadow-intensity="1"
           style={{ width: "100%", height: "100%" }}
         />
-        {state === "loading" && (
+        {(state === "validating" || state === "loading") && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-zinc-500">
             <CubeIcon className="h-8 w-8 animate-pulse" />
-            <p className="mt-2 text-xs">Rendering preview…</p>
+            <p className="mt-2 text-xs">{state === "validating" ? "Checking file…" : "Rendering preview…"}</p>
           </div>
         )}
         {state === "error" && (
           <p role="alert" className="absolute inset-0 flex items-center justify-center p-4 text-center text-xs font-medium text-red-700">
-            This file could not be rendered. Visitors would not be able to view it either.
+            {message ?? "This file could not be rendered. Visitors would not be able to view it either."}
           </p>
         )}
       </div>

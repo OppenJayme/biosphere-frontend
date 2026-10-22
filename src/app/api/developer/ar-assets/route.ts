@@ -1,7 +1,8 @@
 /**
  * Same-origin upload boundary for developer AR asset deployment (REQ-4.2-04, REQ-4.2-05).
  * It checks the developer role before parsing, bounds multipart requests, verifies the model's
- * file signature, and forwards only allowlisted fields to the backend.
+ * contents (a well-formed, self-contained GLB, or the USDZ signature), and forwards only
+ * allowlisted fields to the backend.
  *
  * proxy.ts excludes this path from its matcher: proxy buffers at most 10 MB of a request body,
  * which would silently truncate AR models (up to 50 MB).
@@ -16,6 +17,7 @@ import {
   toCreateArAssetFormData,
   toReplaceArAssetFormData,
 } from "@/features/developer/form";
+import { glbFileError } from "@/features/developer/glb";
 import { getDeveloperAccess } from "@/features/developer/session";
 import { AR_ASSET_MAX_BYTES, type ArModelFormat } from "@/features/developer/types";
 import { ApiError } from "@/lib/api-client";
@@ -100,18 +102,16 @@ async function readBoundedMultipart(request: Request) {
   }
 }
 
-async function signatureError(file: File, format: ArModelFormat) {
+// A GLB must be well-formed and self-contained: an external buffer or texture URI would make
+// every visitor's browser request it. USDZ is checked by its ZIP signature only.
+async function contentError(file: File, format: ArModelFormat) {
+  if (format === "glb") {
+    const message = await glbFileError(file);
+    return message ? json({ message }, 400) : null;
+  }
   const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
   if (matchesModelSignature(format, header)) return null;
-  return json(
-    {
-      message:
-        format === "glb"
-          ? "This file is not a valid binary glTF (.glb) model."
-          : "This file is not a valid USDZ package.",
-    },
-    400,
-  );
+  return json({ message: "This file is not a valid USDZ package." }, 400);
 }
 
 export async function POST(request: Request) {
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
   const parsed = readArAssetCreateForm(upload.formData);
   if (!parsed.success) return json({ message: firstValidationMessage(parsed.error) }, 400);
 
-  const invalid = await signatureError(parsed.data.file, parsed.data.modelFormat);
+  const invalid = await contentError(parsed.data.file, parsed.data.modelFormat);
   if (invalid) return invalid;
 
   try {
@@ -144,7 +144,7 @@ export async function PUT(request: Request) {
   const parsed = readArAssetReplaceForm(upload.formData);
   if (!parsed.success) return json({ message: firstValidationMessage(parsed.error) }, 400);
 
-  const invalid = await signatureError(parsed.data.file, parsed.data.modelFormat);
+  const invalid = await contentError(parsed.data.file, parsed.data.modelFormat);
   if (invalid) return invalid;
 
   try {
