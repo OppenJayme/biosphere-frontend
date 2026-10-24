@@ -223,3 +223,38 @@ dominates, inspect payload/render work. Only optimize a demonstrated bottleneck.
 Automated tests cover href/navigation/pending/repeat-click contracts and existing
 filter-form reset tests. Actual browser timings and failure/history interaction
 are pending; DEF-011 remains In progress, not a claimed speed improvement.
+
+## DEF-020 - Interrupted duplicate-warning request
+
+The client request boundary now catches transport rejection separately from
+the Server Action's backend-error handling. It returns `unavailable`, preserving
+the existing unknown/Check again UI and request-ID stale-response guard. It does
+not change duplicate rules, accession uniqueness, archive policy or save behavior.
+
+Test seam approved by the user: real client request function with only the
+remote Server Action mocked, plus a browser interruption/retry check. The new
+regression failed on uncaught `Failed to fetch` before the fallback was added.
+Five request tests now cover rejection, a successful matching retry and resolved
+idle/clear/unavailable results; all 366 frontend tests (62 files), lint and
+TypeScript passed on 2026-10-23. These unit tests are not full React/Next transport
+integration or live backend failure evidence.
+
+Browser verification used a separately approved loopback-only dev server on
+port 3002 because port 3000 runs an older production build. The original failure
+was reproduced there; replaying it against that unchanged build is not a failed
+test of new source. Do not rebuild underneath an occupied production server.
+
+For an independent retest, use an existing `TEST` record with both names:
+
+1. Copy its names into an unsaved new-specimen form; do not submit. Blur a name
+   and confirm the warning links that record without disabling Save.
+2. Change to unrelated names; confirm clear replaces the old warning/link.
+3. Interrupt only the read-only duplicate-check action. Confirm pending then
+   unknown/Check again, with entered values intact and Save still enabled.
+4. Restore the connection and Check again; confirm a fresh result, no page error
+   and no specimen save. Do not interrupt unrelated writes or stop shared servers.
+
+The controlled browser run passed those checks with six validated duplicate-read
+attempts, one deliberately aborted, and no other non-read requests or submitted
+forms. Its temporary tab closed; the signed-in Audit tab stayed open. Shared
+DEF-020 remains Ready for retest pending merged/deployed independent verification.
