@@ -1,7 +1,8 @@
 /**
  * Browser-side client for the public FAQ Assistant. Like the public forms, the visitor's browser
  * calls the backend directly so the backend's per-IP FAQ rate limit applies to each visitor rather
- * than to the shared Next.js server. Only the question text is ever sent (REQ-4.11-07).
+ * than to the shared Next.js server. Only question text and an optional public FAQ choice
+ * identifier are sent; no personal information or conversation history (REQ-4.11-07).
  */
 
 import { z } from "zod";
@@ -26,13 +27,17 @@ const suggestionListSchema = z.object({
 });
 
 const assistantResponseSchema = z.object({
-  outcome: z.enum(["ANSWERED", "NO_MATCH", "VISIT_REQUEST_REDIRECT"]),
+  outcome: z.enum(["ANSWERED", "CLARIFICATION_NEEDED", "NO_MATCH", "VISIT_REQUEST_REDIRECT"]),
   answer: publicQuestionSchema.extend({ answer: z.string().min(1) }).nullable(),
   related: z.array(publicQuestionSchema),
   message: z.string().nullable(),
   redirect: z.enum(["GENERAL_INQUIRY", "VISIT_REQUEST"]).nullable(),
   notice: z.string().min(1),
-});
+}).refine((data) => data.outcome !== "CLARIFICATION_NEEDED" || (
+  data.answer === null &&
+  data.related.length >= 2 && data.related.length <= 3 &&
+  new Set(data.related.map((item) => item.id)).size === data.related.length
+), "Clarification must offer two or three distinct questions without an answer.");
 
 export type PublicFaqQuestion = z.infer<typeof publicQuestionSchema>;
 export type FaqSuggestionList = z.infer<typeof suggestionListSchema>;
@@ -85,11 +90,11 @@ export function fetchFaqSuggestions(): Promise<FaqAssistantResult<FaqSuggestionL
   );
 }
 
-export function askFaqAssistant(question: string): Promise<FaqAssistantResult<FaqAssistantResponse>> {
+export function askFaqAssistant(question: string, selectedFaqId?: string): Promise<FaqAssistantResult<FaqAssistantResponse>> {
   return requestAssistant("/faq/assistant/ask", assistantResponseSchema, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, ...(selectedFaqId ? { selectedFaqId } : {}) }),
   });
 }
 
