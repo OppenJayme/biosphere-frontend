@@ -1,12 +1,14 @@
 /**
  * Public Controlled Knowledge-Based FAQ Assistant (SRS 3.1.6, 4.11). Shows only curator-approved
  * answers returned by the backend, always discloses that limit, and keeps a visible path to the
- * General Inquiry form. The conversation lives in memory only and is never persisted (REQ-4.11-07).
+ * General Inquiry form. Conversation remains in memory; a separate, feature-gated form can submit
+ * one explicitly consented unanswered question, never the conversation (REQ-4.11-07).
  */
 
 "use client";
 
 import Link from "next/link";
+import { FaqReviewConsent } from "./FaqReviewConsent";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import {
@@ -35,6 +37,7 @@ type Message =
       kind: "answer" | "clarification" | "fallback" | "error";
       text: string;
       answeredQuestion?: string;
+      reviewQuestion?: string;
       related: PublicFaqQuestion[];
       redirect: FaqAssistantRedirect | null;
     };
@@ -135,6 +138,7 @@ export function FaqAssistantWidget() {
             id: nextId.current++,
             from: "assistant",
             kind: data.outcome === "CLARIFICATION_NEEDED" ? "clarification" : "fallback",
+            reviewQuestion: data.outcome === "NO_MATCH" ? question : undefined,
             text: data.message ?? "No approved answer is available for that question.",
             related: data.related,
             redirect: data.redirect ?? (data.outcome === "CLARIFICATION_NEEDED" ? null : "GENERAL_INQUIRY"),
@@ -379,6 +383,7 @@ function AssistantReply({
           </Link>
         )}
       </AssistantBubble>
+      {message.reviewQuestion && <FaqReviewConsent question={message.reviewQuestion} />}
       {message.related.length > 0 && (
         <div className="pl-1">
           <p className="mb-1.5 text-xs text-ink-muted">
