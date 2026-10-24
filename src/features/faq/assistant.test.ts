@@ -32,6 +32,15 @@ afterEach(() => {
 });
 
 describe("FAQ assistant client", () => {
+  it("sends only the public context identifier with a follow-up, never conversation history", async () => {
+    const fetchMock = mockFetch(json({ outcome: "NO_MATCH", answer: null, related: [], message: "Please ask a complete museum question.", redirect: "GENERAL_INQUIRY", notice: NOTICE }));
+    await askFaqAssistant("How about weekends?", undefined, ENTRY_ID);
+    expect(fetchMock).toHaveBeenCalledWith("http://api.test/faq/assistant/ask", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "How about weekends?", contextFaqId: ENTRY_ID }), cache: "no-store",
+    });
+  });
+
   it("accepts clarification choices without presenting an answer or treating them as a service failure", async () => {
     mockFetch(json({
       outcome: "CLARIFICATION_NEEDED",

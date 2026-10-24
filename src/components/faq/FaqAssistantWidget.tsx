@@ -61,6 +61,8 @@ export function FaqAssistantWidget() {
   const launcherRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  // One public topic hint in component memory only, never a chat-history export.
+  const lastAnsweredFaqId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -100,7 +102,11 @@ export function FaqAssistantWidget() {
     setPending(true);
     setMessages((current) => [...current, { id: nextId.current++, from: "visitor", text: question }]);
 
-    const result = await askFaqAssistant(question, selectedFaqId);
+    const contextFaqId = !selectedFaqId && /^(?:how|what) about\b/i.test(question)
+      ? lastAnsweredFaqId.current
+      : undefined;
+    lastAnsweredFaqId.current = undefined;
+    const result = await askFaqAssistant(question, selectedFaqId, contextFaqId);
     let reply: Message;
     if (!result.ok) {
       reply = {
@@ -113,6 +119,7 @@ export function FaqAssistantWidget() {
       };
     } else {
       const { data } = result;
+      lastAnsweredFaqId.current = data.outcome === "ANSWERED" ? data.answer?.id : undefined;
       setNotice(data.notice);
       reply = data.answer
         ? {

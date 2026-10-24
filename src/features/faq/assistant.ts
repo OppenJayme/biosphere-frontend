@@ -2,7 +2,7 @@
  * Browser-side client for the public FAQ Assistant. Like the public forms, the visitor's browser
  * calls the backend directly so the backend's per-IP FAQ rate limit applies to each visitor rather
  * than to the shared Next.js server. Only question text and an optional public FAQ choice
- * identifier are sent; no personal information or conversation history (REQ-4.11-07).
+ * identifier/context ID are sent; no personal information or conversation history (REQ-4.11-07).
  */
 
 import { z } from "zod";
@@ -90,11 +90,11 @@ export function fetchFaqSuggestions(): Promise<FaqAssistantResult<FaqSuggestionL
   );
 }
 
-export function askFaqAssistant(question: string, selectedFaqId?: string): Promise<FaqAssistantResult<FaqAssistantResponse>> {
+export function askFaqAssistant(question: string, selectedFaqId?: string, contextFaqId?: string): Promise<FaqAssistantResult<FaqAssistantResponse>> {
   return requestAssistant("/faq/assistant/ask", assistantResponseSchema, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, ...(selectedFaqId ? { selectedFaqId } : {}) }),
+    body: JSON.stringify({ question, ...(selectedFaqId ? { selectedFaqId } : {}), ...(contextFaqId ? { contextFaqId } : {}) }),
   });
 }
 
