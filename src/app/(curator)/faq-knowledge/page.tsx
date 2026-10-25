@@ -1,6 +1,7 @@
 /** Protected browser for curator-controlled FAQ knowledge. */
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { FaqKnowledgeWorkspace } from "@/components/faq/FaqKnowledgeWorkspace";
@@ -64,6 +65,7 @@ export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePag
           Review curator-approved questions and answers without generating unsupported responses.
         </p>
       </header>
+      <Link href="/faq-knowledge/review" className="text-sm text-forest-700 underline">Review opt-in unanswered questions</Link>
 
       {notice && (
         <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
