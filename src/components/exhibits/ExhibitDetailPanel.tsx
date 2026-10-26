@@ -17,16 +17,18 @@ import {
   ArchiveIcon,
   CalendarIcon,
   CubeIcon,
+  SparkleIcon,
 } from "@/components/icons";
 import {
   changeExhibitStatusAction,
   loadExhibitMediaAction,
   replaceExhibitUrlAction,
   setExhibitArAction,
+  setExhibitArSelectionAction,
   type ExhibitMediaResult,
 } from "@/features/exhibits-qr/actions";
 import type { ExhibitLifecycleCommand, ExhibitQrFile } from "@/features/exhibits-qr/api";
-import { SLUG_MAX_LENGTH } from "@/features/exhibits-qr/form";
+import { AR_SELECTION_NOTE_MAX_LENGTH, SLUG_MAX_LENGTH } from "@/features/exhibits-qr/form";
 import { EXHIBIT_STATUS_LABELS, exhibitDisplayName, type ExhibitRow } from "@/features/exhibits-qr/types";
 import { formatExhibitDate, layoutLabel, STATUS_STYLES } from "./exhibit-format";
 import type { ExhibitNotice } from "./ExhibitsWorkspace";
@@ -171,7 +173,87 @@ function printBlob(blob: Blob, title: string) {
   document.body.append(frame);
 }
 
-/** Curator switch for developer-uploaded AR models; unavailable until at least one is uploaded. */
+/**
+ * Curator marks an exhibit for AR preparation (REQ-4.13-02). The listed considerations come from
+ * SRS 4.13.1 and are guidance only: nothing is scored or ranked (REQ-4.13-08). The note is shown
+ * to the developer who deploys the model.
+ */
+function ArSelectionForm({
+  exhibit,
+  onDone,
+  onNotice,
+}: {
+  exhibit: ExhibitRow;
+  onDone: () => void;
+  onNotice: (notice: ExhibitNotice) => void;
+}) {
+  const [note, setNote] = useState(exhibit.arSelectionNote ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const unchanged = exhibit.arSelected && note.trim() === (exhibit.arSelectionNote ?? "");
+
+  function submit() {
+    startTransition(async () => {
+      const result = await setExhibitArSelectionAction(exhibit.id, exhibit.publicSlug, true, note);
+      if (!result.ok) {
+        setError(result.message ?? "The AR selection could not be saved.");
+        return;
+      }
+      onNotice({ tone: "success", message: result.message ?? "AR selection saved." });
+      onDone();
+    });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-forest-700/20 bg-forest-50 p-3 text-xs text-zinc-700">
+      <label htmlFor="ar-selection-note" className="block font-semibold text-zinc-800">
+        Reason for AR (optional, shown to the developer)
+      </label>
+      <textarea
+        id="ar-selection-note"
+        rows={3}
+        value={note}
+        maxLength={AR_SELECTION_NOTE_MAX_LENGTH}
+        onChange={(e) => {
+          setNote(e.target.value);
+          setError(null);
+        }}
+        placeholder="e.g. Endemic species featured in the Grade 7 biodiversity tour"
+        className="w-full resize-none rounded-lg border border-black/15 bg-white px-2.5 py-2 text-zinc-900 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+      />
+      <p className="text-zinc-500">
+        You may consider its research or educational objective, conservation status, rarity, endemism, exotic or
+        invasive status, and economic or ecological value. The choice is yours; BioSphere does not score
+        specimens.
+      </p>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={pending || unchanged}
+          onClick={submit}
+          className="flex-1 rounded-lg bg-forest-700 px-3 py-2 font-semibold text-white hover:bg-forest-800 disabled:opacity-50"
+        >
+          {pending ? "Saving…" : exhibit.arSelected ? "Save note" : "Mark for AR"}
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onDone}
+          className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Curator switch for developer-uploaded AR models; unavailable until marked for AR and a model is uploaded. */
 function ArSwitch({
   exhibit,
   pending,
@@ -181,7 +263,7 @@ function ArSwitch({
   pending: boolean;
   onChange: (enabled: boolean) => void;
 }) {
-  const unavailable = exhibit.arAssetCount === 0;
+  const unavailable = !exhibit.arSelected || exhibit.arAssetCount === 0;
   return (
     <span className="flex flex-col items-end gap-1">
       <button
@@ -202,8 +284,10 @@ function ArSwitch({
         />
       </button>
       <span className="text-[11px] font-normal text-zinc-500">
-        {unavailable
-          ? "No AR model uploaded yet"
+        {!exhibit.arSelected
+          ? "Mark for AR first"
+          : exhibit.arAssetCount === 0
+          ? "Waiting for a developer to upload a model"
           : `${exhibit.arEnabled ? "On" : "Off"} · ${exhibit.arAssetCount} model${exhibit.arAssetCount === 1 ? "" : "s"}`}
       </span>
     </span>
@@ -306,6 +390,8 @@ export function ExhibitDetailPanel({
   const [media, setMedia] = useState<ExhibitMediaResult | null>(null);
   const [confirm, setConfirm] = useState<"archive" | "disable" | null>(null);
   const [replacingUrl, setReplacingUrl] = useState(false);
+  const [editingArSelection, setEditingArSelection] = useState(false);
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const [qrBusy, setQrBusy] = useState<ExhibitQrFile | "print" | null>(null);
   const [pending, startTransition] = useTransition();
   const exhibitId = exhibit?.id;
@@ -343,6 +429,14 @@ export function ExhibitDetailPanel({
       onNotice({ tone: result.ok ? "success" : "error", message: result.message ?? "The exhibit could not be changed." });
       if (result.ok && command === "archive") onArchived();
       setConfirm(null);
+    });
+  }
+
+  function withdrawArSelection() {
+    startTransition(async () => {
+      const result = await setExhibitArSelectionAction(current.id, current.publicSlug, false, "");
+      onNotice({ tone: result.ok ? "success" : "error", message: result.message ?? "The AR selection could not be changed." });
+      setConfirmWithdraw(false);
     });
   }
 
@@ -425,6 +519,79 @@ export function ExhibitDetailPanel({
         <InfoRow icon={ClockIcon} label="Last Updated">
           {formatExhibitDate(exhibit.updatedAt)}
         </InfoRow>
+        <InfoRow icon={SparkleIcon} label="AR Selection">
+          {exhibit.arSelected ? (
+            <>
+              <span className="rounded-full bg-forest-100 px-2 py-0.5 text-[11px] font-medium text-forest-700">
+                Marked for AR
+              </span>
+              <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
+                Since {formatExhibitDate(exhibit.arSelectedAt)}
+              </span>
+            </>
+          ) : (
+            <span className="font-normal text-zinc-500">Not selected</span>
+          )}
+          {!editingArSelection && !confirmWithdraw && (
+            <span className="mt-0.5 flex justify-end gap-3 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setEditingArSelection(true)}
+                className="font-semibold text-forest-700 underline hover:text-forest-800"
+              >
+                {exhibit.arSelected ? "Edit note" : "Mark for AR"}
+              </button>
+              {exhibit.arSelected && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setConfirmWithdraw(true)}
+                  className="font-semibold text-red-600 underline hover:text-red-700 disabled:opacity-50"
+                >
+                  Withdraw
+                </button>
+              )}
+            </span>
+          )}
+        </InfoRow>
+        {exhibit.arSelected && exhibit.arSelectionNote && !editingArSelection && (
+          <p className="py-2 text-xs whitespace-pre-line text-zinc-600">
+            <span className="font-semibold text-zinc-700">Reason: </span>
+            {exhibit.arSelectionNote}
+          </p>
+        )}
+        {editingArSelection && (
+          <div className="py-2">
+            <ArSelectionForm exhibit={exhibit} onDone={() => setEditingArSelection(false)} onNotice={onNotice} />
+          </div>
+        )}
+        {confirmWithdraw && (
+          <div className="my-2 space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            <p>
+              Withdraw the AR selection?{exhibit.arEnabled && " View in AR turns off on the public page."} Developers
+              can no longer deploy or activate models for this exhibit. Uploaded models are kept until a developer
+              removes them.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={withdrawArSelection}
+                className="flex-1 rounded-lg bg-red-600 px-3 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {pending ? "Withdrawing…" : "Withdraw"}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setConfirmWithdraw(false)}
+                className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         <InfoRow icon={CubeIcon} label="View in AR">
           <ArSwitch exhibit={exhibit} pending={pending} onChange={toggleAr} />
         </InfoRow>
