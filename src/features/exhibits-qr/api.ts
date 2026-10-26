@@ -76,6 +76,18 @@ export async function changeExhibitStatus(id: string, command: ExhibitLifecycleC
   return parse(exhibitSchema, response, command);
 }
 
+/**
+ * Marks or unmarks the exhibit for AR preparation (REQ-4.13-02). Developers can deploy AR assets
+ * only to marked exhibits; unmarking also turns off any active AR.
+ */
+export async function setExhibitArSelection(id: string, selected: boolean, note: string | null) {
+  const response = await apiFetch<unknown>(`${exhibitPath(id)}/ar-selection`, {
+    method: "PATCH",
+    body: JSON.stringify(selected ? { selected, note } : { selected }),
+  });
+  return parse(exhibitSchema, response, "AR selection");
+}
+
 /** Enables or disables every AR asset a developer uploaded for the exhibit. */
 export async function setExhibitAr(id: string, enabled: boolean) {
   const response = await apiFetch<unknown>(`${exhibitPath(id)}/ar`, {

@@ -51,6 +51,11 @@ export const exhibitSchema = z.object({
   diet: z.string().nullable(),
   layoutType: z.string().nullable(),
   status: z.enum(EXHIBIT_STATUSES),
+  /** True when the curator has marked the exhibit for AR preparation (REQ-4.13-02). */
+  arSelected: z.boolean(),
+  arSelectedAt: z.string().nullable(),
+  /** The curator's reason for the AR selection, shown to the developer. */
+  arSelectionNote: z.string().nullable(),
   /** True when at least one uploaded AR asset is enabled. */
   arEnabled: z.boolean(),
   /** AR assets a developer has uploaded; AR can only be switched on when this is above 0. */

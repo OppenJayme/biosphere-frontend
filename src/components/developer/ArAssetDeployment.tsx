@@ -217,8 +217,8 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
 
       {exhibits.length === 0 ? (
         <p className="mt-4 rounded-lg border border-black/10 bg-sage-50 px-3 py-2 text-sm text-zinc-600">
-          No exhibits are eligible for AR yet. An exhibit becomes eligible once its specimen is Cataloged
-          and approved for public display by the curator.
+          No exhibits are ready for AR yet. An exhibit is listed here once the curator marks it for AR
+          preparation in Exhibits, and its specimen is Cataloged and approved for public display.
         </p>
       ) : (
         <form
@@ -232,7 +232,7 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
           className="mt-4 grid gap-3 sm:grid-cols-2"
         >
           <label className="text-xs font-medium text-zinc-700 sm:col-span-2">
-            Curator-approved exhibit
+            Exhibit marked for AR by the curator
             <select
               name="exhibitId"
               required
@@ -472,9 +472,20 @@ function ExhibitCard({ exhibit }: { exhibit: ArExhibit }) {
         </div>
       </div>
 
+      {exhibit.arSelected && exhibit.arSelectionNote && (
+        <p className="mt-2 rounded-lg bg-sage-50 px-3 py-2 text-xs whitespace-pre-line text-zinc-700">
+          <span className="font-semibold">Curator&apos;s reason: </span>
+          {exhibit.arSelectionNote}
+        </p>
+      )}
+
       {!exhibit.deployable && (
         <p className="mt-2 text-xs text-amber-900">
-          {exhibit.archived ? "This exhibit is archived." : "This exhibit is no longer approved for public display."}{" "}
+          {exhibit.archived
+            ? "This exhibit is archived."
+            : !exhibit.arSelected
+              ? "The curator withdrew this exhibit's AR selection."
+              : "This exhibit is no longer approved for public display."}{" "}
           Its assets can only be deactivated or removed.
         </p>
       )}
@@ -514,9 +525,9 @@ export function ArAssetDeployment({ exhibits }: { exhibits: ArExhibit[] | null }
           AR asset deployment
         </h2>
         <p className="mt-1 max-w-3xl text-sm text-zinc-600">
-          Deploy approved 3D models to exhibits the Museum Curator has approved. Every upload,
-          replacement, and activation records the curator authorization in the audit log. The curator
-          controls whether AR is shown on the exhibit page.
+          Deploy approved 3D models to exhibits the Museum Curator has marked for AR preparation. Every
+          upload, replacement, and activation records the curator authorization in the audit log. The
+          curator controls whether AR is shown on the exhibit page.
         </p>
       </div>
 
@@ -530,7 +541,7 @@ export function ArAssetDeployment({ exhibits }: { exhibits: ArExhibit[] | null }
           <div>
             <h3 className="text-sm font-semibold text-zinc-900">Exhibits and deployed assets</h3>
             {exhibits.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-600">No exhibits are eligible for AR and no assets are deployed.</p>
+              <p className="mt-2 text-sm text-zinc-600">No exhibits are marked for AR and no assets are deployed.</p>
             ) : (
               <ul className="mt-2 space-y-3">
                 {exhibits.map((exhibit) => (
