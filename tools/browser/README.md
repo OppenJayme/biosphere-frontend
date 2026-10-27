@@ -44,6 +44,34 @@ using approved development fixtures and independently defined expected results.
 
 ## Safe manual use
 
+### Duplicate-warning component regression
+
+From the frontend root, run `npm run test:duplicates:browser` after the existing
+root and optional browser dependencies are installed. This opt-in check uses
+the Vite bundler already supplied by Vitest; it installs nothing and does not
+run as part of ordinary Vitest/CI discovery.
+
+The actual duplicate-warning component, React renderer, candidate validation,
+transport wrapper and duplicate list run in a fresh headless Edge context on
+`about:blank`. Only the remote duplicate-check Server Action is replaced by
+synthetic delayed responses. Page network requests are aborted; no application
+server, credentials, live API, records or environment files are needed.
+
+Six scenarios cover editing during a pending check, reversed response order,
+each of the three matched fields' settled-result invalidation/failed transport/
+same-candidate retry/clearing, and an unrelated remarks edit. The pending-edit
+assertion was observed failing before the input-invalidation fix (DEF-026).
+This is mounted component behavior, not deployed Next Server Action, backend
+matching/database, production-build or independent acceptance evidence. It also
+does not assert that a newer response renders while an older request is still
+pending; that transition timing is outside this regression's claim.
+
+The harness loads no Vite config or `.env`, writes only ignored bundles/scripts
+under `tools/browser/artifacts/`, and closes only its unique temporary session
+in `finally`. Existing signed-in sessions and servers remain untouched.
+
+### Manual CLI commands
+
 ```powershell
 npm --prefix tools/browser run cli -- -s=biosphere-review open about:blank
 npm --prefix tools/browser run cli -- -s=biosphere-review snapshot

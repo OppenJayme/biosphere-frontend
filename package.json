@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs"
   },
   "dependencies": {
     "@google/model-viewer": "^4.3.1",

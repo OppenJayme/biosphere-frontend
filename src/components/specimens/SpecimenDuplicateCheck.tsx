@@ -69,8 +69,20 @@ export function SpecimenDuplicateCheck({ formRef, excludeSpecimenId }: SpecimenD
       const target = event.target;
       if (target instanceof HTMLInputElement && CHECKED_FIELDS.has(target.name)) runCheck(false);
     };
+    const onInput = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || !CHECKED_FIELDS.has(target.name)) return;
+      // Edits invalidate the evidence immediately, before the next focus-out lookup.
+      ++requestId.current;
+      lastCheckedKey.current = null;
+      setState({ status: "idle" });
+    };
     form.addEventListener("focusout", onFocusOut);
-    return () => form.removeEventListener("focusout", onFocusOut);
+    form.addEventListener("input", onInput);
+    return () => {
+      form.removeEventListener("focusout", onFocusOut);
+      form.removeEventListener("input", onInput);
+    };
   }, [formRef, runCheck]);
 
   if (state.status === "idle" && !checking) return null;
