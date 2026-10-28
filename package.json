@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:public-dialogs:browser": "node tools/browser/public-dialog.mjs",
     "test:notifications:browser": "node tools/browser/notification-state.mjs",
     "dev": "next dev",
     "build": "next build",

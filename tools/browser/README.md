@@ -301,7 +301,7 @@ unexpected arrivals, CLI errors, counter failures or cleanup failures fail the
 command. Finally, it closes only its own named session and counting server;
 it never uses global browser cleanup or stops application servers.
 
-### Local evidence — 2026-10-22
+### Local evidence â€” 2026-10-22
 
 The HTTP contract test first failed before the server implementation existed,
 then passed after implementation. Both current HTTP tests pass, including
@@ -329,3 +329,25 @@ instead of 400), then passed after changing the counter's guard to reject header
 presence, not just nonempty values. An unsupported target argument was also
 rejected before the server/browser started. A local application build was not run against
 the active workspace; normal PR CI separately checks Node 22 and the app build.
+
+### Public dialog keyboard regression
+
+Run `npm run test:public-dialogs:browser` from the frontend root with the
+existing application/browser dependencies and supported installed Edge channel.
+The runner accepts no live URL or login. It bundles the real VisitOptionsSection,
+Modal and both real forms using fixed synthetic public configuration, no .env
+or public assets. A fresh isolated browser permits only its intercepted fixture
+GET; every other request is blocked and counted. No submission is performed.
+
+Six scenarios cover inquiry/visit dialogs closed through Escape, the Close
+button or Cancel, using actual keyboard actions. Checks include initial focus,
+forward/backward Tab wrap, denied programmatic background focus, normal field
+navigation, return to the opening button, and restoring both empty and nonempty
+body scroll styles. Zero unexpected/non-read requests and zero browser runtime
+errors are required. Only its own uniquely named session is closed on success
+or failure; artifacts stay ignored. These are real DOM keyboard checks with the
+production React fixture bundle, not a deployed-build, CSS/visual, mobile,
+screen-reader or full accessibility certification. The StrictMode wrapper does
+not imply development Strict Effects were executed in this production bundle.
+Pending-submit close/retention policy and server-side request behavior remain
+separate and are unchanged by this dialog-only repair.
