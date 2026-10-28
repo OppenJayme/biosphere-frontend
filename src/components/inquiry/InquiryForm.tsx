@@ -26,6 +26,8 @@ export function InquiryForm({
   const [failure, setFailure] = useState<Extract<SubmissionResult, { ok: false }> | null>(null);
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [retryAllowed, setRetryAllowed] = useState(false);
+  const retryBlocked = failure?.outcome === "unknown" && !retryAllowed;
   // Remounts the form (clearing every field) after "Send another".
   const [formKey, setFormKey] = useState(0);
 
@@ -50,7 +52,7 @@ export function InquiryForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || retryBlocked) return;
 
     const parsed = readInquiryForm(new FormData(event.currentTarget));
     setFailure(null);
@@ -61,6 +63,7 @@ export function InquiryForm({
     }
 
     setErrors({});
+    setRetryAllowed(false);
     setSubmitting(true);
     const result = await postPublicSubmission("/inquiries", parsed.data);
     setSubmitting(false);
@@ -161,7 +164,14 @@ export function InquiryForm({
 
       <PrivacyConsent id="inquiry-consent" purpose="this inquiry" error={errors.consent} />
 
-      {failure && <FormAlert message={failure.message} details={failure.details} />}
+      {failure && (
+        <FormAlert
+          message={failure.message}
+          details={failure.details}
+          uncertain={failure.outcome === "unknown"}
+          onAllowRetry={retryBlocked ? () => setRetryAllowed(true) : undefined}
+        />
+      )}
 
       <div className="flex justify-end gap-3 pt-2">
         {onCancel && (
@@ -169,7 +179,7 @@ export function InquiryForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" variant="solid-forest" disabled={submitting} aria-busy={submitting || undefined}>
+        <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked} aria-busy={submitting || undefined}>
           {submitting ? "Sending…" : "Send Inquiry"}
           {!submitting && <ArrowRightIcon className="h-4 w-4" />}
         </Button>

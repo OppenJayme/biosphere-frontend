@@ -10,16 +10,16 @@ import { env } from "@/lib/env";
 const receiptSchema = z.object({
   id: z.uuid(),
   /** Short code the visitor quotes when following up; curators can search by it. */
-  referenceCode: z.string().min(1),
-  status: z.string(),
-  submittedAt: z.string(),
+  referenceCode: z.string().trim().min(1),
+  status: z.literal("PENDING"),
+  submittedAt: z.iso.datetime({ offset: true }),
 });
 
 export type SubmissionReceipt = z.infer<typeof receiptSchema>;
 
 export type SubmissionResult =
   | { ok: true; receipt: SubmissionReceipt }
-  | { ok: false; message: string; details: string[] };
+  | { ok: false; outcome: "rejected" | "unknown"; message: string; details: string[] };
 
 /** Nest's ValidationPipe returns `message` as a string or a list of strings. */
 function validationDetails(body: unknown): string[] {
@@ -30,10 +30,12 @@ function validationDetails(body: unknown): string[] {
   return [];
 }
 
+/** Only validation/rate-limit rejection is definitive; other failures may follow a stored request. */
 export function submissionFailure(status: number | null, body: unknown): SubmissionResult {
   if (status === 400) {
     return {
       ok: false,
+      outcome: "rejected",
       message: "Some details were not accepted. Check the form and try again.",
       details: validationDetails(body),
     };
@@ -41,16 +43,15 @@ export function submissionFailure(status: number | null, body: unknown): Submiss
   if (status === 429) {
     return {
       ok: false,
+      outcome: "rejected",
       message: "Too many submissions from your network. Please wait a minute, then try again.",
       details: [],
     };
   }
   return {
     ok: false,
-    message:
-      status === null
-        ? "We couldn't reach the museum's system. Check your internet connection and try again."
-        : "Your request was not sent because of a problem on our side. Please try again later.",
+    outcome: "unknown",
+    message: "We couldn't confirm your submission. The museum may have received it. Check any confirmation you received or contact the museum before sending again. Sending again may create another request.",
     details: [],
   };
 }
@@ -74,9 +75,8 @@ export async function postPublicSubmission(
   if (!response.ok) return submissionFailure(response.status, body);
 
   const receipt = receiptSchema.safeParse(body);
-  // The request was stored; only the receipt is unreadable. Never report that as a failure.
   if (!receipt.success) {
-    return { ok: true, receipt: { id: "", referenceCode: "", status: "PENDING", submittedAt: new Date().toISOString() } };
+    return submissionFailure(null, null);
   }
   return { ok: true, receipt: receipt.data };
 }

@@ -35,8 +35,13 @@ export function PrivacyConsent({ id, purpose, error }: { id: string; purpose: st
   );
 }
 
-/** Submission-level error (network, rate limit, rejected fields). Takes focus so screen readers hear it. */
-export function FormAlert({ message, details }: { message: string; details: string[] }) {
+/** Submission-level feedback. Uncertain outcomes require an explicit retry acknowledgement. */
+export function FormAlert({ message, details, uncertain = false, onAllowRetry }: {
+  message: string;
+  details: string[];
+  uncertain?: boolean;
+  onAllowRetry?: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,10 +53,11 @@ export function FormAlert({ message, details }: { message: string; details: stri
       ref={ref}
       role="alert"
       tabIndex={-1}
-      className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 outline-none"
+      className={`flex gap-3 rounded-xl border p-4 text-sm outline-none ${uncertain ? "border-amber-200 bg-amber-50 text-amber-950" : "border-red-200 bg-red-50 text-red-900"}`}
     >
       <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
       <div>
+        {uncertain && <p className="mb-1 font-semibold">Submission not confirmed</p>}
         <p className="font-medium">{message}</p>
         {details.length > 0 && (
           <ul className="mt-2 list-disc space-y-1 pl-4 text-red-800">
@@ -59,6 +65,11 @@ export function FormAlert({ message, details }: { message: string; details: stri
               <li key={detail}>{detail}</li>
             ))}
           </ul>
+        )}
+        {onAllowRetry && (
+          <Button type="button" variant="outline-forest" className="mt-3 whitespace-normal" onClick={onAllowRetry}>
+            I checked; allow another submission
+          </Button>
         )}
       </div>
     </div>
