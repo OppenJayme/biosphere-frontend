@@ -83,6 +83,52 @@ open; its disabled shared-backend pilot must stay disabled. A later interruption
 slice needs an explicitly agreed write-capable owned adapter, not removal of
 these protections against shared servers.
 
+### Owned offline lost-response recovery
+
+After the approved containment preflight, run `npm run test:offline:recovery`
+from the sibling backend root with matching recovery changes in both checkouts.
+It uses the same existing Docker/image/Edge/dependency prerequisites and stays
+outside normal CI browser discovery. No CLI target URLs or saved profiles are
+accepted; the parent supplies its newly owned adapter origin on stdin.
+
+The real panel/hook/Dexie/sync modules save one synthetic draft while the fresh
+context is offline. Reconnecting runs the real two-second stable-connection
+queue. A **separate** write-capable fixture adapter permits only the complete
+expected synthetic payload, one draft UUID and at most two forwards, to one
+fixed owned Nest endpoint/identity. It holds the first successful response
+without sending headers/body, then observes that fixture tab's connection close.
+No page-scoped held-route callback controls the backend destination.
+
+A new tab in the same isolated context/origin mounts offline, so recovery can
+be inspected before automatic retry. The interrupted alert, disabled offline
+Retry and unchanged editable fields are checked. Reconnecting automatically
+retries through the real hook; the backend must return `alreadySynchronized`
+and the original specimen ID. The UI must show Synchronized and an Uncataloged
+cached record, with no Retry control. Parent SQL checks require exactly one
+specimen, receipt, audit and successful sync audit; public eligibility stays off.
+Cache-list GET still returns 503 and is not counted as cache-list coverage.
+
+The fixture CSP permits inline bundle execution and Zod's runtime `new Function`
+compiler (`unsafe-eval`); network connections remain same-origin and browser
+requests default-deny outside the exact fixture routes. This is **not** a
+production CSP recommendation/change. No app component or remote response is
+mocked; the HTTP facade replaces Next's session/route boundary. Vite ignores
+environment configuration and public assets. Errors include only synthetic
+fixture text/state; generated bundles remain ignored.
+
+2026-10-28: two complete consecutive runs passed (25.7s and 26.8s). Earlier
+attempts exposed a fixture CSP incompatibility and incorrect SQL column name,
+both corrected. One earlier wait for Synchronized timed out without sufficient
+state diagnostics; richer bounded diagnostics were added, and that timeout did
+not recur in the two complete runs. Its cause is unestablished, not a confirmed
+app defect or a justified flaky-test suppression. No production fix is claimed.
+
+Normal cleanup closes only the owned session/servers/tmpfs database. This is
+tab-close/accepted-write recovery, not a browser/OS crash, real Next/PWA auth,
+provider expiry, deployed database or independent acceptance test. DEF-019 stays
+open and its shared-backend pilot remains disabled. Do not replace the parent
+fixture with shared application ports or remove the original read-only adapter.
+
 ### Duplicate-warning component regression
 
 From the frontend root, run `npm run test:duplicates:browser` after the existing
