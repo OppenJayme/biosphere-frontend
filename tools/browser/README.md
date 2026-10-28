@@ -321,7 +321,7 @@ unexpected arrivals, CLI errors, counter failures or cleanup failures fail the
 command. Finally, it closes only its own named session and counting server;
 it never uses global browser cleanup or stops application servers.
 
-### Local evidence â€” 2026-10-22
+### Local evidence — 2026-10-22
 
 The HTTP contract test first failed before the server implementation existed,
 then passed after implementation. Both current HTTP tests pass, including

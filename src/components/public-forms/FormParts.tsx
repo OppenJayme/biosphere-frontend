@@ -67,7 +67,10 @@ export function FormAlert({ message, details, uncertain = false, onAllowRetry }:
           </ul>
         )}
         {onAllowRetry && (
-          <Button type="button" variant="outline-forest" className="mt-3 whitespace-normal" onClick={onAllowRetry}>
+          <Button type="button" variant="outline-forest" className="mt-3 whitespace-normal" onClick={() => {
+            onAllowRetry();
+            ref.current?.focus();
+          }}>
             I checked; allow another submission
           </Button>
         )}

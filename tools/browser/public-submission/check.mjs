@@ -191,7 +191,14 @@ export async function checkPublicForms(page, bundle) {
               name: "I checked; allow another submission",
               exact: true,
             })
-            .click();
+            .focus();
+          await page.keyboard.press("Enter");
+          assert(
+            await alert.evaluate(
+              (element) => document.activeElement === element,
+            ),
+            `${kind}: acknowledgement lost focus instead of keeping it on the warning`,
+          );
           assert(
             posts.length === 1,
             `${kind}: acknowledgement itself sent another request`,
@@ -200,15 +207,61 @@ export async function checkPublicForms(page, bundle) {
             await submit.isEnabled(),
             `${kind}: explicit retry remains blocked`,
           );
+          if (scenario === "transport") {
+            mode = "server";
+            await submit.click();
+            await page
+              .getByRole("button", {
+                name: "I checked; allow another submission",
+                exact: true,
+              })
+              .waitFor();
+            assert(
+              posts.length === 2,
+              `${kind}: repeated uncertain attempt count wrong`,
+            );
+            assert(
+              await submit.isDisabled(),
+              `${kind}: repeated uncertainty did not re-arm the gate`,
+            );
+            assert(
+              await alert.evaluate(
+                (element) => document.activeElement === element,
+              ),
+              `${kind}: repeated uncertainty did not focus the warning`,
+            );
+            await page
+              .getByRole("button", {
+                name: "I checked; allow another submission",
+                exact: true,
+              })
+              .focus();
+            await page.keyboard.press("Enter");
+            assert(
+              posts.length === 2,
+              `${kind}: second acknowledgement sent a request`,
+            );
+            assert(
+              await alert.evaluate(
+                (element) => document.activeElement === element,
+              ),
+              `${kind}: second acknowledgement lost focus`,
+            );
+          }
           mode = "success";
           await submit.click();
           await page
             .getByRole("heading", { name: heading, exact: true })
             .waitFor();
           await page.getByText("55555555", { exact: true }).waitFor();
-          assert(posts.length === 2, `${kind}: explicit retry count wrong`);
           assert(
-            JSON.stringify(posts[0]) === JSON.stringify(posts[1]),
+            posts.length === (scenario === "transport" ? 3 : 2),
+            `${kind}: explicit retry count wrong`,
+          );
+          assert(
+            posts.every(
+              (post) => JSON.stringify(post) === JSON.stringify(posts[0]),
+            ),
             `${kind}: retained payload changed on explicit retry`,
           );
         } else {
