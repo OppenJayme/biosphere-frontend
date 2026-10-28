@@ -44,6 +44,27 @@ using approved development fixtures and independently defined expected results.
 
 ## Safe manual use
 
+### Notification bell state regression
+
+Run `npm run test:notifications:browser` from the frontend root with existing
+root/browser dependencies and installed Edge. No application URL or login is
+accepted. Vite bundles the real bell without application environment/public
+assets; a fresh isolated context receives synthetic intercepted HTTP responses
+only. No application server, museum record, email or actual backend is used.
+
+Seven scenarios cover read/dismiss with unchanged pending-work counts, three
+failure/explicit-retry paths (503, transport loss, malformed acknowledgement),
+pending double-click prevention, a stale pre-mutation response, and hidden
+controls for a legacy/disabled backend. No internal component collaborator is
+mocked. Only the remote HTTP boundary is synthetic. The named session closes
+on normal success/failure and generated artifacts remain ignored. This is not
+live provider/auth, shared database or production deployment acceptance.
+
+The paired backend guide is `docs/NOTIFICATION_STATE_GUIDE.md`. Backend
+`NOTIFICATION_STATE_ENABLED` stays off until the migration and runtime-role
+deployment checks are separately verified. No new frontend environment flag
+or browser authentication export is required.
+
 ### Offline containment preflight
 
 This opt-in cross-repository check requires sibling `biosphere-backend` and
