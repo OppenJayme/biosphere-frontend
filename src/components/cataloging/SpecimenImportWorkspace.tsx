@@ -11,9 +11,7 @@ import {
   DownloadIcon,
   UploadIcon,
 } from "@/components/icons";
-import {
-  commitSpecimenImportAction,
-} from "@/features/specimens/import-actions";
+import { requestSpecimenImportCommit } from "@/features/specimens/import-request";
 import {
   MAX_SPECIMEN_IMPORT_FILE_BYTES,
   selectedWarningCount,
@@ -149,7 +147,7 @@ export function SpecimenImportWorkspace() {
     setCommitResult(null);
 
     startCommit(async () => {
-      const result = await commitSpecimenImportAction({
+      const result = await requestSpecimenImportCommit({
         previewId: preview.previewId,
         rowNumbers: [...selected],
       });

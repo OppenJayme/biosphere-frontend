@@ -17,12 +17,14 @@ import {
   removeExhibitMedia,
   replaceExhibitUrl,
   setExhibitAr,
+  setExhibitArSelection,
   updateExhibit,
   updateExhibitMedia,
   type ExhibitLifecycleCommand,
   type UpdateExhibitMediaInput,
 } from "./api";
 import {
+  AR_SELECTION_NOTE_MAX_LENGTH,
   backendMessage,
   readCreateExhibitForm,
   readReplaceUrlForm,
@@ -36,13 +38,14 @@ import {
 } from "./form";
 import { sortExhibitMedia, type ExhibitMedia, type PublicExhibitMedia } from "./types";
 
-type Operation = "create" | "update" | "replaceUrl" | "ar" | ExhibitLifecycleCommand | "media";
+type Operation = "create" | "update" | "replaceUrl" | "ar" | "arSelection" | ExhibitLifecycleCommand | "media";
 
 const FALLBACK_400: Record<Operation, string> = {
   create: "Only a Cataloged specimen approved for public display can have an exhibit.",
   update: "Change at least one exhibit field before saving.",
   replaceUrl: "Choose a different URL ending from the current one.",
-  ar: "AR can only be turned on after a developer uploads an AR model for this exhibit.",
+  ar: "AR can only be turned on after the exhibit is marked for AR and a developer uploads an AR model.",
+  arSelection: "Only an exhibit whose specimen is Cataloged and approved for public display can be marked for AR.",
   publish: "This exhibit cannot be published. Its specimen must still be Cataloged and approved for public display.",
   unpublish: "Only a published exhibit can be unpublished.",
   disable: "This exhibit cannot be disabled in its current state.",
@@ -186,6 +189,49 @@ export async function replaceExhibitUrlAction(
   return {
     ok: true,
     message: `The public URL now ends in /exhibits/${updated.publicSlug}. QR labels printed for the old URL no longer work; print new ones.`,
+  };
+}
+
+/**
+ * Curator marks an exhibit for AR preparation, with an optional reason for the developer
+ * (REQ-4.13-02). Selection is at the curator's discretion; nothing is scored or ranked
+ * (REQ-4.13-08). Unmarking also turns off AR on the public page.
+ */
+export async function setExhibitArSelectionAction(
+  exhibitId: string,
+  publicSlug: string,
+  selected: boolean,
+  note: string,
+): Promise<ExhibitCommandState> {
+  await requireSession();
+  const parsed = z
+    .object({
+      id: idSchema,
+      selected: z.boolean(),
+      note: z
+        .string()
+        .trim()
+        .max(AR_SELECTION_NOTE_MAX_LENGTH, `The note must be ${AR_SELECTION_NOTE_MAX_LENGTH} characters or fewer.`),
+    })
+    .safeParse({ id: exhibitId, selected, note: typeof note === "string" ? note : "" });
+  if (!parsed.success) return { message: parsed.error.issues[0]?.message ?? "The AR selection is invalid." };
+
+  let updated;
+  try {
+    updated = await setExhibitArSelection(parsed.data.id, parsed.data.selected, parsed.data.note || null);
+  } catch (error) {
+    return { message: exhibitError(error, "arSelection") };
+  }
+
+  refreshExhibitConsumers([publicSlug]);
+  revalidatePath("/developer");
+  return {
+    ok: true,
+    message: !parsed.data.selected
+      ? "AR selection withdrawn. View in AR is off, and developers can no longer deploy models to this exhibit."
+      : updated.arAssetCount > 0
+        ? "AR selection saved."
+        : "Marked for AR preparation. A developer can now deploy an approved 3D model to this exhibit.",
   };
 }
 

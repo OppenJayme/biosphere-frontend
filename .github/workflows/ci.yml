@@ -34,5 +34,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Canary server contract (no browser)
+        run: node --test tools/browser/isolation-server.test.mjs
+
       - name: Build
         run: npm run build

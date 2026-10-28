@@ -6,6 +6,7 @@ import { useActionState, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { ModelFilePreview } from "./ModelFilePreview";
 import {
   activateArAssetAction,
   deactivateArAssetAction,
@@ -19,7 +20,13 @@ import {
   readArAssetReplaceForm,
   type ArAssetCommandState,
 } from "@/features/developer/form";
-import { AR_MODEL_FORMATS, arAssetSchema, type ArAsset, type ArExhibit } from "@/features/developer/types";
+import {
+  AR_MODEL_FORMATS,
+  arAssetSchema,
+  type ArAsset,
+  type ArExhibit,
+  type ArModelFormat,
+} from "@/features/developer/types";
 
 type Notice = { tone: "success" | "error"; message: string };
 
@@ -77,11 +84,24 @@ async function responseMessage(response: Response) {
   return "The AR model could not be deployed. Try again later.";
 }
 
-function FormatSelect({ disabled }: { disabled: boolean }) {
+function FormatSelect({
+  disabled,
+  onChange,
+}: {
+  disabled: boolean;
+  onChange?: (format: ArModelFormat) => void;
+}) {
   return (
     <label className="text-xs font-medium text-zinc-700">
       Model format
-      <select name="modelFormat" required disabled={disabled} defaultValue="glb" className={inputClasses}>
+      <select
+        name="modelFormat"
+        required
+        disabled={disabled}
+        defaultValue="glb"
+        onChange={(event) => onChange?.(event.target.value as ArModelFormat)}
+        className={inputClasses}
+      >
         {AR_MODEL_FORMATS.map((format) => (
           <option key={format} value={format}>
             {format.toUpperCase()}
@@ -114,6 +134,16 @@ function AuthorizationField({ disabled, hint }: { disabled: boolean; hint: strin
       <p className="mt-1 text-xs text-zinc-500">{hint}</p>
     </div>
   );
+}
+
+/** True when visitors would only get a USDZ model, which Android and desktop browsers cannot open. */
+function usdzOnly(assets: ArAsset[]) {
+  const formats = new Set(assets.filter((asset) => asset.isEnabled).map((asset) => asset.modelFormat));
+  return formats.has("usdz") && !formats.has("glb");
+}
+
+function UsdzOnlyWarning({ children }: { children: string }) {
+  return <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-amber-200">{children}</p>;
 }
 
 /** Upload or replace a model through the same-origin route, then reload the server list. */
@@ -151,6 +181,13 @@ function useModelUpload() {
 
 function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
   const { pending, notice, setNotice, upload } = useModelUpload();
+  const [file, setFile] = useState<File | null>(null);
+  const [format, setFormat] = useState<ArModelFormat>("glb");
+  const [exhibitId, setExhibitId] = useState("");
+  // Only an active GLB reaches visitors; an inactive one does not cover Android and desktop.
+  const exhibitHasActiveGlb = exhibits
+    .find((exhibit) => exhibit.id === exhibitId)
+    ?.assets.some((asset) => asset.modelFormat === "glb" && asset.isEnabled);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -180,14 +217,30 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
 
       {exhibits.length === 0 ? (
         <p className="mt-4 rounded-lg border border-black/10 bg-sage-50 px-3 py-2 text-sm text-zinc-600">
-          No exhibits are eligible for AR yet. An exhibit becomes eligible once its specimen is Cataloged
-          and approved for public display by the curator.
+          No exhibits are ready for AR yet. An exhibit is listed here once the curator marks it for AR
+          preparation in Exhibits, and its specimen is Cataloged and approved for public display.
         </p>
       ) : (
-        <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
+        <form
+          onSubmit={submit}
+          // form.reset() after a successful upload also clears the preview and warning.
+          onReset={() => {
+            setFile(null);
+            setFormat("glb");
+            setExhibitId("");
+          }}
+          className="mt-4 grid gap-3 sm:grid-cols-2"
+        >
           <label className="text-xs font-medium text-zinc-700 sm:col-span-2">
-            Curator-approved exhibit
-            <select name="exhibitId" required disabled={pending} defaultValue="" className={inputClasses}>
+            Exhibit marked for AR by the curator
+            <select
+              name="exhibitId"
+              required
+              disabled={pending}
+              defaultValue=""
+              onChange={(event) => setExhibitId(event.target.value)}
+              className={inputClasses}
+            >
               <option value="" disabled>
                 Choose an exhibit…
               </option>
@@ -198,7 +251,7 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
               ))}
             </select>
           </label>
-          <FormatSelect disabled={pending} />
+          <FormatSelect disabled={pending} onChange={setFormat} />
           <label className="text-xs font-medium text-zinc-700">
             Model file
             <input
@@ -207,9 +260,23 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
               accept={AR_ASSET_ACCEPT}
               required
               disabled={pending}
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               className={fileInputClasses}
             />
           </label>
+          {format === "usdz" && exhibitId && !exhibitHasActiveGlb && (
+            <div className="sm:col-span-2">
+              <UsdzOnlyWarning>
+                This exhibit has no active GLB model. A USDZ file only opens on iPhone and iPad, so Android and
+                desktop visitors will not see a 3D model. Upload or activate a GLB version as well.
+              </UsdzOnlyWarning>
+            </div>
+          )}
+          {file && (
+            <div className="sm:col-span-2">
+              <ModelFilePreview key={`${file.name}-${file.lastModified}-${file.size}`} file={file} />
+            </div>
+          )}
           <div className="sm:col-span-2">
             <AuthorizationField
               disabled={pending}
@@ -305,6 +372,7 @@ function RemoveControl({ asset }: { asset: ArAsset }) {
 
 function ReplaceControl({ asset }: { asset: ArAsset }) {
   const { pending, notice, setNotice, upload } = useModelUpload();
+  const [file, setFile] = useState<File | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -323,7 +391,7 @@ function ReplaceControl({ asset }: { asset: ArAsset }) {
       <summary className="cursor-pointer text-xs font-semibold text-forest-800 hover:underline">
         Replace file…
       </summary>
-      <form onSubmit={submit} className="mt-2 grid max-w-md gap-2">
+      <form onSubmit={submit} onReset={() => setFile(null)} className="mt-2 grid max-w-md gap-2">
         <input type="hidden" name="assetId" value={asset.id} />
         <FormatSelect disabled={pending} />
         <label className="text-xs font-medium text-zinc-700">
@@ -334,9 +402,11 @@ function ReplaceControl({ asset }: { asset: ArAsset }) {
             accept={AR_ASSET_ACCEPT}
             required
             disabled={pending}
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             className={fileInputClasses}
           />
         </label>
+        {file && <ModelFilePreview key={`${file.name}-${file.lastModified}-${file.size}`} file={file} />}
         <AuthorizationField disabled={pending} hint="Recorded in the audit log with the replacement." />
         <div>
           <button type="submit" disabled={pending} className={outlineButtonClasses}>
@@ -402,11 +472,31 @@ function ExhibitCard({ exhibit }: { exhibit: ArExhibit }) {
         </div>
       </div>
 
+      {exhibit.arSelected && exhibit.arSelectionNote && (
+        <p className="mt-2 rounded-lg bg-sage-50 px-3 py-2 text-xs whitespace-pre-line text-zinc-700">
+          <span className="font-semibold">Curator&apos;s reason: </span>
+          {exhibit.arSelectionNote}
+        </p>
+      )}
+
       {!exhibit.deployable && (
         <p className="mt-2 text-xs text-amber-900">
-          {exhibit.archived ? "This exhibit is archived." : "This exhibit is no longer approved for public display."}{" "}
+          {exhibit.archived
+            ? "This exhibit is archived."
+            : !exhibit.arSelected
+              ? "The curator withdrew this exhibit's AR selection."
+              : "This exhibit is no longer approved for public display."}{" "}
           Its assets can only be deactivated or removed.
         </p>
+      )}
+
+      {usdzOnly(exhibit.assets) && (
+        <div className="mt-2">
+          <UsdzOnlyWarning>
+            Only a USDZ model is active, so the 3D model opens on iPhone and iPad only. Deploy a GLB version
+            so Android and desktop visitors can view it too.
+          </UsdzOnlyWarning>
+        </div>
       )}
 
       {exhibit.assets.length === 0 ? (
@@ -435,9 +525,9 @@ export function ArAssetDeployment({ exhibits }: { exhibits: ArExhibit[] | null }
           AR asset deployment
         </h2>
         <p className="mt-1 max-w-3xl text-sm text-zinc-600">
-          Deploy approved 3D models to exhibits the Museum Curator has approved. Every upload,
-          replacement, and activation records the curator authorization in the audit log. The curator
-          controls whether AR is shown on the exhibit page.
+          Deploy approved 3D models to exhibits the Museum Curator has marked for AR preparation. Every
+          upload, replacement, and activation records the curator authorization in the audit log. The
+          curator controls whether AR is shown on the exhibit page.
         </p>
       </div>
 
@@ -451,7 +541,7 @@ export function ArAssetDeployment({ exhibits }: { exhibits: ArExhibit[] | null }
           <div>
             <h3 className="text-sm font-semibold text-zinc-900">Exhibits and deployed assets</h3>
             {exhibits.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-600">No exhibits are eligible for AR and no assets are deployed.</p>
+              <p className="mt-2 text-sm text-zinc-600">No exhibits are marked for AR and no assets are deployed.</p>
             ) : (
               <ul className="mt-2 space-y-3">
                 {exhibits.map((exhibit) => (

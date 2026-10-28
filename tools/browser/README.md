@@ -44,6 +44,140 @@ using approved development fixtures and independently defined expected results.
 
 ## Safe manual use
 
+### Notification bell state regression
+
+Run `npm run test:notifications:browser` from the frontend root with existing
+root/browser dependencies and installed Edge. No application URL or login is
+accepted. Vite bundles the real bell without application environment/public
+assets; a fresh isolated context receives synthetic intercepted HTTP responses
+only. No application server, museum record, email or actual backend is used.
+
+Seven scenarios cover read/dismiss with unchanged pending-work counts, three
+failure/explicit-retry paths (503, transport loss, malformed acknowledgement),
+pending double-click prevention, a stale pre-mutation response, and hidden
+controls for a legacy/disabled backend. No internal component collaborator is
+mocked. Only the remote HTTP boundary is synthetic. The named session closes
+on normal success/failure and generated artifacts remain ignored. This is not
+live provider/auth, shared database or production deployment acceptance.
+
+The paired backend guide is `docs/NOTIFICATION_STATE_GUIDE.md`. Backend
+`NOTIFICATION_STATE_ENABLED` stays off until the migration and runtime-role
+deployment checks are separately verified. No new frontend environment flag
+or browser authentication export is required.
+
+### Offline containment preflight
+
+This opt-in cross-repository check requires sibling `biosphere-backend` and
+`biosphere-frontend` checkouts containing the containment changes, backend's
+offline disposable database fixture, existing installed root/browser dependencies,
+Windows local Docker, its pinned cached PostgreSQL image and installed Edge.
+From the **backend** root run `npm run test:offline:containment`. Normal CI does
+not run it or install a browser/Docker image. Do not invoke the frontend runner
+with an application URL; it accepts no CLI targets and reads only its parent's
+ephemeral loopback fixture descriptor on stdin.
+
+The real offline panel, hook, Dexie and sync modules are bundled with Vite
+(`configFile: false`, `envDir: false`); no remote Server Action or `.env` is loaded.
+A fresh nonpersistent context and origin receive a synthetic owner, no cookies
+or preexisting IndexedDB. The panel opens/cancels its modal; no draft is saved.
+The permanent read-only adapter rejects non-GET requests, credentials, foreign
+origins, host mismatches, unknown paths and query overrides. Its sole backend
+forward is a fixed protected audit GET to the owned Nest fixture, using a
+synthetic identity; only a readiness boolean returns. Cache reads return an
+explicit 503: cache population is **not** tested here.
+
+Browser default-deny interception and a restrictive document CSP add protection.
+A separate in-memory canary observes one permitted synthetic POST and zero
+blocked POST arrivals across five observations over one second, after the probe
+tab closes. Direct Node HTTP checks also bypass browser interception to verify
+adapter denial against independently counted owned servers. Owned SQL counts
+must remain zero specimens, receipts and audits. Normal success/failure paths
+close only the owned session, adapter, backend and container. Generated bundles
+remain ignored under `artifacts/`; no app processes or signed-in windows are
+controlled.
+
+This is bounded preflight evidence, not an OS/network sandbox or process-crash
+cleanup guarantee. It does not exercise interrupted draft writes, successful
+sync, real Next authentication/route middleware, styling, service workers/PWA,
+provider login, shared records or production DB containment. DEF-019 remains
+open; its disabled shared-backend pilot must stay disabled. A later interruption
+slice needs an explicitly agreed write-capable owned adapter, not removal of
+these protections against shared servers.
+
+### Owned offline lost-response recovery
+
+After the approved containment preflight, run `npm run test:offline:recovery`
+from the sibling backend root with matching recovery changes in both checkouts.
+It uses the same existing Docker/image/Edge/dependency prerequisites and stays
+outside normal CI browser discovery. No CLI target URLs or saved profiles are
+accepted; the parent supplies its newly owned adapter origin on stdin.
+
+The real panel/hook/Dexie/sync modules save one synthetic draft while the fresh
+context is offline. Reconnecting runs the real two-second stable-connection
+queue. A **separate** write-capable fixture adapter permits only the complete
+expected synthetic payload, one draft UUID and at most two forwards, to one
+fixed owned Nest endpoint/identity. It holds the first successful response
+without sending headers/body, then observes that fixture tab's connection close.
+No page-scoped held-route callback controls the backend destination.
+
+A new tab in the same isolated context/origin mounts offline, so recovery can
+be inspected before automatic retry. The interrupted alert, disabled offline
+Retry and unchanged editable fields are checked. Reconnecting automatically
+retries through the real hook; the backend must return `alreadySynchronized`
+and the original specimen ID. The UI must show Synchronized and an Uncataloged
+cached record, with no Retry control. Parent SQL checks require exactly one
+specimen, receipt, audit and successful sync audit; public eligibility stays off.
+Cache-list GET still returns 503 and is not counted as cache-list coverage.
+
+The fixture CSP permits inline bundle execution and Zod's runtime `new Function`
+compiler (`unsafe-eval`); network connections remain same-origin and browser
+requests default-deny outside the exact fixture routes. This is **not** a
+production CSP recommendation/change. No app component or remote response is
+mocked; the HTTP facade replaces Next's session/route boundary. Vite ignores
+environment configuration and public assets. Errors include only synthetic
+fixture text/state; generated bundles remain ignored.
+
+2026-10-28: two complete consecutive runs passed (25.7s and 26.8s). Earlier
+attempts exposed a fixture CSP incompatibility and incorrect SQL column name,
+both corrected. One earlier wait for Synchronized timed out without sufficient
+state diagnostics; richer bounded diagnostics were added, and that timeout did
+not recur in the two complete runs. Its cause is unestablished, not a confirmed
+app defect or a justified flaky-test suppression. No production fix is claimed.
+
+Normal cleanup closes only the owned session/servers/tmpfs database. This is
+tab-close/accepted-write recovery, not a browser/OS crash, real Next/PWA auth,
+provider expiry, deployed database or independent acceptance test. DEF-019 stays
+open and its shared-backend pilot remains disabled. Do not replace the parent
+fixture with shared application ports or remove the original read-only adapter.
+
+### Duplicate-warning component regression
+
+From the frontend root, run `npm run test:duplicates:browser` after the existing
+root and optional browser dependencies are installed. This opt-in check uses
+the Vite bundler already supplied by Vitest; it installs nothing and does not
+run as part of ordinary Vitest/CI discovery.
+
+The actual duplicate-warning component, React renderer, candidate validation,
+transport wrapper and duplicate list run in a fresh headless Edge context on
+`about:blank`. Only the remote duplicate-check Server Action is replaced by
+synthetic delayed responses. Page network requests are aborted; no application
+server, credentials, live API, records or environment files are needed.
+
+Six scenarios cover editing during a pending check, reversed response order,
+each of the three matched fields' settled-result invalidation/failed transport/
+same-candidate retry/clearing, and an unrelated remarks edit. The pending-edit
+assertion was observed failing before the input-invalidation fix (DEF-026).
+This is mounted component behavior, not deployed Next Server Action, backend
+matching/database, production-build or independent acceptance evidence. It also
+does not assert that a newer response renders while an older request is still
+pending; that transition timing is outside this regression's claim.
+
+The harness loads no Vite config or `.env`, writes only ignored bundles/scripts
+under `tools/browser/artifacts/`, and closes only its unique temporary session
+in `finally`. Existing signed-in sessions and servers remain untouched.
+
+### Manual CLI commands
+
 ```powershell
 npm --prefix tools/browser run cli -- -s=biosphere-review open about:blank
 npm --prefix tools/browser run cli -- -s=biosphere-review snapshot
@@ -117,3 +251,81 @@ No application production build was rerun for this tooling-only change, and no
 real BioSphere workflow was automated. Node 22, other operating systems, and
 other browser channels were not verified. The empty tool advisory report does
 not assess the application's dependencies or prove that either is secure.
+
+## DEF-019 investigation: disposable request canary
+
+The shared-backend interruption pilot created a labelled server fixture despite
+its intended interception. It is recorded as **DEF-019** in the backend's
+`docs/TEST_DEFECT_LOG.md`; that ignored pilot remains disabled. Do not rerun it
+against the shared app or delete its retained evidence fixture automatically.
+
+The replacement investigation below deliberately does **not** open BioSphere.
+`isolation-server.mjs` binds only `127.0.0.1` on an OS-assigned port, refusing
+3000/3001. It counts four fixed synthetic POST paths in memory, discards bodies,
+rejects Cookie/Authorization headers and unknown routes, and has no database,
+outbound forwarding, app imports or environment-file loading. It is a disposable
+HTTP fixture, not a separate BioSphere backend or an OS/network sandbox.
+
+```powershell
+# Built-in Node tests; no optional browser dependencies needed.
+npm --prefix tools/browser run isolation:unit
+
+# Existing pinned CLI/Edge installation needed; no URL/config arguments accepted.
+npm --prefix tools/browser run isolation:check
+```
+
+`isolation-check.mjs` starts its own fresh uniquely named nonpersistent browser
+session through the existing environment-filtering CLI wrapper. It never loads
+saved auth state, contacts app ports, changes the signed-in session, or imports
+application data. Async child execution keeps the counting server responsive.
+Only the generated canary origin is permitted by fixture context routing;
+that routing is defense in depth, **not** an independent containment guarantee
+or a claim that browser background services are network-free.
+
+The positive control sends one real synthetic POST and verifies the server
+counter changes to one. An intentionally false zero-arrival assertion must
+throw, showing the observer cannot silently report no writes. An intentional
+browser assertion also must produce a failed CLI command. Then it compares:
+
+- A held page route followed by tab closure, release and attempted abort.
+- Abort while the page is still alive, awaiting fetch rejection before closing.
+- Context offline before closing a held-request page; restore only this fresh
+  fixture context afterward, never the signed-in application context.
+
+Five server reads, spaced 200 ms apart after the browser cases, check for delayed
+arrivals. The held-close case is **observational**: either zero or one arrival
+is reported, and `heldCloseLeakObserved` makes any observed arrival explicit.
+A zero exit code does not mean that held page routes guarantee isolation.
+Abort-before-close and offline-before-close counts must remain zero; repeated
+unexpected arrivals, CLI errors, counter failures or cleanup failures fail the
+command. Finally, it closes only its own named session and counting server;
+it never uses global browser cleanup or stops application servers.
+
+### Local evidence — 2026-10-22
+
+The HTTP contract test first failed before the server implementation existed,
+then passed after implementation. Both current HTTP tests pass, including
+credential/unknown-route rejection (including empty credential headers). Five
+complete fresh-session browser runs
+each reported `{control: 1, held: 0, aborted: 0, offline: 0}` during the bounded
+one-second observation window. No BioSphere records/accounts were used.
+
+The minimal canary **did not reproduce** DEF-019's unexpected write. It does not
+establish its cause, close the defect, authorize re-enabling the disabled pilot,
+or prove indefinite isolation across other platforms/versions/process crashes.
+No offline sync, authentication, IndexedDB, database commit/idempotency or app
+acceptance claim follows from these synthetic fixture results. Any full-stack
+interruption retest still requires an explicitly approved disposable target and
+independently established containment.
+
+Frontend CI runs only the built-in HTTP contract tests plus its usual app checks.
+The optional real-browser canary remains manual; CI does not install Edge or
+the optional tool package. No dependencies or lockfiles changed in this addition.
+
+Local verification used Node 24.7.0/Windows with the existing Edge install:
+HTTP tests 2/2, application Vitest suite 340/340 across 58 files, full lint and
+`git diff --check`. An added empty-credential-header case first failed (204
+instead of 400), then passed after changing the counter's guard to reject header
+presence, not just nonempty values. An unsupported target argument was also
+rejected before the server/browser started. A local application build was not run against
+the active workspace; normal PR CI separately checks Node 22 and the app build.

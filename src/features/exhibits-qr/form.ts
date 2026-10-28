@@ -12,6 +12,9 @@ import {
   type ExhibitListQuery,
 } from "./types";
 
+/** Matches the backend limit on the curator's AR selection note. */
+export const AR_SELECTION_NOTE_MAX_LENGTH = 1000;
+
 export const EXHIBIT_MEDIA_MAX_BYTES = 15 * 1024 * 1024;
 export const EXHIBIT_MEDIA_ACCEPT = "image/jpeg,image/png,image/webp";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);

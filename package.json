@@ -3,17 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:notifications:browser": "node tools/browser/notification-state.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs"
   },
   "dependencies": {
     "@google/model-viewer": "^4.3.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "dexie": "^4.4.6",
+    "jsqr": "1.4.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

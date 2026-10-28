@@ -11,8 +11,8 @@ import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   removeSpecimenMediaAction,
   setSpecimenMediaCoverAction,
-  updateSpecimenMediaAction,
 } from "@/features/specimens/media-actions";
+import { requestSpecimenMediaMetadataUpdate } from "@/features/specimens/media-request";
 import {
   firstMediaFormError,
   readSpecimenMediaUploadForm,
@@ -176,7 +176,7 @@ function UploadForm({ specimenId }: { specimenId: string }) {
 }
 
 function MetadataForm({ specimenId, item }: { specimenId: string; item: SpecimenMedia }) {
-  const action = updateSpecimenMediaAction.bind(null, specimenId, item.id);
+  const action = requestSpecimenMediaMetadataUpdate.bind(null, specimenId, item.id);
   const [state, formAction, pending] = useActionState<MediaFormState, FormData>(action, {
     values: { caption: item.caption ?? "", displayOrder: String(item.displayOrder) },
   });

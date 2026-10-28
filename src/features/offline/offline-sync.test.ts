@@ -10,6 +10,7 @@ import {
 import {
   refreshSpecimenCache,
   synchronizeDraft,
+  synchronizeEligibleDrafts,
 } from "./sync";
 import type { SpecimenDraftData, SpecimenRecord } from "./types";
 
@@ -140,6 +141,88 @@ describe("offline specimen synchronization", () => {
       serverSpecimenId: null,
     });
     expect(failed?.lastError).toContain("still saved locally");
+  });
+
+  it("preserves an expired-session draft and retries the same ID without disturbing another owner", async () => {
+    const created = await createOfflineDraft(database, OWNER_ID, draftData);
+    const otherDraft = await createOfflineDraft(database, OTHER_OWNER_ID, {
+      ...draftData,
+      commonName: "Other owner's offline specimen",
+    });
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ message: "Synthetic expired session" }, 401))
+      .mockResolvedValueOnce(jsonResponse({
+        clientDraftId: created.clientDraftId,
+        alreadySynchronized: false,
+        specimen,
+      }));
+
+    expect(await synchronizeDraft(database, OWNER_ID, created.clientDraftId, fetcher)).toBeNull();
+    expect(await database.specimenDrafts.get(created.clientDraftId)).toMatchObject({
+      clientDraftId: created.clientDraftId,
+      ownerId: OWNER_ID,
+      draft: draftData,
+      syncState: "SYNC_FAILED",
+      failureKind: "AUTH",
+      retryable: true,
+      serverSpecimenId: null,
+      synchronizedAt: null,
+      lastError: "Your session expired. Sign in again, then retry this draft.",
+    });
+    expect(await database.specimenCache.get([OWNER_ID, SPECIMEN_ID])).toBeUndefined();
+
+    // The next response represents restored authorization; no real login/session is used.
+    await synchronizeEligibleDrafts(database, OWNER_ID, fetcher);
+
+    expect(fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))).toEqual([
+      { clientDraftId: created.clientDraftId, draft: draftData },
+      { clientDraftId: created.clientDraftId, draft: draftData },
+    ]);
+    expect(await database.specimenDrafts.get(created.clientDraftId)).toMatchObject({
+      clientDraftId: created.clientDraftId,
+      draft: draftData,
+      syncState: "SYNCHRONIZED",
+      serverSpecimenId: SPECIMEN_ID,
+      failureKind: null,
+      lastError: null,
+      retryable: false,
+    });
+    expect(await database.specimenCache.get([OWNER_ID, SPECIMEN_ID])).toMatchObject({
+      id: SPECIMEN_ID, ownerId: OWNER_ID, status: "UNCATALOGED", publicDisplay: false,
+    });
+    expect(await database.specimenDrafts.get(otherDraft.clientDraftId)).toEqual(otherDraft);
+    expect(await database.specimenCache.get([OTHER_OWNER_ID, SPECIMEN_ID])).toBeUndefined();
+  });
+
+  it("preserves a forbidden draft and excludes it from automatic retry", async () => {
+    const created = await createOfflineDraft(database, OWNER_ID, draftData);
+    const otherDraft = await createOfflineDraft(database, OTHER_OWNER_ID, draftData);
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({ message: "Synthetic permission denial" }, 403),
+    );
+
+    expect(await synchronizeDraft(database, OWNER_ID, created.clientDraftId, fetcher)).toBeNull();
+    const denied = await database.specimenDrafts.get(created.clientDraftId);
+    expect(denied).toMatchObject({
+      clientDraftId: created.clientDraftId,
+      ownerId: OWNER_ID,
+      draft: draftData,
+      syncState: "SYNC_FAILED",
+      failureKind: "AUTH",
+      retryable: false,
+      serverSpecimenId: null,
+      synchronizedAt: null,
+      lastError: "Your account is not allowed to synchronize specimen drafts.",
+    });
+
+    await synchronizeEligibleDrafts(database, OWNER_ID, fetcher);
+
+    expect(fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))).toEqual([
+      { clientDraftId: created.clientDraftId, draft: draftData },
+    ]);
+    expect(await database.specimenDrafts.get(created.clientDraftId)).toEqual(denied);
+    expect(await database.specimenDrafts.get(otherDraft.clientDraftId)).toEqual(otherDraft);
+    expect(await database.specimenCache.get([OWNER_ID, SPECIMEN_ID])).toBeUndefined();
   });
 
   it("locks an ID-reuse conflict against unsafe retry or editing", async () => {

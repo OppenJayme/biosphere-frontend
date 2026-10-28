@@ -1,12 +1,14 @@
 /**
  * Public Controlled Knowledge-Based FAQ Assistant (SRS 3.1.6, 4.11). Shows only curator-approved
  * answers returned by the backend, always discloses that limit, and keeps a visible path to the
- * General Inquiry form. The conversation lives in memory only and is never persisted (REQ-4.11-07).
+ * General Inquiry form. Conversation remains in memory; a separate, feature-gated form can submit
+ * one explicitly consented unanswered question, never the conversation (REQ-4.11-07).
  */
 
 "use client";
 
 import Link from "next/link";
+import { FaqReviewConsent } from "./FaqReviewConsent";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import {
@@ -32,9 +34,10 @@ type Message =
   | {
       id: number;
       from: "assistant";
-      kind: "answer" | "fallback" | "error";
+      kind: "answer" | "clarification" | "fallback" | "error";
       text: string;
       answeredQuestion?: string;
+      reviewQuestion?: string;
       related: PublicFaqQuestion[];
       redirect: FaqAssistantRedirect | null;
     };
@@ -61,6 +64,8 @@ export function FaqAssistantWidget() {
   const launcherRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  // One public topic hint in component memory only, never a chat-history export.
+  const lastAnsweredFaqId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -92,7 +97,7 @@ export function FaqAssistantWidget() {
     launcherRef.current?.focus();
   }
 
-  async function ask(rawQuestion: string) {
+  async function ask(rawQuestion: string, selectedFaqId?: string) {
     const question = normalizeVisitorQuestion(rawQuestion);
     if (!question || pending) return;
 
@@ -100,7 +105,11 @@ export function FaqAssistantWidget() {
     setPending(true);
     setMessages((current) => [...current, { id: nextId.current++, from: "visitor", text: question }]);
 
-    const result = await askFaqAssistant(question);
+    const contextFaqId = !selectedFaqId && /^(?:how|what) about\b/i.test(question)
+      ? lastAnsweredFaqId.current
+      : undefined;
+    lastAnsweredFaqId.current = undefined;
+    const result = await askFaqAssistant(question, selectedFaqId, contextFaqId);
     let reply: Message;
     if (!result.ok) {
       reply = {
@@ -113,6 +122,7 @@ export function FaqAssistantWidget() {
       };
     } else {
       const { data } = result;
+      lastAnsweredFaqId.current = data.outcome === "ANSWERED" ? data.answer?.id : undefined;
       setNotice(data.notice);
       reply = data.answer
         ? {
@@ -127,10 +137,11 @@ export function FaqAssistantWidget() {
         : {
             id: nextId.current++,
             from: "assistant",
-            kind: "fallback",
+            kind: data.outcome === "CLARIFICATION_NEEDED" ? "clarification" : "fallback",
+            reviewQuestion: data.outcome === "NO_MATCH" ? question : undefined,
             text: data.message ?? "No approved answer is available for that question.",
             related: data.related,
-            redirect: data.redirect ?? "GENERAL_INQUIRY",
+            redirect: data.redirect ?? (data.outcome === "CLARIFICATION_NEEDED" ? null : "GENERAL_INQUIRY"),
           };
     }
     setMessages((current) => [...current, reply]);
@@ -192,7 +203,7 @@ export function FaqAssistantWidget() {
               curator-approved information. Pick a question below or type your own.
             </AssistantBubble>
 
-            <Suggestions state={suggestions} disabled={pending} onPick={(question) => void ask(question)} />
+            <Suggestions state={suggestions} disabled={pending} onPick={(item) => void ask(item.question, item.id)} />
 
             {messages.map((message) =>
               message.from === "visitor" ? (
@@ -208,7 +219,7 @@ export function FaqAssistantWidget() {
                   key={message.id}
                   message={message}
                   disabled={pending}
-                  onAsk={(question) => void ask(question)}
+                  onAsk={(item) => void ask(item.question, item.id)}
                   onNavigate={() => setOpen(false)}
                 />
               ),
@@ -294,7 +305,7 @@ function Suggestions({
 }: {
   state: SuggestionState;
   disabled: boolean;
-  onPick: (question: string) => void;
+  onPick: (question: PublicFaqQuestion) => void;
 }) {
   if (state.status !== "ready") {
     return state.status === "error" ? null : (
@@ -318,7 +329,7 @@ function QuestionChips({
 }: {
   questions: PublicFaqQuestion[];
   disabled: boolean;
-  onPick: (question: string) => void;
+  onPick: (question: PublicFaqQuestion) => void;
 }) {
   return (
     <ul className="flex flex-wrap gap-2">
@@ -327,7 +338,7 @@ function QuestionChips({
           <button
             type="button"
             disabled={disabled}
-            onClick={() => onPick(item.question)}
+            onClick={() => onPick(item)}
             className="rounded-full border border-brand/40 px-3 py-1.5 text-left text-xs font-medium text-brand hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50"
           >
             {item.question}
@@ -346,7 +357,7 @@ function AssistantReply({
 }: {
   message: Extract<Message, { from: "assistant" }>;
   disabled: boolean;
-  onAsk: (question: string) => void;
+  onAsk: (question: PublicFaqQuestion) => void;
   onNavigate: () => void;
 }) {
   const redirect = message.redirect ? FAQ_REDIRECTS[message.redirect] : null;
@@ -372,10 +383,11 @@ function AssistantReply({
           </Link>
         )}
       </AssistantBubble>
+      {message.reviewQuestion && <FaqReviewConsent question={message.reviewQuestion} />}
       {message.related.length > 0 && (
         <div className="pl-1">
           <p className="mb-1.5 text-xs text-ink-muted">
-            {message.kind === "answer" ? "Related questions" : "Did you mean one of these?"}
+            {message.kind === "answer" ? "Related questions" : message.kind === "clarification" ? "Choose the question you meant" : "Did you mean one of these?"}
           </p>
           <QuestionChips questions={message.related} disabled={disabled} onPick={onAsk} />
         </div>

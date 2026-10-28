@@ -223,3 +223,75 @@ dominates, inspect payload/render work. Only optimize a demonstrated bottleneck.
 Automated tests cover href/navigation/pending/repeat-click contracts and existing
 filter-form reset tests. Actual browser timings and failure/history interaction
 are pending; DEF-011 remains In progress, not a claimed speed improvement.
+
+## DEF-020 - Interrupted duplicate-warning request
+
+The client request boundary now catches transport rejection separately from
+the Server Action's backend-error handling. It returns `unavailable`, preserving
+the existing unknown/Check again UI and request-ID stale-response guard. It does
+not change duplicate rules, accession uniqueness, archive policy or save behavior.
+
+Test seam approved by the user: real client request function with only the
+remote Server Action mocked, plus a browser interruption/retry check. The new
+regression failed on uncaught `Failed to fetch` before the fallback was added.
+Five request tests now cover rejection, a successful matching retry and resolved
+idle/clear/unavailable results; all 366 frontend tests (62 files), lint and
+TypeScript passed on 2026-10-23. These unit tests are not full React/Next transport
+integration or live backend failure evidence.
+
+Browser verification used a separately approved loopback-only dev server on
+port 3002 because port 3000 runs an older production build. The original failure
+was reproduced there; replaying it against that unchanged build is not a failed
+test of new source. Do not rebuild underneath an occupied production server.
+
+For an independent retest, use an existing `TEST` record with both names:
+
+1. Copy its names into an unsaved new-specimen form; do not submit. Blur a name
+   and confirm the warning links that record without disabling Save.
+2. Change to unrelated names; confirm clear replaces the old warning/link.
+3. Interrupt only the read-only duplicate-check action. Confirm pending then
+   unknown/Check again, with entered values intact and Save still enabled.
+4. Restore the connection and Check again; confirm a fresh result, no page error
+   and no specimen save. Do not interrupt unrelated writes or stop shared servers.
+
+The controlled browser run passed those checks with six validated duplicate-read
+attempts, one deliberately aborted, and no other non-read requests or submitted
+forms. Its temporary tab closed; the signed-in Audit tab stayed open. Shared
+DEF-020 remains Ready for retest pending merged/deployed independent verification.
+
+## DEF-021 - Reviewed import recovery after commit transport rejection
+
+The user-approved client request seam wraps only the remote commit Server
+Action. Rejected transport returns an unknown-outcome message to the existing
+alert path instead of escaping the transition. It does not claim the backend
+saved nothing or retry automatically. The component preserves the preview,
+selected rows, duplicate-warning acknowledgement and file. Server validation,
+authorization, normalization, idempotency and result handling are unchanged.
+
+The first focused test failed on rejected `Failed to fetch`, then passed after
+the fallback. Four request tests cover rejection without automatic retry,
+explicit same-preview/row retry, resolved backend rejection and resolved result
+counts. Focused import tests passed 10/10; full frontend 370/370 across 63 files,
+full lint and TypeScript `--noEmit --incremental false` passed.
+
+Approved browser retest used a temporary dev server bound only to
+`127.0.0.1:3002`, with a locally supplied synthetic preview (two valid rows,
+one invalid, one duplicate warning). After choosing only the warning row and
+acknowledging it, both the initial commit and an explicit retry were intercepted
+and aborted before server forwarding. Two complete runs preserved reviewed
+state and showed the unknown-outcome alert, with controls re-enabled and zero
+page errors. Both attempts used the same preview ID and selected row `[2]`;
+invalid rows stayed disabled and no automatic commit was observed.
+
+The first cold-dev attempt clicked server-rendered controls before hydration,
+causing a GET form navigation rather than a synthetic preview. The helper now
+waits for the submit handler; that harness precondition failure is not a failed
+retest of the recovery fix. No real preview or commit was sent. The temporary
+server was stopped and ports 3000/3001 plus original role windows were preserved.
+
+DEF-021 is Ready for retest, not Verified: merge/CI, rebuilt deployed behavior
+and independent acceptance remain pending. Production port 3000 still serves
+the pre-fix build. Browser success here does not prove real database commits,
+retry idempotency, provider failures or concurrency. Recheck the same scoped
+scenario after approved deployment; do not send live commits merely to repeat
+this transport-only case.

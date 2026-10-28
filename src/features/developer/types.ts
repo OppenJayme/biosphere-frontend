@@ -38,7 +38,7 @@ export const arAssetRemovedSchema = z.object({
 });
 
 /**
- * GET /developer/ar-exhibits: curator-approved (deployable) exhibits, plus any
+ * GET /developer/ar-exhibits: exhibits the curator marked for AR (deployable), plus any
  * exhibit that still holds assets so they can be cleaned up. Public identity only.
  */
 export const arExhibitSchema = z.object({
@@ -48,6 +48,10 @@ export const arExhibitSchema = z.object({
   archived: z.boolean(),
   // false = cleanup-only: assets can be deactivated or removed, not activated or replaced.
   deployable: z.boolean(),
+  /** The curator marked this exhibit for AR preparation (REQ-4.13-02). */
+  arSelected: z.boolean(),
+  /** The curator's reason for the selection. */
+  arSelectionNote: z.string().nullable(),
   commonName: z.string().nullable(),
   scientificName: z.string().nullable(),
   assets: z.array(arAssetSchema),

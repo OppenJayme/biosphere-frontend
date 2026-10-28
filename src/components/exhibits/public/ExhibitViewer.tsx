@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
-import { CubeIcon, MoonIcon, SunIcon } from "@/components/icons";
+import { CubeIcon, MoonIcon, ScanIcon, SunIcon } from "@/components/icons";
 import { exhibitLayout, publicArModels, type PublicExhibit } from "@/features/exhibits-qr/types";
 import { CardGridView } from "./CardGridView";
 import { AccordionView } from "./AccordionView";
 import { ArModal } from "./ArModal";
+import { ScanModal } from "./ScanModal";
 
 export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; title: string }) {
   const [dark, setDark] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  // Stable, so the open scanner does not restart the camera on every render.
+  const closeScan = useCallback(() => setScanOpen(false), []);
   const models = publicArModels(exhibit.ar);
 
   return (
@@ -50,14 +54,16 @@ export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; titl
         }`}
       >
         <div className="mx-auto flex max-w-2xl gap-3">
-          <a
-            href="/gallery"
+          <button
+            type="button"
+            onClick={() => setScanOpen(true)}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-3 text-sm font-semibold transition-colors ${
               dark ? "border-white/30 text-white hover:bg-white/10" : "border-forest-800 text-forest-800 hover:bg-forest-100/60"
             }`}
           >
-            Scan More
-          </a>
+            <ScanIcon className="h-4.5 w-4.5" />
+            Scan Another
+          </button>
           {models && (
             <button
               type="button"
@@ -72,6 +78,8 @@ export function ExhibitViewer({ exhibit, title }: { exhibit: PublicExhibit; titl
           )}
         </div>
       </div>
+
+      {scanOpen && <ScanModal dark={dark} onClose={closeScan} />}
 
       {models && modelOpen && (
         <ArModal

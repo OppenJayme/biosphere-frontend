@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition, type RefObject } from "react";
-import { checkSpecimenDuplicatesAction } from "@/features/specimens/actions";
+import { requestSpecimenDuplicateCheck } from "@/features/specimens/duplicate-request";
 import { duplicateCheckCandidate, type DuplicateCheckState } from "@/features/specimens/duplicates";
 import { SpecimenDuplicateList } from "./SpecimenDuplicateList";
 
@@ -53,7 +53,7 @@ export function SpecimenDuplicateCheck({ formRef, excludeSpecimenId }: SpecimenD
       }
 
       startTransition(async () => {
-        const result = await checkSpecimenDuplicatesAction(candidate);
+        const result = await requestSpecimenDuplicateCheck(candidate);
         // Ignore answers to values the curator has since changed.
         if (current === requestId.current) setState(result);
       });
@@ -69,8 +69,20 @@ export function SpecimenDuplicateCheck({ formRef, excludeSpecimenId }: SpecimenD
       const target = event.target;
       if (target instanceof HTMLInputElement && CHECKED_FIELDS.has(target.name)) runCheck(false);
     };
+    const onInput = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || !CHECKED_FIELDS.has(target.name)) return;
+      // Edits invalidate the evidence immediately, before the next focus-out lookup.
+      ++requestId.current;
+      lastCheckedKey.current = null;
+      setState({ status: "idle" });
+    };
     form.addEventListener("focusout", onFocusOut);
-    return () => form.removeEventListener("focusout", onFocusOut);
+    form.addEventListener("input", onInput);
+    return () => {
+      form.removeEventListener("focusout", onFocusOut);
+      form.removeEventListener("input", onInput);
+    };
   }, [formRef, runCheck]);
 
   if (state.status === "idle" && !checking) return null;
