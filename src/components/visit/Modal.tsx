@@ -39,7 +39,7 @@ export function Modal({
       ref={dialogRef}
       aria-modal="true"
       aria-labelledby="modal-title"
-      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 bg-transparent px-4 py-10 open:flex open:items-start open:justify-center backdrop:bg-forest-900/60 backdrop:backdrop-blur-sm"
+      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 bg-transparent px-4 py-10 text-ink open:flex open:items-start open:justify-center backdrop:bg-forest-900/60 backdrop:backdrop-blur-sm"
       onCancel={(event) => {
         event.preventDefault();
         onClose();
