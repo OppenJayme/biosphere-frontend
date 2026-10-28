@@ -44,6 +44,45 @@ using approved development fixtures and independently defined expected results.
 
 ## Safe manual use
 
+### Offline containment preflight
+
+This opt-in cross-repository check requires sibling `biosphere-backend` and
+`biosphere-frontend` checkouts containing the containment changes, backend's
+offline disposable database fixture, existing installed root/browser dependencies,
+Windows local Docker, its pinned cached PostgreSQL image and installed Edge.
+From the **backend** root run `npm run test:offline:containment`. Normal CI does
+not run it or install a browser/Docker image. Do not invoke the frontend runner
+with an application URL; it accepts no CLI targets and reads only its parent's
+ephemeral loopback fixture descriptor on stdin.
+
+The real offline panel, hook, Dexie and sync modules are bundled with Vite
+(`configFile: false`, `envDir: false`); no remote Server Action or `.env` is loaded.
+A fresh nonpersistent context and origin receive a synthetic owner, no cookies
+or preexisting IndexedDB. The panel opens/cancels its modal; no draft is saved.
+The permanent read-only adapter rejects non-GET requests, credentials, foreign
+origins, host mismatches, unknown paths and query overrides. Its sole backend
+forward is a fixed protected audit GET to the owned Nest fixture, using a
+synthetic identity; only a readiness boolean returns. Cache reads return an
+explicit 503: cache population is **not** tested here.
+
+Browser default-deny interception and a restrictive document CSP add protection.
+A separate in-memory canary observes one permitted synthetic POST and zero
+blocked POST arrivals across five observations over one second, after the probe
+tab closes. Direct Node HTTP checks also bypass browser interception to verify
+adapter denial against independently counted owned servers. Owned SQL counts
+must remain zero specimens, receipts and audits. Normal success/failure paths
+close only the owned session, adapter, backend and container. Generated bundles
+remain ignored under `artifacts/`; no app processes or signed-in windows are
+controlled.
+
+This is bounded preflight evidence, not an OS/network sandbox or process-crash
+cleanup guarantee. It does not exercise interrupted draft writes, successful
+sync, real Next authentication/route middleware, styling, service workers/PWA,
+provider login, shared records or production DB containment. DEF-019 remains
+open; its disabled shared-backend pilot must stay disabled. A later interruption
+slice needs an explicitly agreed write-capable owned adapter, not removal of
+these protections against shared servers.
+
 ### Duplicate-warning component regression
 
 From the frontend root, run `npm run test:duplicates:browser` after the existing
