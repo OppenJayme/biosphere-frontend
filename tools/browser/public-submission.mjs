@@ -79,7 +79,7 @@ try {
   cli("open", "about:blank");
   const result = JSON.parse(cli("run-code", `--filename=${script}`).result);
   assert.equal(result.marker, "PUBLIC_SUBMISSION_UI_OK");
-  assert.equal(result.scenarios, 14);
+  assert.equal(result.scenarios, 16);
 } catch (error) {
   failure = error;
 } finally {
@@ -94,5 +94,5 @@ if (failure) {
   process.exitCode = 1;
 } else
   console.log(
-    "PUBLIC_SUBMISSION_UI_OK: 14 scenarios passed; own session closed.",
+    "PUBLIC_SUBMISSION_UI_OK: 16 scenarios passed; own session closed.",
   );
