@@ -19,7 +19,7 @@ export async function checkPublicForms(page, bundle) {
     if (url.origin !== origin || url.search) return route.abort();
     if (
       request.method() === "GET" &&
-      ["/inquiry", "/visit"].includes(url.pathname)
+      ["/inquiry", "/visit", "/dialog"].includes(url.pathname)
     ) {
       return route.fulfill({
         contentType: "text/html",
@@ -58,6 +58,30 @@ export async function checkPublicForms(page, bundle) {
   const assert = (condition, message) => {
     if (!condition) throw new Error(message);
   };
+  async function fillFields(kind) {
+    await page.locator('[name="name"]').fill("TEST Synthetic Visitor");
+    await page.locator('[name="email"]').fill("visitor@example.test");
+    if (kind === "inquiry") {
+      await page
+        .locator('[name="message"]')
+        .fill("Synthetic inquiry retained after an uncertain response.");
+    } else {
+      await page.locator('[name="phone"]').fill("09171234567");
+      await page.locator('[name="organization"]').fill("TEST Museum Group");
+      await page
+        .locator('[name="purpose"]')
+        .fill("Synthetic visit request retained after an uncertain response.");
+      const date = page.locator('[name="scheduleDate"]');
+      await date.fill(await date.getAttribute("min"));
+      await page.locator('[name="scheduleStart"]').fill("09:00");
+      await page.locator('[name="scheduleEnd"]').fill("10:00");
+      await page.locator('[name="visitorCount"]').fill("1");
+      await page.locator('[name="visitorFirstName"]').fill("Synthetic");
+      await page.locator('[name="visitorLastName"]').fill("Visitor");
+      await page.locator('[name="notes"]').fill("Keep this synthetic note.");
+    }
+    await page.locator('[name="consent"]').check();
+  }
   for (const kind of ["inquiry", "visit"]) {
     for (const scenario of [
       "malformed",
@@ -73,30 +97,7 @@ export async function checkPublicForms(page, bundle) {
       releasePending = undefined;
       await page.goto(`${origin}/${kind}`);
       await page.addScriptTag({ path: bundle });
-      await page.locator('[name="name"]').fill("TEST Synthetic Visitor");
-      await page.locator('[name="email"]').fill("visitor@example.test");
-      if (kind === "inquiry") {
-        await page
-          .locator('[name="message"]')
-          .fill("Synthetic inquiry retained after an uncertain response.");
-      } else {
-        await page.locator('[name="phone"]').fill("09171234567");
-        await page.locator('[name="organization"]').fill("TEST Museum Group");
-        await page
-          .locator('[name="purpose"]')
-          .fill(
-            "Synthetic visit request retained after an uncertain response.",
-          );
-        const date = page.locator('[name="scheduleDate"]');
-        await date.fill(await date.getAttribute("min"));
-        await page.locator('[name="scheduleStart"]').fill("09:00");
-        await page.locator('[name="scheduleEnd"]').fill("10:00");
-        await page.locator('[name="visitorCount"]').fill("1");
-        await page.locator('[name="visitorFirstName"]').fill("Synthetic");
-        await page.locator('[name="visitorLastName"]').fill("Visitor");
-        await page.locator('[name="notes"]').fill("Keep this synthetic note.");
-      }
-      await page.locator('[name="consent"]').check();
+      await fillFields(kind);
       const fieldsBefore = await page
         .locator("form")
         .evaluate((form) => JSON.stringify([...new FormData(form)]));
@@ -295,6 +296,136 @@ export async function checkPublicForms(page, bundle) {
       assert(errors.length === 0, "Unexpected browser runtime error");
       scenarios++;
     }
+  }
+  // Exercise the merged feedback and native dialog together through real VisitOptionsSection.
+  for (const kind of ["inquiry", "visit"]) {
+    mode = "transport";
+    posts = [];
+    await page.goto(`${origin}/dialog`);
+    await page.addScriptTag({ path: bundle });
+    const priorOverflow = await page.evaluate(
+      () => document.body.style.overflow,
+    );
+    const trigger = page.getByRole("button", {
+      name: kind === "inquiry" ? "Send an inquiry" : "Request a visit",
+      exact: true,
+    });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", {
+      name: kind === "inquiry" ? "Inquiry" : "Request a Visit",
+      exact: true,
+    });
+    await dialog.waitFor({ state: "visible" });
+    await fillFields(kind);
+    const fieldsBefore = await dialog
+      .locator("form")
+      .evaluate((form) => JSON.stringify([...new FormData(form)]));
+    const submit = dialog.getByRole("button", {
+      name: kind === "inquiry" ? "Send Inquiry" : "Submit Request",
+      exact: true,
+    });
+    const alert = dialog.getByRole("alert");
+    const acknowledge = dialog.getByRole("button", {
+      name: "I checked; allow another submission",
+      exact: true,
+    });
+    const close = dialog.getByRole("button", { name: "Close", exact: true });
+    const cancel = dialog.getByRole("button", { name: "Cancel", exact: true });
+    await submit.focus();
+    await page.keyboard.press("Enter");
+    await alert.filter({ hasText: "couldn't confirm" }).waitFor();
+    for (const attempt of [1, 2]) {
+      assert(
+        posts.length === attempt,
+        `${kind}: integrated attempt count wrong`,
+      );
+      assert(
+        await submit.isDisabled(),
+        `${kind}: integrated uncertainty did not block Send`,
+      );
+      assert(
+        await alert.evaluate((element) => document.activeElement === element),
+        `${kind}: integrated warning not focused`,
+      );
+      await cancel.focus();
+      await page.keyboard.press("Tab");
+      assert(
+        await close.evaluate((element) => document.activeElement === element),
+        `${kind}: disabled Send broke forward Tab boundary`,
+      );
+      await page.keyboard.press("Shift+Tab");
+      assert(
+        await cancel.evaluate((element) => document.activeElement === element),
+        `${kind}: disabled Send broke backward Tab boundary`,
+      );
+      await acknowledge.focus();
+      await page.keyboard.press("Enter");
+      assert(
+        posts.length === attempt,
+        `${kind}: integrated acknowledgement posted`,
+      );
+      assert(
+        await alert.evaluate((element) => document.activeElement === element),
+        `${kind}: integrated acknowledgement lost warning focus`,
+      );
+      assert(
+        await dialog.evaluate((element) =>
+          element.contains(document.activeElement),
+        ),
+        `${kind}: integrated focus left modal`,
+      );
+      assert(
+        await submit.isEnabled(),
+        `${kind}: integrated explicit retry blocked`,
+      );
+      assert(
+        (await dialog
+          .locator("form")
+          .evaluate((form) => JSON.stringify([...new FormData(form)]))) ===
+          fieldsBefore,
+        `${kind}: integrated fields/consent changed`,
+      );
+      mode = attempt === 1 ? "server" : "success";
+      await submit.focus();
+      await page.keyboard.press("Enter");
+      if (attempt === 1) await acknowledge.waitFor();
+    }
+    await dialog
+      .getByRole("heading", {
+        name:
+          kind === "inquiry"
+            ? "Your inquiry was sent"
+            : "Your visit request was sent",
+        exact: true,
+      })
+      .waitFor();
+    await dialog.getByText("55555555", { exact: true }).waitFor();
+    assert(
+      posts.length === 3 &&
+        posts.every(
+          (post) => JSON.stringify(post) === JSON.stringify(posts[0]),
+        ),
+      `${kind}: integrated request replay/payload mismatch`,
+    );
+    const done = dialog.getByRole("button", { name: "Done", exact: true });
+    await done.focus();
+    await page.keyboard.press("Enter");
+    await dialog.waitFor({ state: "detached" });
+    assert(
+      await trigger.evaluate((element) => document.activeElement === element),
+      `${kind}: Done did not restore opener`,
+    );
+    assert(
+      (await page.evaluate(() => document.body.style.overflow)) ===
+        priorOverflow,
+      `${kind}: Done did not restore scroll style`,
+    );
+    assert(
+      errors.length === 0,
+      "Integrated form generated a browser runtime error",
+    );
+    scenarios++;
   }
   return { marker: "PUBLIC_SUBMISSION_UI_OK", scenarios };
 }

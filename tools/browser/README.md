@@ -54,15 +54,32 @@ public configuration (`envDir: false`, no public assets). A fresh isolated
 context permits only intercepted requests to `public-submissions-fixture.test`;
 other destinations are aborted. No local app server or live backend is used.
 
-Fourteen scenarios cover both forms across malformed receipts, transport loss,
+Sixteen scenarios include the original fourteen covering both forms across
+malformed receipts, transport loss,
 503, validation rejection, rate limiting, confirmed success and pending response.
 Checks include retained fields/consent, focused uncertainty feedback, disabled
 resubmission including requestSubmit, explicit acknowledgement without a POST,
 explicit subsequent send, valid reference display, send-another reset and
-pending-request protection. Only HTTP is synthetic. The uniquely named session
+pending-request protection. Two added merged-dialog scenarios drive the real
+VisitOptionsSection through transport loss, acknowledgement, 503, another
+acknowledgement, success and Done. They check retained fields/consent, focused
+warning inside the modal, Cancel/Close Tab boundaries while Send is disabled,
+explicit POST counts and final opener/scroll restoration. Only HTTP is synthetic.
+The uniquely named session
 closes on success/failure; generated artifacts remain ignored. These checks do
 not establish server-side idempotency, actual stored/lost responses, email
-delivery, real proxy/CORS behavior, modal close/reopen or full accessibility.
+delivery, real proxy/CORS behavior, unsent/pending-close recovery or full
+accessibility.
+
+Merged integration checkpoint - 2026-10-29: on frontend develop
+`dad7a561397f0b0d97d1ea08ac2b3c58f6362347` (merged #92/#93), all sixteen
+scenarios passed and the owned browser session closed. The two additional flows
+use the actual VisitOptionsSection and native Modal together with the merged
+forms; prior isolated results remain historical at their recorded SHAs. Focused
+tooling lint and TypeScript passed. No application-source change, full-suite
+rerun, production build, running-app restart, live submission/email or database
+operation was performed for this test-only integration follow-up. Backend #212
+and its independent review remain separate.
 
 ### Notification bell state regression
 
