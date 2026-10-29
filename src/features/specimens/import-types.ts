@@ -1,4 +1,4 @@
-/** Runtime contracts for the reviewed, two-phase specimen CSV import flow. */
+/** Runtime contracts for the reviewed, two-phase specimen import flow. */
 
 import { z } from "zod";
 import { specimenSummarySchema } from "./types";
@@ -60,12 +60,12 @@ export type SpecimenImportCommit = z.infer<typeof specimenImportCommitSchema>;
 export type ImportActionResult<T> = { ok: true; data: T } | { ok: false; message: string };
 
 export function validateImportFileMetadata(file: { name: string; size: number }) {
-  if (file.size === 0) return "Choose a non-empty CSV file to preview.";
-  if (!file.name.toLowerCase().endsWith(".csv")) {
-    return "Only .csv specimen import files are supported.";
+  if (file.size === 0) return "Choose a non-empty CSV or XLSX file to preview.";
+  if (!/\.(csv|xlsx)$/i.test(file.name)) {
+    return "Only .csv and .xlsx specimen import files are supported.";
   }
   if (file.size > MAX_SPECIMEN_IMPORT_FILE_BYTES) {
-    return "The CSV exceeds the 5 MB upload limit.";
+    return "The import file exceeds the 5 MB upload limit.";
   }
   return null;
 }
