@@ -11,7 +11,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs",
-    "test:public-submissions:browser": "node tools/browser/public-submission.mjs"
+    "test:public-submissions:browser": "node tools/browser/public-submission.mjs",
+    "3d:manifest": "node tools/3d-models/build-manifest.mjs",
+    "3d:check": "node tools/3d-models/check-models.mjs"
   },
   "dependencies": {
     "@google/model-viewer": "^4.3.1",

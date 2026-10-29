@@ -22,6 +22,10 @@
 /tools/browser/storage-state*.json
 /tools/browser/*profile*/
 
+# 3D model pipeline working files: specimen photos, paid Tripo output, batch state.
+/3d-models/
+tripo-out/
+
 # next.js
 /.next/
 /out/
