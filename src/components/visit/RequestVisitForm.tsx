@@ -40,6 +40,8 @@ export function RequestVisitForm({
   const [failure, setFailure] = useState<Extract<SubmissionResult, { ok: false }> | null>(null);
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [retryAllowed, setRetryAllowed] = useState(false);
+  const retryBlocked = failure?.outcome === "unknown" && !retryAllowed;
   const [formKey, setFormKey] = useState(0);
 
   if (receipt) {
@@ -70,7 +72,7 @@ export function RequestVisitForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || retryBlocked) return;
 
     const parsed = readVisitRequestForm(new FormData(event.currentTarget), today);
     setFailure(null);
@@ -83,6 +85,7 @@ export function RequestVisitForm({
 
     setErrors({});
     setScheduleErrors([]);
+    setRetryAllowed(false);
     setSubmitting(true);
     const result = await postPublicSubmission("/visit-requests", parsed.data);
     setSubmitting(false);
@@ -430,7 +433,14 @@ export function RequestVisitForm({
 
       <PrivacyConsent id="visit-consent" purpose="this visit request" error={errors.consent} />
 
-      {failure && <FormAlert message={failure.message} details={failure.details} />}
+      {failure && (
+        <FormAlert
+          message={failure.message}
+          details={failure.details}
+          uncertain={failure.outcome === "unknown"}
+          onAllowRetry={retryBlocked ? () => setRetryAllowed(true) : undefined}
+        />
+      )}
 
       <div className="flex justify-end gap-3 border-t border-line pt-6">
         {onCancel && (
@@ -438,7 +448,7 @@ export function RequestVisitForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" variant="solid-forest" disabled={submitting} aria-busy={submitting || undefined}>
+        <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked} aria-busy={submitting || undefined}>
           {submitting ? "Sending…" : "Submit Request"}
           {!submitting && <ArrowRightIcon className="h-4 w-4" />}
         </Button>

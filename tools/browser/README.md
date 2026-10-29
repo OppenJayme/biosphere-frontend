@@ -44,6 +44,26 @@ using approved development fixtures and independently defined expected results.
 
 ## Safe manual use
 
+### Public submission uncertainty regression
+
+Run `npm run test:public-submissions:browser` from the frontend root with the
+existing application/browser dependencies and installed Edge. No application
+URL, credentials or database is accepted. Vite bundles the real inquiry/visit
+forms, validators, feedback components and submission helper with fixed synthetic
+public configuration (`envDir: false`, no public assets). A fresh isolated
+context permits only intercepted requests to `public-submissions-fixture.test`;
+other destinations are aborted. No local app server or live backend is used.
+
+Fourteen scenarios cover both forms across malformed receipts, transport loss,
+503, validation rejection, rate limiting, confirmed success and pending response.
+Checks include retained fields/consent, focused uncertainty feedback, disabled
+resubmission including requestSubmit, explicit acknowledgement without a POST,
+explicit subsequent send, valid reference display, send-another reset and
+pending-request protection. Only HTTP is synthetic. The uniquely named session
+closes on success/failure; generated artifacts remain ignored. These checks do
+not establish server-side idempotency, actual stored/lost responses, email
+delivery, real proxy/CORS behavior, modal close/reopen or full accessibility.
+
 ### Notification bell state regression
 
 Run `npm run test:notifications:browser` from the frontend root with existing

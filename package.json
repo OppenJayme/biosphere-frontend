@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs"
+    "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs",
+    "test:public-submissions:browser": "node tools/browser/public-submission.mjs"
   },
   "dependencies": {
     "@google/model-viewer": "^4.3.1",
