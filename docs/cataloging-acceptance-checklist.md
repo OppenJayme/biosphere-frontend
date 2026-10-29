@@ -206,11 +206,11 @@ See `docs/offline-specimen-drafts.md` for the complete offline contract.
       no secrets, service-role keys, or database credentials appear in browser
       responses, logs, screenshots, commits, or test evidence.
 
-## Bulk specimen CSV import
+## Bulk specimen CSV / XLSX import
 
 - [ ] Download the CSV template and confirm its headers match the backend's
       supported specimen-core columns.
-- [ ] Reject an empty file, a non-CSV file, a file over 5 MB, and a CSV over
+- [ ] Reject an empty file, an unsupported file (including XLS/XLSM), a file over 5 MB, and an import over
       500 data rows with clear messages and no specimen creation.
 - [ ] Preview a valid CSV and confirm no database rows are created until the
       curator explicitly commits selected rows.
@@ -222,12 +222,26 @@ See `docs/offline-specimen-drafts.md` for the complete offline contract.
 - [ ] Force one commit-time row failure and confirm successful rows remain
       created while failed rows remain selected for a safe retry.
 - [ ] Retry the same preview rows and confirm they do not create duplicates.
+- [ ] For XLSX, rename the data worksheet to `Specimens`; keep headers in the
+      first row. Confirm another worksheet is not imported and a missing
+      `Specimens` worksheet gives a clear error.
+- [ ] Format accession cells as Text. Confirm `000123` remains `000123` in
+      preview, while a numeric accession cell is rejected rather than guessed.
+- [ ] Use literal values and ISO dates or date-only Excel cells. Reject formulas,
+      spreadsheet errors, external links and oversized/sparse workbook ranges.
+      The backend bounds expanded data to 20 MB, 128 ZIP entries and sheets to
+      501 rows including headers / 100 columns; clear unused Excel formatting.
 - [ ] Wait more than 30 minutes and confirm an expired preview asks for a new
       upload instead of creating anything.
 - [ ] Confirm the batch identifier is displayed, appears in the corresponding
       audit details, and the result links to filtered `IMPORT_SPECIMEN` events.
 
-## Deferred decisions — do not implement yet
+## Historical deferred decisions — reconcile before use
+
+This section retains earlier planning questions. It is not the current status
+of the subsequently implemented Cataloging, import or restoration workflows.
+Use the backend acceptance register, module guides and retained approved
+decisions to determine current gaps; this XLSX change does not reopen them.
 
 The following require museum/client approval or a dedicated backend contract:
 

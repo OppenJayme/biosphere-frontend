@@ -1,4 +1,4 @@
-/** Authenticated Server Actions forming the browser/backend boundary for CSV import. */
+/** Authenticated Server Actions forming the browser/backend boundary for specimen import. */
 
 "use server";
 
@@ -36,7 +36,7 @@ function safeCommitError(error: unknown) {
     if (error.status === 401) return "Your session expired. Sign in and try again.";
     if (error.status === 403) return "You do not have permission to import specimen records.";
     if (error.status === 404) {
-      return "This preview expired or is no longer available. Upload the CSV again.";
+      return "This preview expired or is no longer available. Upload the file again.";
     }
     if (error.status === 429) return "Too many import requests were sent. Wait briefly and try again.";
   }

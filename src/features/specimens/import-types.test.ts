@@ -101,10 +101,11 @@ describe("specimen import contracts", () => {
     ).toBe(false);
   });
 
-  it("rejects empty, non-CSV, and oversized uploads before sending them", () => {
+  it("accepts CSV/XLSX but rejects empty, legacy Excel and oversized uploads before sending", () => {
     expect(validateImportFileMetadata({ name: "specimens.csv", size: 10 })).toBeNull();
     expect(validateImportFileMetadata({ name: "specimens.csv", size: 0 })).toMatch(/non-empty/i);
-    expect(validateImportFileMetadata({ name: "specimens.xlsx", size: 10 })).toMatch(/\.csv/i);
+    expect(validateImportFileMetadata({ name: "specimens.XLSX", size: 10 })).toBeNull();
+    expect(validateImportFileMetadata({ name: "specimens.xls", size: 10 })).toMatch(/\.xlsx/i);
     expect(
       validateImportFileMetadata({
         name: "specimens.csv",

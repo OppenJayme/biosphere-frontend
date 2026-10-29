@@ -1,4 +1,4 @@
-/** Same-origin, authenticated and bounded multipart boundary for specimen CSV previews. */
+/** Same-origin, authenticated and bounded multipart boundary for specimen import previews. */
 
 import { previewSpecimenImport } from "@/features/specimens/import-api";
 import {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     contentLength &&
     (!/^\d+$/.test(contentLength) || Number(contentLength) > MAX_MULTIPART_BYTES)
   ) {
-    return json({ message: "The CSV upload is too large." }, 413);
+    return json({ message: "The import upload is too large." }, 413);
   }
 
   let formData: FormData;
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
   const file = formData.get("file");
   if (!(file instanceof File)) {
-    return json({ message: "Choose a non-empty CSV file to preview." }, 400);
+    return json({ message: "Choose a non-empty CSV or XLSX file to preview." }, 400);
   }
   const fileError = validateImportFileMetadata(file);
   if (fileError) return json({ message: fileError }, 400);
@@ -76,11 +76,11 @@ export async function POST(request: Request) {
       }
       if ([400, 413, 415, 429].includes(error.status)) {
         return json(
-          { message: backendMessage(error.body) ?? "The backend rejected this CSV." },
+          { message: backendMessage(error.body) ?? "The backend rejected this import file." },
           error.status,
         );
       }
     }
-    return json({ message: "The CSV preview is temporarily unavailable." }, 502);
+    return json({ message: "The import preview is temporarily unavailable." }, 502);
   }
 }
