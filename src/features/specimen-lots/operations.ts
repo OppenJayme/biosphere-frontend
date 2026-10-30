@@ -10,6 +10,7 @@ import {
   QUANTITY_ADJUSTMENT_TYPES,
   type LotTransactionType,
   type QuantityAdjustmentType,
+  type RecordedQuantityAdjustmentType,
 } from "./types";
 
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
@@ -250,7 +251,7 @@ const TRANSACTION_LABELS: Record<LotTransactionType, string> = {
   QUANTITY_ADJUSTMENT: "Quantity adjustment",
 };
 
-const ADJUSTMENT_LABELS: Record<QuantityAdjustmentType, string> = {
+const ADJUSTMENT_LABELS: Record<RecordedQuantityAdjustmentType, string> = {
   ADDITION: "Addition",
   REMOVAL: "Removal",
   TRANSFER_OUT: "Transfer out of the museum",
@@ -258,13 +259,14 @@ const ADJUSTMENT_LABELS: Record<QuantityAdjustmentType, string> = {
   MISSING_LOSS: "Missing / loss",
   DESTRUCTION: "Destruction",
   DATA_CORRECTION: "Data correction",
+  TEMPORARY_ABSENCE: "Temporary absence",
 };
 
 export function transactionTypeLabel(type: LotTransactionType) {
   return TRANSACTION_LABELS[type];
 }
 
-export function adjustmentTypeLabel(type: QuantityAdjustmentType) {
+export function adjustmentTypeLabel(type: RecordedQuantityAdjustmentType) {
   return ADJUSTMENT_LABELS[type];
 }
 
