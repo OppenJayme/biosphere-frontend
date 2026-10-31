@@ -33,6 +33,8 @@ import {
   PanelHeading,
   StatusChangeForm,
   VisitorEmailFields,
+  managementColumnClasses,
+  managementColumnsClasses,
   panelClasses,
   primaryButtonClasses,
   secondaryButtonClasses,
@@ -222,146 +224,150 @@ export function VisitRequestDetail({
   const vehicles = request.vehicles.filter((vehicle) => vehicle.plateNumber || vehicle.brand || vehicle.type);
 
   return (
-    <div className="space-y-4">
-      <section aria-labelledby="visit-detail-heading" className={`${panelClasses} space-y-3`}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 id="visit-detail-heading" className="break-words text-base font-semibold text-zinc-900">
-              {request.organization}
-            </h2>
-            <p className="text-xs text-zinc-500">
-              Visit request · received {formatTimestamp(request.createdAt)}
-            </p>
+    <div className={managementColumnsClasses}>
+      <div className={managementColumnClasses}>
+        <section aria-labelledby="visit-detail-heading" className={`${panelClasses} space-y-3`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 id="visit-detail-heading" className="break-words text-base font-semibold text-zinc-900">
+                {request.organization}
+              </h3>
+              <p className="text-xs text-zinc-500">
+                Visit request · received {formatTimestamp(request.createdAt)}
+              </p>
+            </div>
+            <VisitStatusBadge status={request.status} />
           </div>
-          <VisitStatusBadge status={request.status} />
-        </div>
 
-        {request.approvedSchedule && (
-          <p className="flex items-center gap-2 rounded-lg bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-800">
-            <CheckIcon className="h-4 w-4 shrink-0" />
-            Approved: {formatSchedule(request.approvedSchedule)}
-          </p>
-        )}
-
-        <dl className="divide-y divide-black/5 border-y border-black/5">
-          {/* The visitor's own reference number, quoted in emails and follow-ups. */}
-          <InfoRow label="Reference no.">{request.referenceCode}</InfoRow>
-          <InfoRow label="Contact person">{request.name}</InfoRow>
-          <InfoRow label="Email">{request.email}</InfoRow>
-          <InfoRow label="Contact number">{request.phone}</InfoRow>
-          <InfoRow label="Address">{request.address ?? <NotGiven />}</InfoRow>
-          <InfoRow label="Purpose">
-            <span className="whitespace-pre-line">{request.purpose ?? <NotGiven />}</span>
-          </InfoRow>
-          <InfoRow label="Equipment">{request.equipment ?? <NotGiven />}</InfoRow>
-          <InfoRow label="Notes">
-            <span className="whitespace-pre-line">{request.notes ?? <NotGiven />}</span>
-          </InfoRow>
-          <InfoRow label="Privacy consent">Accepted {formatTimestamp(request.consentAcceptedAt)}</InfoRow>
-        </dl>
-
-        {!canApproveSchedule(request.status) && (
-          <div>
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Preferred schedules
+          {request.approvedSchedule && (
+            <p className="flex items-center gap-2 rounded-lg bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-800">
+              <CheckIcon className="h-4 w-4 shrink-0" />
+              Approved: {formatSchedule(request.approvedSchedule)}
             </p>
-            <ol className="space-y-1 text-xs text-zinc-700">
-              {request.preferredSchedules.map((schedule) => (
-                <li key={schedule.preferenceOrder}>
-                  {schedule.preferenceOrder}. {formatSchedule(schedule)}
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-
-        <div>
-          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-            <UsersIcon className="h-3.5 w-3.5" />
-            {request.visitorCount} visitor{request.visitorCount === 1 ? "" : "s"}
-            {request.visitors.length > 0 && `, ${request.visitors.length} named`}
-          </p>
-          {request.visitors.length > 0 && (
-            <ol className="max-h-40 list-decimal space-y-0.5 overflow-y-auto pl-8 text-xs text-zinc-700">
-              {request.visitors.map((visitor, index) => (
-                <li key={`${visitor.name}-${index}`}>{visitor.name}</li>
-              ))}
-            </ol>
           )}
-        </div>
 
-        {vehicles.length > 0 && (
+          <dl className="divide-y divide-black/5 border-y border-black/5">
+            {/* The visitor's own reference number, quoted in emails and follow-ups. */}
+            <InfoRow label="Reference no.">{request.referenceCode}</InfoRow>
+            <InfoRow label="Contact person">{request.name}</InfoRow>
+            <InfoRow label="Email">{request.email}</InfoRow>
+            <InfoRow label="Contact number">{request.phone}</InfoRow>
+            <InfoRow label="Address">{request.address ?? <NotGiven />}</InfoRow>
+            <InfoRow label="Purpose">
+              <span className="whitespace-pre-line">{request.purpose ?? <NotGiven />}</span>
+            </InfoRow>
+            <InfoRow label="Equipment">{request.equipment ?? <NotGiven />}</InfoRow>
+            <InfoRow label="Notes">
+              <span className="whitespace-pre-line">{request.notes ?? <NotGiven />}</span>
+            </InfoRow>
+            <InfoRow label="Privacy consent">Accepted {formatTimestamp(request.consentAcceptedAt)}</InfoRow>
+          </dl>
+
+          {!canApproveSchedule(request.status) && (
+            <div>
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                Preferred schedules
+              </p>
+              <ol className="space-y-1 text-xs text-zinc-700">
+                {request.preferredSchedules.map((schedule) => (
+                  <li key={schedule.preferenceOrder}>
+                    {schedule.preferenceOrder}. {formatSchedule(schedule)}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
           <div>
             <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-              <CarIcon className="h-3.5 w-3.5" />
-              Vehicle
+              <UsersIcon className="h-3.5 w-3.5" />
+              {request.visitorCount} visitor{request.visitorCount === 1 ? "" : "s"}
+              {request.visitors.length > 0 && `, ${request.visitors.length} named`}
             </p>
-            <ul className="space-y-0.5 text-xs text-zinc-700">
-              {vehicles.map((vehicle, index) => (
-                <li key={index}>
-                  <span className="font-mono font-semibold">{vehicle.plateNumber ?? "No plate given"}</span>
-                  {[vehicle.brand, vehicle.type].filter(Boolean).length > 0 &&
-                    ` · ${[vehicle.brand, vehicle.type].filter(Boolean).join(", ")}`}
-                </li>
-              ))}
-            </ul>
+            {request.visitors.length > 0 && (
+              <ol className="max-h-40 list-decimal space-y-0.5 overflow-y-auto pl-8 text-xs text-zinc-700">
+                {request.visitors.map((visitor, index) => (
+                  <li key={`${visitor.name}-${index}`}>{visitor.name}</li>
+                ))}
+              </ol>
+            )}
           </div>
+
+          {vehicles.length > 0 && (
+            <div>
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+                <CarIcon className="h-3.5 w-3.5" />
+                {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"}
+              </p>
+              <ul className="space-y-0.5 text-xs text-zinc-700">
+                {vehicles.map((vehicle, index) => (
+                  <li key={index}>
+                    <span className="font-mono font-semibold">{vehicle.plateNumber ?? "No plate given"}</span>
+                    {[vehicle.brand, vehicle.type].filter(Boolean).length > 0 &&
+                      ` · ${[vehicle.brand, vehicle.type].filter(Boolean).join(", ")}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {request.sourceInquiryId && (
+            <Link
+              href={publicWebsiteHref({ tab: "inquiries" }, { selected: request.sourceInquiryId })}
+              className="flex items-center justify-between rounded-lg border border-black/10 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-sage-50"
+            >
+              Open the inquiry this request came from
+              <ArrowRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </section>
+
+        <section className={`${panelClasses} space-y-4`}>
+          <PanelHeading icon={ChatIcon} title="Notes and history" />
+          <NoteForm key={request.id} action={addVisitNoteAction.bind(null, request.id, returnQuery)} />
+          <HistoryTimeline
+            submittedAt={request.createdAt}
+            entries={history}
+            statusLabels={VISIT_REQUEST_STATUS_LABELS}
+            currentAccountId={currentAccountId}
+          />
+        </section>
+      </div>
+
+      <div className={managementColumnClasses}>
+        {canApproveSchedule(request.status) && (
+          <ApproveScheduleForm
+            key={request.id}
+            request={request}
+            action={approveVisitScheduleAction.bind(null, request.id, returnQuery)}
+          />
         )}
 
-        {request.sourceInquiryId && (
-          <Link
-            href={publicWebsiteHref({ tab: "inquiries" }, { selected: request.sourceInquiryId })}
-            className="flex items-center justify-between rounded-lg border border-black/10 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-sage-50"
-          >
-            Open the inquiry this request came from
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </Link>
+        {request.approvedSchedule && <CampusEntryCard summary={campusEntry} />}
+
+        {statusOptions.length > 0 && (
+          <StatusChangeForm
+            key={`${request.id}-${request.status}`}
+            action={updateVisitStatusAction.bind(null, request.id, returnQuery)}
+            options={statusOptions}
+            recordLabel="visit request"
+            visitorEmail={{
+              recipient: request.email,
+              sendsFor: (status) => emailsVisitorOnStatus(status as CuratorSettableVisitStatus),
+            }}
+          />
         )}
-      </section>
 
-      {canApproveSchedule(request.status) && (
-        <ApproveScheduleForm
-          key={request.id}
-          request={request}
-          action={approveVisitScheduleAction.bind(null, request.id, returnQuery)}
+        <EmailVisitorForm
+          key={`message-${request.id}`}
+          action={sendVisitMessageAction.bind(null, request.id, returnQuery)}
+          recipient={request.email}
+          title="Email the visitor"
+          description="Ask for more information or share details. The request's status does not change."
+          placeholder="e.g. Could you send the full list of students joining the visit?"
         />
-      )}
-
-      {request.approvedSchedule && <CampusEntryCard summary={campusEntry} />}
-
-      {statusOptions.length > 0 && (
-        <StatusChangeForm
-          key={`${request.id}-${request.status}`}
-          action={updateVisitStatusAction.bind(null, request.id, returnQuery)}
-          options={statusOptions}
-          recordLabel="visit request"
-          visitorEmail={{
-            recipient: request.email,
-            sendsFor: (status) => emailsVisitorOnStatus(status as CuratorSettableVisitStatus),
-          }}
-        />
-      )}
-
-      <EmailVisitorForm
-        key={`message-${request.id}`}
-        action={sendVisitMessageAction.bind(null, request.id, returnQuery)}
-        recipient={request.email}
-        title="Email the visitor"
-        description="Ask for more information or share details. The request's status does not change."
-        placeholder="e.g. Could you send the full list of students joining the visit?"
-      />
-
-      <section className={`${panelClasses} space-y-4`}>
-        <PanelHeading icon={ChatIcon} title="Notes and history" />
-        <NoteForm key={request.id} action={addVisitNoteAction.bind(null, request.id, returnQuery)} />
-        <HistoryTimeline
-          submittedAt={request.createdAt}
-          entries={history}
-          statusLabels={VISIT_REQUEST_STATUS_LABELS}
-          currentAccountId={currentAccountId}
-        />
-      </section>
+      </div>
     </div>
   );
 }
