@@ -1,10 +1,12 @@
 import "server-only";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { listAuditLogs } from "../audit/api";
+import { describeAuditEntry } from "../audit/describe";
 import type { AuditLogEntry } from "../audit/types";
 import { listStorageLocations } from "../storage-locations/api";
 import type { StorageUnit } from "../storage-locations/types";
 import {
+  buildAttention,
   buildCatalogingTrend,
   buildCollectionByType,
   buildStats,
@@ -19,6 +21,8 @@ import {
   type SectionResult,
   type StorageOverviewItem,
 } from "./types";
+import { resolveAuditRecordLabels } from "../audit/record-labels";
+import { labelFor } from "../audit/label-key";
 
 
 const RECENT_ACTIVITY_LIMIT = 6;
@@ -50,11 +54,15 @@ export async function getDashboardData(): Promise<DashboardData> {
   }
 
   const summary = summaryResult.status === "fulfilled" ? summaryResult.value : null;
+  // Names for the records in recent activity; a failed lookup only drops the names.
+  const activityLabels =
+    auditResult.status === "fulfilled" ? await resolveAuditRecordLabels(auditResult.value.items).catch(() => ({})) : {};
   const fromSummary = <T>(build: (data: DashboardSummary) => T): SectionResult<T> =>
     summary ? { status: "ok", data: build(summary) } : { status: "error" };
 
   return {
     stats: fromSummary(buildStats),
+    attention: fromSummary(buildAttention),
     collectionByType: fromSummary(buildCollectionByType),
     catalogingTrend: fromSummary(buildCatalogingTrend),
     catalogingQueue: fromSummary((data) => data.catalogingQueue.map(toQueueItem)),
@@ -65,7 +73,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         : { status: "error" },
     recentActivity:
       auditResult.status === "fulfilled"
-        ? { status: "ok", data: buildRecentActivity(auditResult.value.items) }
+        ? { status: "ok", data: buildRecentActivity(auditResult.value.items, activityLabels) }
         : { status: "error" },
     qrReadiness: fromSummary((data) => data.exhibits),
   };
@@ -85,24 +93,13 @@ function buildStorageOverview(items: StorageUnit[]): StorageOverviewItem[] {
     .slice(0, STORAGE_HEALTH_LIMIT);
 }
 
-function buildRecentActivity(items: AuditLogEntry[]): ActivityItem[] {
+function buildRecentActivity(items: AuditLogEntry[], labels: Record<string, string>): ActivityItem[] {
+  // One plain sentence per entry; record IDs never reach the dashboard.
   return items.map((item) => ({
     id: item.id,
-    action: humanize(item.action),
-    detail: item.affectedRecordType
-      ? `${humanize(item.affectedRecordType)}${item.affectedRecordId ? ` · ${item.affectedRecordId.slice(0, 8)}` : ""}`
-      : "—",
-    by: item.actor?.fullName ?? "System",
+    summary: describeAuditEntry(item, labelFor(labels, item)),
     timestamp: item.createdAt,
     module: item.module,
     failed: item.result !== "SUCCESS",
   }));
-}
-
-function humanize(value: string): string {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }

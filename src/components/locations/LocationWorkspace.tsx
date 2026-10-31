@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ArchiveIcon, ClockIcon, InfoIcon, SearchIcon } from "@/components/icons";
+import { ArchiveIcon, ChevronDownIcon, ClockIcon, SearchIcon } from "@/components/icons";
 import {
   buildStorageHierarchy,
   filterStorageUnits,
@@ -17,6 +17,7 @@ import { LocationTree } from "./LocationTree";
 import { StorageLocationManagement } from "./StorageLocationManagement";
 import { StorageMovementHistory } from "./StorageMovementHistory";
 import { StorageLifecycleBadge } from "./StorageLifecycleBadge";
+import { InfoTip } from "@/components/ui/InfoTip";
 
 type LocationWorkspaceProps = {
   units: StorageUnit[];
@@ -48,8 +49,18 @@ export function LocationWorkspace({
     () => storageBrowserView(units, { selectedId, archived: showArchived ? "1" : "0" }),
     [units, selectedId, showArchived],
   );
-  const hierarchy = useMemo(() => buildStorageHierarchy(view.visibleUnits), [view.visibleUnits]);
+  // Archived records are listed in their own group, so the tree only holds active locations.
+  const activeUnits = useMemo(() => view.visibleUnits.filter((unit) => !unit.archivedAt), [view.visibleUnits]);
+  const archivedUnits = useMemo(
+    () =>
+      view.visibleUnits
+        .filter((unit) => Boolean(unit.archivedAt))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })),
+    [view.visibleUnits],
+  );
+  const hierarchy = useMemo(() => buildStorageHierarchy(activeUnits), [activeUnits]);
   const [query, setQuery] = useState("");
+  const [hierarchyOpen, setHierarchyOpen] = useState(true);
 
   const selected = view.selected;
   const matches = useMemo(() => filterStorageUnits(view.visibleUnits, query), [query, view.visibleUnits]);
@@ -102,55 +113,94 @@ export function LocationWorkspace({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[300px_1fr_300px]">
-      <aside className="flex h-fit flex-col rounded-xl border border-black/10 bg-white p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-900">Storage Hierarchy</h2>
-          <InfoIcon className="h-4 w-4 text-zinc-400" />
-        </div>
-        <p className="mb-3 rounded-lg bg-sage-50 px-3 py-2.5 text-xs text-zinc-600">
-          Types and parent relationships are curator-managed; this view does not assume a fixed hierarchy.
-        </p>
-        <ArchiveVisibilityToggle showArchived={showArchived} pending={selectionPending} onChange={toggleArchived} />
-        <label className="relative mb-3 block">
-          <span className="sr-only">Search storage locations</span>
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name, type, or ID..."
-            className="w-full rounded-lg border border-black/15 py-2 pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-          />
-        </label>
+    <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <aside className="flex h-fit flex-col rounded-xl border border-black/10 bg-white p-5">
+        <h2 className={`text-sm font-semibold text-zinc-900 ${hierarchyOpen ? "mb-3" : ""}`}>
+          <button
+            type="button"
+            onClick={() => setHierarchyOpen((open) => !open)}
+            aria-expanded={hierarchyOpen}
+            aria-controls="storage-hierarchy-body"
+            className="-m-1 flex items-center gap-1.5 rounded-md p-1 text-left hover:text-forest-800 focus-visible:outline-2 focus-visible:outline-forest-600"
+          >
+            <ChevronDownIcon
+              className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform motion-reduce:transition-none ${hierarchyOpen ? "" : "-rotate-90"}`}
+            />
+            Storage Hierarchy
+          </button>
+        </h2>
+        <div id="storage-hierarchy-body" hidden={!hierarchyOpen}>
+          <ArchiveVisibilityToggle showArchived={showArchived} pending={selectionPending} onChange={toggleArchived} />
+          <label className="relative mb-3 block">
+            <span className="sr-only">Search storage locations</span>
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search name or type…"
+              className="w-full rounded-lg border border-black/15 py-2 pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+            />
+          </label>
 
-        <div className="max-h-[560px] overflow-y-auto">
-          {query.trim() ? (
-            <ul className="space-y-0.5">
-              {matches.map((unit) => (
-                <li key={unit.id}>
-                  <button
-                    type="button"
-                    onClick={() => selectUnit(unit.id)}
-                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${
-                      unit.id === selected.id
-                        ? "bg-forest-50 font-semibold text-forest-800"
-                        : "text-zinc-700 hover:bg-sage-50"
-                    }`}
-                  >
-                    <span className="truncate">{unit.label}</span>
-                    <StorageLifecycleBadge archived={Boolean(unit.archivedAt)} />
-                    <span className="shrink-0 text-[10px] text-zinc-400">{unit.unitType}</span>
-                  </button>
-                </li>
-              ))}
-              {matches.length === 0 && (
-                <li className="py-6 text-center text-xs text-zinc-500">No storage locations match that search.</li>
-              )}
-            </ul>
-          ) : (
-            <LocationTree nodes={hierarchy} selectedId={selected.id} onSelect={selectUnit} />
-          )}
+          <div className="max-h-[560px] overflow-y-auto">
+            {query.trim() ? (
+              <ul className="space-y-0.5">
+                {[...matches].sort((a, b) => Number(Boolean(a.archivedAt)) - Number(Boolean(b.archivedAt))).map((unit) => (
+                  <li key={unit.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectUnit(unit.id)}
+                      className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${
+                        unit.id === selected.id
+                          ? "bg-forest-50 font-semibold text-forest-800"
+                          : "text-zinc-700 hover:bg-sage-50"
+                      }`}
+                    >
+                      <span className="truncate">{unit.label}</span>
+                      <StorageLifecycleBadge archived={Boolean(unit.archivedAt)} />
+                      <span className="shrink-0 text-[10px] text-zinc-400">{unit.unitType}</span>
+                    </button>
+                  </li>
+                ))}
+                {matches.length === 0 && (
+                  <li className="py-6 text-center text-xs text-zinc-500">No storage locations match that search.</li>
+                )}
+              </ul>
+            ) : (
+              <>
+                {showArchived && <GroupHeading>Active</GroupHeading>}
+                <LocationTree nodes={hierarchy} selectedId={selected.id} onSelect={selectUnit} />
+                {showArchived && (
+                  <>
+                    <GroupHeading className="mt-4 border-t border-black/10 pt-3">Archived</GroupHeading>
+                    {archivedUnits.length > 0 ? (
+                      <ul className="space-y-0.5">
+                        {archivedUnits.map((unit) => (
+                          <li key={unit.id}>
+                            <button
+                              type="button"
+                              onClick={() => selectUnit(unit.id)}
+                              className={`flex w-full flex-col rounded-lg px-2.5 py-2 text-left text-sm ${
+                                unit.id === selected.id ? "bg-forest-50 font-semibold text-forest-800" : "text-zinc-600 hover:bg-sage-50"
+                              }`}
+                            >
+                              <span className="truncate">{unit.label}</span>
+                              <span className="truncate text-[11px] font-normal text-zinc-500">
+                                {storagePath(units, unit.id).slice(0, -1).map((parent) => parent.label).join(" › ") || "Top level"}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="px-2.5 py-2 text-xs text-zinc-500">No archived locations.</p>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </aside>
 
@@ -185,6 +235,13 @@ export function LocationWorkspace({
                 {selected.unitType} &middot; {selected.storageType}
               </p>
             </div>
+            <Link
+              href={`/audit-logs?search=${encodeURIComponent(selected.id)}&affectedRecordType=storage_unit`}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-forest-700 px-3 py-2 text-sm font-semibold text-forest-800 hover:bg-forest-50"
+            >
+              <ClockIcon className="h-4 w-4" />
+              View audit history
+            </Link>
           </div>
 
           <dl className="mt-5 grid gap-4 border-t border-black/10 pt-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -194,6 +251,9 @@ export function LocationWorkspace({
             {showArchived && <Detail label="Archived direct children" value={String(view.archivedChildren.length)} />}
             <Detail label="Can hold specimens" value={selected.holdsSpecimens ? "Yes" : "No"} />
             <Detail label="Capacity" value={selected.capacity === null ? "Not set" : String(selected.capacity)} />
+            <Detail label="Created" value={formatDate(selected.createdAt)} />
+            <Detail label="Last updated" value={formatDate(selected.updatedAt)} />
+            {selected.archivedAt && <Detail label="Archived" value={formatDate(selected.archivedAt)} />}
           </dl>
         </section>
 
@@ -223,22 +283,6 @@ export function LocationWorkspace({
         <StorageLocationManagement key={selected.id} selected={selected} units={units} />
       </main>
 
-      <aside className="h-fit rounded-xl border border-black/10 bg-white p-4">
-        <h3 className="text-sm font-semibold text-zinc-900">Record details</h3>
-        <dl className="mt-4 space-y-3 border-t border-black/10 pt-4">
-          <Detail label="Storage unit ID" value={selected.id} breakAll />
-          <Detail label="Created" value={formatDate(selected.createdAt)} />
-          <Detail label="Last updated" value={formatDate(selected.updatedAt)} />
-          {selected.archivedAt && <Detail label="Archived" value={formatDate(selected.archivedAt)} />}
-        </dl>
-        <Link
-          href={`/audit-logs?search=${encodeURIComponent(selected.id)}&affectedRecordType=storage_unit`}
-          className="mt-5 flex items-center justify-center gap-2 rounded-lg border border-forest-700 px-3 py-2 text-sm font-semibold text-forest-800 hover:bg-forest-50"
-        >
-          <ClockIcon className="h-4 w-4" />
-          View audit history
-        </Link>
-      </aside>
     </div>
   );
 }
@@ -253,8 +297,11 @@ function ArchiveVisibilityToggle({ showArchived, pending, onChange }: {
           onChange={event => onChange(event.target.checked)}
           className="h-4 w-4 accent-forest-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700" />
         Show archived locations
+        <InfoTip label="Archived locations" align="start">
+          Archived locations are kept for history and can&apos;t be changed. They appear in their own group below
+          the active ones.
+        </InfoTip>
       </label>
-      <p className="mt-1">{showArchived ? "Includes read-only historical locations." : "Showing active locations only."}</p>
       {pending && <p role="status" className="mt-1">Updating location view…</p>}
     </div>
   );
@@ -280,15 +327,17 @@ function ChildLocationList({ units, onSelect }: { units: StorageUnit[]; onSelect
   );
 }
 
-function Detail({ label, value, breakAll = false }: { label: string; value: string; breakAll?: boolean }) {
+function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-zinc-400">{label}</dt>
-      <dd className={`mt-0.5 text-sm font-medium text-zinc-900 ${breakAll ? "break-all font-mono text-xs" : ""}`}>
-        {value}
-      </dd>
+      <dt className="text-xs text-zinc-500">{label}</dt>
+      <dd className="mt-0.5 text-sm font-medium text-zinc-900">{value}</dd>
     </div>
   );
+}
+
+function GroupHeading({ children, className = "" }: { children: string; className?: string }) {
+  return <p className={`mb-1 px-2.5 text-xs font-semibold text-zinc-500 ${className}`}>{children}</p>;
 }
 
 function formatDate(value: string): string {

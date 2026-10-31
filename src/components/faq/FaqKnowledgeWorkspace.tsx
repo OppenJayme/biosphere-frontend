@@ -14,6 +14,7 @@ import {
   type FaqListQuery,
   type FaqStatus,
 } from "@/features/faq/types";
+import { PrevNextPagination } from "@/components/ui/PrevNextPagination";
 
 type FaqKnowledgeWorkspaceProps = {
   page: FaqEntryPage | null;
@@ -60,7 +61,7 @@ export function FaqKnowledgeWorkspace({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-black/10 bg-white p-4">
+      <section className="rounded-xl border border-black/10 bg-white p-5">
         <form action="/faq-knowledge" className="flex flex-col gap-3 md:flex-row md:items-end">
           <label className="min-w-0 flex-[2] text-xs font-medium text-zinc-700">
             Search
@@ -103,10 +104,10 @@ export function FaqKnowledgeWorkspace({
         </form>
       </section>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="overflow-hidden rounded-xl border border-black/10 bg-white">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0 rounded-xl border border-black/10 bg-white p-5">
           {page.items.length === 0 ? (
-            <div className="p-8 text-center">
+            <div className="py-12 text-center">
               <ChatIcon className="mx-auto h-8 w-8 text-zinc-300" />
               <p className="mt-3 text-sm font-semibold text-zinc-900">No FAQ knowledge matches these filters</p>
               <p className="mt-1 text-sm text-zinc-500">No sample answers are substituted.</p>
@@ -114,29 +115,30 @@ export function FaqKnowledgeWorkspace({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[44rem] text-left text-sm">
-                <thead className="bg-sage-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">Question</th>
-                    <th scope="col" className="px-4 py-3">Category</th>
-                    <th scope="col" className="px-4 py-3">Status</th>
-                    <th scope="col" className="px-4 py-3">Updated</th>
+                <thead>
+                  <tr className="border-b border-black/10 text-xs text-zinc-500">
+                    <th scope="col" className="py-2 pr-3 font-medium">Question</th>
+                    <th scope="col" className="py-2 pr-3 font-medium">Category</th>
+                    <th scope="col" className="py-2 pr-3 font-medium">Status</th>
+                    <th scope="col" className="py-2 pr-0 font-medium">Last Updated</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {page.items.map((entry) => (
-                    <tr key={entry.id} className={entry.id === selected?.id ? "bg-forest-50/70" : "hover:bg-zinc-50"}>
+                    <tr key={entry.id} className={entry.id === selected?.id ? "bg-forest-50" : "hover:bg-sage-50"}>
                       <td className="p-0">
                         <button
                           type="button"
                           onClick={() => setSelectedId(entry.id)}
-                          className="w-full px-4 py-3 text-left font-medium text-zinc-900"
+                          aria-pressed={entry.id === selected?.id}
+                          className="w-full py-2.5 pr-3 text-left font-medium text-zinc-900 focus-visible:outline-2 focus-visible:outline-forest-700"
                         >
                           {entry.question}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">{entry.category ?? "Uncategorized"}</td>
-                      <td className="px-4 py-3"><StatusBadge status={entry.status} /></td>
-                      <td className="px-4 py-3 text-xs text-zinc-500">{formatDate(entry.updatedAt)}</td>
+                      <td className="py-2.5 pr-3 text-zinc-600">{entry.category ?? "Uncategorized"}</td>
+                      <td className="py-2.5 pr-3"><StatusBadge status={entry.status} /></td>
+                      <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">{formatDate(entry.updatedAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -152,9 +154,6 @@ export function FaqKnowledgeWorkspace({
 
       <FaqKnowledgeManagement selected={selected} />
 
-      <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-950">
-        Only active entries are used by the public FAQ Assistant. Visitors are matched on the question, alternative wording, and keywords; unmatched questions are sent to the General Inquiry form.
-      </div>
     </div>
   );
 }
@@ -171,7 +170,7 @@ function FaqDetail({ entry }: { entry: FaqEntry | null }) {
   return (
     <aside className="h-fit rounded-xl border border-black/10 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="font-serif text-lg font-semibold text-forest-800">Knowledge details</h2>
+        <h2 className="text-sm font-semibold text-zinc-900">Knowledge details</h2>
         <StatusBadge status={entry.status} />
       </div>
       <dl className="mt-4 space-y-4">
@@ -181,7 +180,6 @@ function FaqDetail({ entry }: { entry: FaqEntry | null }) {
         <TermList label="Alternative wording" values={entry.alternativeWording} />
         <TermList label="Keywords" values={entry.keywords} />
         <Detail label="Last updated"><p>{formatDate(entry.updatedAt)}</p></Detail>
-        <Detail label="Record ID"><p className="break-all font-mono text-xs">{entry.id}</p></Detail>
       </dl>
       <Link
         href={`/audit-logs?search=${encodeURIComponent(entry.id)}&affectedRecordType=faq_entry`}
@@ -197,7 +195,7 @@ function FaqDetail({ entry }: { entry: FaqEntry | null }) {
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">{label}</dt>
+      <dt className="text-xs text-zinc-500">{label}</dt>
       <dd className="mt-1 text-sm text-zinc-800">{children}</dd>
     </div>
   );
@@ -228,22 +226,16 @@ function Pagination({ page, query }: { page: FaqEntryPage; query: FaqListQuery }
   const first = page.total === 0 ? 0 : (page.page - 1) * page.limit + 1;
   const last = Math.min(page.page * page.limit, page.total);
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 px-4 py-3 text-sm text-zinc-600">
-      <p>{page.total === 0 ? "0 entries" : `${first}-${last} of ${page.total} entries`}</p>
-      <div className="flex gap-2">
-        {page.page > 1 ? <PageLink href={faqKnowledgeHref(query, page.page - 1)} label="Previous" /> : <DisabledPage label="Previous" />}
-        {page.page * page.limit < page.total ? <PageLink href={faqKnowledgeHref(query, page.page + 1)} label="Next" /> : <DisabledPage label="Next" />}
-      </div>
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-sm text-zinc-600">
+      <p>{page.total === 0 ? "No entries" : `Showing ${first}-${last} of ${page.total} entries`}</p>
+      <PrevNextPagination
+        label="FAQ knowledge pages"
+        page={page.page}
+        totalPages={Math.max(1, Math.ceil(page.total / page.limit))}
+        hrefFor={(target) => faqKnowledgeHref(query, target)}
+      />
     </div>
   );
-}
-
-function PageLink({ href, label }: { href: string; label: string }) {
-  return <Link href={href} className="rounded-lg border border-black/15 px-3 py-2 font-semibold text-zinc-700 hover:bg-zinc-50">{label}</Link>;
-}
-
-function DisabledPage({ label }: { label: string }) {
-  return <span className="rounded-lg border border-black/10 px-3 py-2 text-zinc-400">{label}</span>;
 }
 
 function humanize(value: string) {

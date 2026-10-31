@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { StatCard } from "@/components/ui/StatCard";
 import { ExhibitsWorkspace } from "@/components/exhibits/ExhibitsWorkspace";
 import { listExhibits } from "@/features/exhibits-qr/api";
 import type { Exhibit, ExhibitRow, ExhibitSpecimenInfo } from "@/features/exhibits-qr/types";
 import { getSpecimen } from "@/features/specimens/api";
 import { verifySession } from "@/lib/session";
+import { PageHeader } from "@/components/curator/PageHeader";
 
 export const metadata: Metadata = {
   title: "QR Exhibits",
@@ -32,14 +32,11 @@ async function withSpecimens(exhibits: Exhibit[]): Promise<ExhibitRow[]> {
   return exhibits.map((exhibit) => ({ ...exhibit, specimen: specimens.get(exhibit.specimenId) ?? null }));
 }
 
-function percentOf(count: number, total: number) {
-  return total ? `${((count / total) * 100).toFixed(1)}% of total` : "No exhibits yet";
-}
-
 export default async function ExhibitsPage({ searchParams }: ExhibitsPageProps) {
   if (!(await verifySession())) redirect("/login?from=/exhibits");
 
-  const selected = (await searchParams).selected;
+  const params = await searchParams;
+  const selected = params.selected;
   let rows: ExhibitRow[] | null = null;
   try {
     rows = await withSpecimens(await listExhibits());
@@ -47,32 +44,21 @@ export default async function ExhibitsPage({ searchParams }: ExhibitsPageProps) 
     rows = null;
   }
 
-  const total = rows?.length ?? 0;
-  const published = rows?.filter((row) => row.status === "PUBLISHED").length ?? 0;
-  const unpublished = rows?.filter((row) => row.status === "UNPUBLISHED").length ?? 0;
-  const disabled = rows?.filter((row) => row.status === "DISABLED").length ?? 0;
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Exhibits</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Create, manage, and publish QR-enabled specimen exhibits.
-        </p>
-      </div>
+      <PageHeader
+        title="QR Exhibits"
+        description="Web pages for selected specimens, opened by scanning a QR label in the museum."
+        info="Only published exhibits of cataloged, publicly eligible specimens are visible to visitors. Each exhibit page has a QR code and a short web address you can print."
+      />
 
       {rows ? (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Total Exhibits" value={String(total)} note="Active (not archived)" tone="neutral" icon="cube" />
-            <StatCard label="Published" value={String(published)} note={percentOf(published, total)} tone="positive" icon="specimen" />
-            <StatCard label="Unpublished" value={String(unpublished)} note={percentOf(unpublished, total)} tone="warning" icon="draft" />
-            <StatCard label="Disabled" value={String(disabled)} note={percentOf(disabled, total)} tone="danger" icon="lock" />
-          </div>
-
           <ExhibitsWorkspace
             exhibits={rows}
             initialSelectedId={typeof selected === "string" ? selected : null}
+            openCreate={params.create === "1"}
           />
         </>
       ) : (

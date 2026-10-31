@@ -1,18 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { CloseIcon } from "@/components/icons";
 import { SpecimenCoverPreview } from "./SpecimenCoverPreview";
-import type { SpecimenSummary } from "@/features/specimens/types";
+import type { SpecimenSearchItem } from "@/features/specimens/types";
 
 function displayValue(value: string | null) {
   return value ?? "Not recorded";
 }
 
+const DATE_TIME = new Intl.DateTimeFormat("en-PH", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Manila",
+});
+
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Not recorded" : value.slice(0, 16).replace("T", " ");
+  return Number.isNaN(date.getTime()) ? "Not recorded" : DATE_TIME.format(date);
+}
+
+function statusLabel(status: SpecimenSearchItem["status"]) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="shrink-0 text-zinc-500">{label}</dt>
+      <dd className="min-w-0 text-right text-zinc-800">{children}</dd>
+    </div>
+  );
 }
 
 export function SpecimenDetailPanel({
@@ -20,14 +39,14 @@ export function SpecimenDetailPanel({
   onClear,
   clearHref,
 }: {
-  specimen: SpecimenSummary | null;
+  specimen: SpecimenSearchItem | null;
   onClear: (event: MouseEvent<HTMLAnchorElement>) => void;
   clearHref: string;
 }) {
   return (
     <aside
       id="selected-specimen"
-      className="scroll-mt-4 rounded-xl border border-black/10 bg-white p-4"
+      className="h-fit scroll-mt-20 rounded-xl border border-black/10 bg-white p-5 xl:sticky xl:top-20"
     >
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-900">Selected Specimen</h3>
@@ -73,48 +92,38 @@ export function SpecimenDetailPanel({
           </div>
 
           <dl className="space-y-2 text-xs">
-            <div className="flex justify-between gap-3">
-              <dt className="text-zinc-400">Status</dt>
-              <dd className="text-right font-medium text-zinc-800">{specimen.status}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-zinc-400">Category</dt>
-              <dd className="text-right text-zinc-800">
-                {displayValue(specimen.specimenCategory)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-zinc-400">Gender</dt>
-              <dd className="text-right text-zinc-800">{displayValue(specimen.gender)}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-zinc-400">Classification</dt>
-              <dd className="text-right text-zinc-800">
-                {displayValue(specimen.classificationStatus)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-zinc-400">Public display</dt>
-              <dd className="text-right text-zinc-800">
-                {specimen.publicDisplay ? "Eligible" : "Not eligible"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-zinc-400">Last updated</dt>
-              <dd className="text-right text-zinc-800">{formatDate(specimen.updatedAt)}</dd>
-            </div>
+            <Row label="Status">{statusLabel(specimen.status)}</Row>
+            <Row label="Category">{displayValue(specimen.specimenCategory)}</Row>
+            <Row label="Family">{displayValue(specimen.family)}</Row>
+            <Row label="Gender">{displayValue(specimen.gender)}</Row>
+            <Row label="Classification">{displayValue(specimen.classificationStatus)}</Row>
+            <Row label="Public display">{specimen.publicDisplay ? "Eligible" : "Not eligible"}</Row>
+            <Row label="Active quantity">{specimen.totalQuantity.toLocaleString()}</Row>
+            <Row label="Condition">
+              {specimen.conditionClasses.length > 0 ? specimen.conditionClasses.join(", ") : "Not recorded"}
+            </Row>
+            <Row label="Storage">
+              {specimen.storageUnits.length > 0
+                ? specimen.storageUnits.map((unit) => (
+                    <span key={unit.id} className="block break-words">
+                      {unit.pathLabel}
+                    </span>
+                  ))
+                : "Not stored"}
+            </Row>
+            <Row label="Last updated">{formatDate(specimen.updatedAt)}</Row>
           </dl>
 
           {specimen.remarks && (
             <div>
-              <p className="mb-1 text-xs text-zinc-400">Remarks</p>
+              <p className="mb-1 text-xs text-zinc-500">Remarks</p>
               <p className="text-xs leading-5 text-zinc-700">{specimen.remarks}</p>
             </div>
           )}
 
           <Link
             href={`/specimens/${specimen.id}`}
-            className="inline-flex w-full justify-center rounded-lg bg-forest-700 px-3 py-2 text-xs font-semibold text-white hover:bg-forest-800"
+            className="inline-flex w-full justify-center rounded-lg bg-forest-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
           >
             View full specimen details
           </Link>

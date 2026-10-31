@@ -411,7 +411,7 @@ export function ExhibitDetailPanel({
 
   if (!exhibit) {
     return (
-      <div className="rounded-xl border border-black/10 bg-white p-4">
+      <div className="rounded-xl border border-black/10 bg-white p-5">
         <h3 className="mb-3 text-sm font-semibold text-zinc-900">Selected Exhibit</h3>
         <p className="py-6 text-center text-xs text-zinc-500">
           Select an exhibit from the table to see its details here.
@@ -465,7 +465,7 @@ export function ExhibitDetailPanel({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-4">
+    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-900">Selected Exhibit</h3>
         <button

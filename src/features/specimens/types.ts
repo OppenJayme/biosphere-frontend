@@ -359,9 +359,14 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
   const rawSearch = firstValue(searchParams.search) ?? "";
   const search = rawSearch.trim().slice(0, 100);
   const rawStatus = firstValue(searchParams.status);
-  const status = SPECIMEN_STATUSES.includes(rawStatus as SpecimenStatus)
-    ? (rawStatus as SpecimenStatus)
-    : null;
+  // The "Show archived specimens" checkbox submits archived=1; it takes precedence
+  // over the status select because the backend filters on one status at a time.
+  const status =
+    firstValue(searchParams.archived) === "1"
+      ? "ARCHIVED"
+      : SPECIMEN_STATUSES.includes(rawStatus as SpecimenStatus)
+        ? (rawStatus as SpecimenStatus)
+        : null;
   const rawCollectionId = firstValue(searchParams.collectionId);
   const collectionId = z.uuid().safeParse(rawCollectionId).success
     ? (rawCollectionId ?? null)

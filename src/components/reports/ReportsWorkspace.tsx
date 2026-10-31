@@ -94,7 +94,7 @@ export function ReportsWorkspace({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_360px]">
       <AvailableReportsList reports={reports} selected={selected.type} onSelect={selectReport} />
       <ReportOptionsPanel
         definition={selected}

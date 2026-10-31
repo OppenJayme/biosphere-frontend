@@ -12,6 +12,7 @@ import {
 import type { FaqCommandState, FaqFormState, FaqFormValues } from "@/features/faq/management";
 import type { FaqEntry } from "@/features/faq/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { InfoTip } from "@/components/ui/InfoTip";
 
 const inputClasses =
   "mt-1 w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
@@ -73,7 +74,7 @@ function CreateFaqForm() {
   });
 
   return (
-    <details className="rounded-xl border border-black/10 bg-white p-4">
+    <details className="rounded-xl border border-black/10 bg-white p-5">
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Add FAQ knowledge</summary>
       <form action={action} className="mt-4">
         <p className="mb-3 text-xs text-zinc-500">
@@ -97,7 +98,7 @@ function EditFaqForm({ entry }: { entry: FaqEntry }) {
   });
 
   return (
-    <details className="rounded-xl border border-black/10 bg-white p-4">
+    <details className="rounded-xl border border-black/10 bg-white p-5">
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Edit selected knowledge</summary>
       <form action={formAction} className="mt-4">
         {entry.status === "ACTIVE" && (
@@ -165,11 +166,14 @@ function FaqLifecycle({ entry }: { entry: FaqEntry }) {
   }
 
   return (
-    <section className="rounded-xl border border-black/10 bg-white p-4">
-      <h3 className="text-sm font-semibold text-zinc-900">Knowledge lifecycle</h3>
-      <p className="mt-1 text-xs text-zinc-600">
-        Activation is the approval step. Archiving preserves history and currently cannot be reversed.
-      </p>
+    <section className="rounded-xl border border-black/10 bg-white p-5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+        Approve or retire this answer
+        <InfoTip label="Approving FAQ answers" align="start">
+          Activating an answer approves it for the public FAQ assistant. Archiving keeps its history but can&apos;t be
+          undone yet.
+        </InfoTip>
+      </h3>
       <div className="mt-3 flex flex-wrap gap-2">
         {entry.status === "INACTIVE" ? (
           <LifecycleButton
@@ -208,8 +212,8 @@ export function FaqKnowledgeManagement({ selected }: { selected: FaqEntry | null
   return (
     <section className="space-y-3" aria-labelledby="faq-management-heading">
       <div>
-        <h2 id="faq-management-heading" className="font-serif text-lg font-semibold text-forest-800">Manage FAQ knowledge</h2>
-        <p className="mt-1 text-sm text-zinc-600">Changes are validated, attributed, and audited by the protected backend.</p>
+        <h2 id="faq-management-heading" className="text-sm font-semibold text-zinc-900">Manage FAQ knowledge</h2>
+        <p className="mt-0.5 text-xs text-zinc-500">Every change is recorded in the audit log.</p>
       </div>
       <CreateFaqForm />
       {selected && selected.status !== "ARCHIVED" && <EditFaqForm key={selected.id} entry={selected} />}

@@ -6,7 +6,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { InfoTip } from "@/components/ui/InfoTip";
 import {
   archiveSpecimenAction,
   restoreSpecimenAction,
@@ -37,7 +39,7 @@ function PublicDisplayControl({ specimen }: { specimen: SpecimenSummary }) {
   if (!command) {
     return (
       <div>
-        <p className="text-sm font-semibold text-zinc-900">Public-display eligibility</p>
+        <p className="text-sm font-semibold text-zinc-900">Public display</p>
         <p className="mt-1 text-sm text-zinc-600">
           {specimen.status === "ARCHIVED"
             ? "Archived specimens cannot be publicly eligible."
@@ -49,10 +51,17 @@ function PublicDisplayControl({ specimen }: { specimen: SpecimenSummary }) {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-zinc-900">Public-display eligibility</p>
-      <p className="mt-1 text-sm text-zinc-600">
-        Currently {specimen.publicDisplay ? "eligible" : "not eligible"}. Eligibility does not
-        publish an exhibit or expose the internal catalog record.
+      <p className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+        Public display
+        <InfoTip label="Public display">
+          An eligible specimen can be used for a public QR exhibit. Turning this on does not publish anything by
+          itself, and the internal catalog record is never shown to visitors.
+        </InfoTip>
+      </p>
+      <p className="mt-1.5">
+        <Badge tone={specimen.publicDisplay ? "success" : "neutral"}>
+          {specimen.publicDisplay ? "Eligible for public display" : "Not eligible for public display"}
+        </Badge>
       </p>
       <form action={formAction} className="mt-3">
         <ConfirmButton
@@ -80,10 +89,12 @@ function ArchiveControl({ specimen, activeLotCount }: SpecimenLifecyclePanelProp
 
   return (
     <div className="border-t border-black/5 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
-      <p className="text-sm font-semibold text-zinc-900">Archive record</p>
-      <p className="mt-1 text-sm text-zinc-600">
-        Archiving preserves history and disables public eligibility. Restoring later revalidates
-        the record against current Cataloging requirements.
+      <p className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+        Archive record
+        <InfoTip label="Archiving">
+          The record and its history are kept, but it leaves the active catalog and public display is turned off.
+          You can restore it later; it is then checked against the current cataloging requirements.
+        </InfoTip>
       </p>
       {blockedReason ? (
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
@@ -117,10 +128,12 @@ function RestoreControl({ specimen, readiness }: Pick<SpecimenLifecyclePanelProp
 
   return (
     <div className="border-t border-black/5 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
-      <p className="text-sm font-semibold text-zinc-900">Restore archived record</p>
-      <p className="mt-1 text-sm text-zinc-600">
-        Restores this same record as Cataloged only if every current requirement passes;
-        otherwise as Uncataloged. Public display stays off. Lots, quantities, and storage are not changed.
+      <p className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+        Restore archived record
+        <InfoTip label="Restoring">
+          The record comes back as Cataloged only if it meets every current requirement, otherwise as Uncataloged.
+          Public display stays off. Lots, quantities and storage are not changed.
+        </InfoTip>
       </p>
       {readiness ? (
         <div className="mt-3 rounded-lg border border-black/10 bg-zinc-50 px-3 py-2.5 text-xs text-zinc-700">
@@ -162,12 +175,7 @@ export function SpecimenLifecyclePanel({
 }: SpecimenLifecyclePanelProps) {
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5">
-      <div className="mb-4">
-        <h2 className="font-serif text-lg font-semibold text-forest-800">Catalog lifecycle</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Controlled record-state operations; physical inventory is managed separately.
-        </p>
-      </div>
+      <h2 className="mb-4 text-base font-semibold text-zinc-900">Public display and archive</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
         <PublicDisplayControl specimen={specimen} />
         {specimen.status === "ARCHIVED"

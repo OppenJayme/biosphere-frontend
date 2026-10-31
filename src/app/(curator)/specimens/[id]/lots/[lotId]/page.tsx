@@ -143,7 +143,7 @@ export default async function SpecimenLotPage({ params, searchParams }: Specimen
 
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <p className="text-sm text-zinc-500">
             {specimenName}
           </p>
           <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">Specimen lot</h1>
@@ -237,7 +237,7 @@ export default async function SpecimenLotPage({ params, searchParams }: Specimen
       )}
 
       <section className="rounded-xl border border-black/10 bg-white p-5">
-        <h2 className="mb-4 font-serif text-lg font-semibold text-forest-800">
+        <h2 className="mb-4 text-base font-semibold text-zinc-900">
           Lot transactions
         </h2>
         <HistoryPagination
@@ -257,7 +257,7 @@ export default async function SpecimenLotPage({ params, searchParams }: Specimen
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">{label}</dt>
+      <dt className="text-xs text-zinc-500">{label}</dt>
       <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-800">{value}</dd>
     </div>
   );

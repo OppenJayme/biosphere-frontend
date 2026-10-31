@@ -43,7 +43,7 @@ export function UsersWorkspace({ users }: { users: AccountUser[] }) {
         }}
       />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
           {visible.length > 0 ? (
             <UserTable users={visible} selectedId={selectedId} onSelect={setSelectedId} />

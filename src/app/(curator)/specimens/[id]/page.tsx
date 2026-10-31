@@ -10,6 +10,15 @@ import { getCatalogReadiness, getSpecimenDetails } from "@/features/specimens/ap
 import { duplicateRecheckTrigger } from "@/features/specimens/duplicates";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { PAGE_ACTION_PRIMARY, PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
+
+const STATUS_LABELS = { UNCATALOGED: "Uncataloged", CATALOGED: "Cataloged", ARCHIVED: "Archived" } as const;
+const STATUS_TONES: Record<keyof typeof STATUS_LABELS, BadgeTone> = {
+  UNCATALOGED: "warning",
+  CATALOGED: "success",
+  ARCHIVED: "neutral",
+};
 
 export const metadata: Metadata = {
   title: "Specimen Details",
@@ -69,7 +78,7 @@ export default async function SpecimenDetailsPage({
     return (
       <div className="space-y-5">
         <Link href="/specimens" className="text-sm font-semibold text-forest-800 hover:underline">
-          ← Back to specimen catalog
+          ← All specimens
         </Link>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-semibold">This specimen could not be loaded.</p>
@@ -100,40 +109,33 @@ export default async function SpecimenDetailsPage({
 
   return (
     <div className="space-y-5">
-      <Link href="/specimens" className="text-sm font-semibold text-forest-800 hover:underline">
-        ← Back to specimen catalog
+      <Link href="/specimens" className="text-sm font-medium text-forest-800 hover:underline">
+        ← All specimens
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Specimen record</p>
-          <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">{title}</h1>
-          {(detail.specimen.commonName || detail.specimen.scientificName) && (
-            <p className="mt-1 text-sm text-zinc-600">
-              {[detail.specimen.commonName, detail.specimen.scientificName]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          )}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-serif text-2xl font-semibold text-forest-800">
+              {detail.specimen.commonName ?? title}
+            </h1>
+            <Badge tone={STATUS_TONES[detail.specimen.status]}>{STATUS_LABELS[detail.specimen.status]}</Badge>
+          </div>
+          <p className="mt-1 text-sm text-zinc-600">
+            {detail.specimen.scientificName && <span className="italic">{detail.specimen.scientificName}</span>}
+            {detail.specimen.scientificName && " · "}
+            Accession no. {detail.specimen.accessionNumber ?? "not assigned yet"}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/specimens/${id}/history`}
-            className="rounded-lg border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
-          >
-            Revision history
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/specimens/${id}/history`} className={PAGE_ACTION_SECONDARY}>
+            Change history
           </Link>
           {detail.specimen.status !== "ARCHIVED" && (
-            <Link
-              href={`/specimens/${id}/edit`}
-              className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
-            >
-              Edit core record
+            <Link href={`/specimens/${id}/edit`} className={PAGE_ACTION_PRIMARY}>
+              Edit basic details
             </Link>
           )}
-          <span className="rounded-full bg-forest-100 px-3 py-1.5 text-xs font-semibold text-forest-800">
-            {detail.specimen.status}
-          </span>
         </div>
       </header>
 

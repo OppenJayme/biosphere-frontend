@@ -372,7 +372,7 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
   return (
     <div className="space-y-4">
       <div className="space-y-3 rounded-lg border border-black/10 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Upload Image</p>
+        <p className="text-sm font-semibold text-zinc-700">Upload Image</p>
         <input
           ref={fileRef}
           type="file"
@@ -406,7 +406,7 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
       )}
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Exhibit Photos</p>
+        <p className="mb-2 text-sm font-semibold text-zinc-700">Exhibit Photos</p>
         {!media ? (
           <p className="text-xs text-zinc-500">Loading images…</p>
         ) : media.message ? (
@@ -564,7 +564,7 @@ export function CreateExhibitModal({
           <div className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-4">
             <div>
               <h2 id="exhibit-modal-title" className="text-base font-semibold text-zinc-900">
-                {editing ? `Edit ${exhibitDisplayName(exhibit)}` : "Create Exhibit"}
+                {editing ? `Edit ${exhibitDisplayName(exhibit)}` : "Create exhibit"}
               </h2>
               <p className="text-xs text-zinc-500">Public-facing exhibit content</p>
             </div>
@@ -574,7 +574,7 @@ export function CreateExhibitModal({
           </div>
 
           <div className="max-h-[65vh] overflow-y-auto px-6 py-5">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Linked Specimen</p>
+            <p className="mb-2 text-sm font-semibold text-zinc-700">Linked Specimen</p>
             {editing ? (
               <div className="flex items-center justify-between gap-3 rounded-lg bg-sage-50 px-4 py-3">
                 <div className="min-w-0">
@@ -629,7 +629,7 @@ export function CreateExhibitModal({
               )}
             </div>
 
-            <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-zinc-500">Public Page Layout</p>
+            <p className="mb-2 mt-5 text-sm font-semibold text-zinc-700">Public Page Layout</p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <LayoutOption
                 active={layout === "card-grid"}

@@ -94,6 +94,9 @@ describe("report contracts from a newer backend", () => {
     expect(item.title).toBe("Future Report");
     expect(
       describeReportParameters({ periodLabel: "October 2026", filters: { auditModule: "auth", auditResult: "DENIED" } }),
-    ).toBe("October 2026 · Module: auth · Result: Denied");
+    ).toBe("October 2026 · Module: Auth · Result: Denied");
+    expect(
+      describeReportParameters({ periodLabel: null, filters: { auditAction: "move_specimen_lot", auditModule: "SPECIMEN_LOTS" } }),
+    ).toBe("Action: Move specimen lot · Module: Specimen lots");
   });
 });

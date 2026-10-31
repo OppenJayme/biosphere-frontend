@@ -9,6 +9,7 @@ import {
   VISIT_STATUS_OPTIONS,
   type ReportHistoryItem,
 } from "./types";
+import { moduleLabel } from "../audit/describe";
 
 const ENUM_LABELS = new Map<string, string>(
   [
@@ -27,6 +28,8 @@ function filterValue(key: string, value: unknown, storageLabels: ReadonlyMap<str
   // Remarks are audited only as `true`; their text is never stored.
   if (key === "remarks") return "Included";
   if (typeof value === "boolean") return value ? "Yes" : "No";
+  // Audit filters are stored as codes ("move_specimen_lot", "SPECIMEN_LOTS"); show them as words.
+  if ((key === "auditModule" || key === "auditAction") && typeof value === "string") return moduleLabel(value);
   if (typeof value === "string") return ENUM_LABELS.get(value) ?? value;
   if (typeof value === "number") return String(value);
   return null;

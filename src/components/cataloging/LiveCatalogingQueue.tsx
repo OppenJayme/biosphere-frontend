@@ -4,11 +4,13 @@
  */
 
 import Link from "next/link";
+import { SearchIcon } from "@/components/icons";
 import {
   catalogingQueueHref,
   type CatalogingQueueQuery,
 } from "@/features/specimens/cataloging-queue";
 import type { SpecimenPage } from "@/features/specimens/types";
+import { PrevNextPagination } from "@/components/ui/PrevNextPagination";
 
 function displayName(commonName: string | null, scientificName: string | null) {
   return commonName ?? scientificName ?? "Unnamed specimen";
@@ -33,19 +35,14 @@ export function LiveCatalogingQueue({
 }) {
   const first = page.total === 0 ? 0 : (page.page - 1) * page.limit + 1;
   const last = Math.min(page.page * page.limit, page.total);
-  const hasPrevious = page.page > 1;
-  const hasNext = page.page * page.limit < page.total;
 
   return (
-    <section className="overflow-hidden rounded-xl border border-black/10 bg-white">
-      <div className="border-b border-black/10 p-4 sm:p-5">
+    <section className="rounded-xl border border-black/10 bg-white p-5">
+      <div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-zinc-900">Records awaiting catalog work</h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Recently updated records appear first. Catalog completion is not inferred until the
-              museum approves its required-field rules.
-            </p>
+            <p className="mt-1 text-xs text-zinc-500">Most recently updated records appear first.</p>
           </div>
           <span className="rounded-full bg-sage-100 px-3 py-1.5 text-xs font-semibold text-forest-800">
             {page.total} Uncataloged
@@ -56,15 +53,18 @@ export function LiveCatalogingQueue({
           <label htmlFor="cataloging-search" className="sr-only">
             Search uncataloged specimens
           </label>
-          <input
-            id="cataloging-search"
-            type="search"
-            name="search"
-            defaultValue={query.search}
-            maxLength={100}
-            placeholder="Search identifiers, names, category, remarks, or collection"
-            className="w-full rounded-lg border border-black/15 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 sm:max-w-xl"
-          />
+          <span className="relative block w-full sm:max-w-xl">
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              id="cataloging-search"
+              type="search"
+              name="search"
+              defaultValue={query.search}
+              maxLength={100}
+              placeholder="Search identifiers, names, category, remarks, or collection"
+              className="w-full rounded-lg border border-black/15 bg-white py-2.5 pl-10 pr-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+            />
+          </span>
           <button
             type="submit"
             className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
@@ -83,7 +83,7 @@ export function LiveCatalogingQueue({
       </div>
 
       {page.items.length === 0 ? (
-        <div className="p-8 text-center text-sm text-zinc-600">
+        <div className="py-12 text-center text-sm text-zinc-600">
           <p className="font-medium text-zinc-800">
             {query.search
               ? "No Uncataloged records match this search."
@@ -96,25 +96,25 @@ export function LiveCatalogingQueue({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[54rem] text-left text-sm">
-            <thead className="bg-sage-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
-              <tr>
-                <th scope="col" className="px-4 py-3">Accession number</th>
-                <th scope="col" className="px-4 py-3">Specimen</th>
-                <th scope="col" className="px-4 py-3">Category</th>
-                <th scope="col" className="px-4 py-3">Classification</th>
-                <th scope="col" className="px-4 py-3">Last updated</th>
-                <th scope="col" className="px-4 py-3"><span className="sr-only">Action</span></th>
+            <thead>
+              <tr className="border-b border-black/10 text-xs text-zinc-500">
+                <th scope="col" className="py-2 pr-3 font-medium">Accession No.</th>
+                <th scope="col" className="py-2 pr-3 font-medium">Specimen</th>
+                <th scope="col" className="py-2 pr-3 font-medium">Category</th>
+                <th scope="col" className="py-2 pr-3 font-medium">Classification</th>
+                <th scope="col" className="py-2 pr-3 font-medium">Last Updated</th>
+                <th scope="col" className="py-2 pr-0"><span className="sr-only">Action</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
               {page.items.map((specimen) => (
-                <tr key={specimen.id} className="hover:bg-sage-50/60">
-                  <td className="px-4 py-3 font-medium text-zinc-900">
-                    {specimen.accessionNumber ?? "Not assigned"}
+                <tr key={specimen.id} className="hover:bg-sage-50">
+                  <td className="py-2.5 pr-3 font-medium text-zinc-900">
+                    {specimen.accessionNumber ?? <span className="font-normal text-zinc-500">Unassigned</span>}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="py-2.5 pr-3">
                     <p className="font-medium text-zinc-900">
                       {displayName(specimen.commonName, specimen.scientificName)}
                     </p>
@@ -124,16 +124,16 @@ export function LiveCatalogingQueue({
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600">
-                    {specimen.specimenCategory ?? "Not recorded"}
+                  <td className="py-2.5 pr-3 text-zinc-600">
+                    {specimen.specimenCategory ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600">
-                    {specimen.classificationStatus ?? "Not recorded"}
+                  <td className="py-2.5 pr-3 text-zinc-600">
+                    {specimen.classificationStatus ?? "—"}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-zinc-500">
+                  <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-500">
                     {dateLabel(specimen.updatedAt)}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="py-2.5 pr-0 text-right">
                     <Link
                       href={`/specimens/${specimen.id}`}
                       className="inline-flex rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
@@ -148,34 +148,14 @@ export function LiveCatalogingQueue({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 px-4 py-3 text-sm text-zinc-600">
-        <p>{page.total === 0 ? "0 records" : `${first}-${last} of ${page.total} records`}</p>
-        <div className="flex gap-2">
-          {hasPrevious ? (
-            <Link
-              href={catalogingQueueHref(query, page.page - 1)}
-              className="rounded-lg border border-black/15 px-3 py-2 font-semibold text-zinc-700 hover:bg-zinc-50"
-            >
-              Previous
-            </Link>
-          ) : (
-            <span className="rounded-lg border border-black/10 px-3 py-2 text-zinc-400">
-              Previous
-            </span>
-          )}
-          {hasNext ? (
-            <Link
-              href={catalogingQueueHref(query, page.page + 1)}
-              className="rounded-lg border border-black/15 px-3 py-2 font-semibold text-zinc-700 hover:bg-zinc-50"
-            >
-              Next
-            </Link>
-          ) : (
-            <span className="rounded-lg border border-black/10 px-3 py-2 text-zinc-400">
-              Next
-            </span>
-          )}
-        </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-sm text-zinc-600">
+        <p>{page.total === 0 ? "No records" : `Showing ${first}-${last} of ${page.total} records`}</p>
+        <PrevNextPagination
+          label="Cataloging queue pages"
+          page={page.page}
+          totalPages={Math.max(1, Math.ceil(page.total / page.limit))}
+          hrefFor={(target) => catalogingQueueHref(query, target)}
+        />
       </div>
     </section>
   );

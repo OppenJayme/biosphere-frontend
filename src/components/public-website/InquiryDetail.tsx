@@ -68,13 +68,15 @@ export function InquiryDetail({
               {inquiry.name}
             </h2>
             <p className="text-xs text-zinc-500">
-              Inquiry <span className="font-mono">{inquiry.referenceCode}</span> · {formatTimestamp(inquiry.createdAt)}
+              General inquiry · received {formatTimestamp(inquiry.createdAt)}
             </p>
           </div>
           <InquiryStatusBadge status={inquiry.status} />
         </div>
 
         <dl className="divide-y divide-black/5 border-y border-black/5">
+          {/* The visitor's own reference number, quoted in emails and follow-ups. */}
+          <InfoRow label="Reference no.">{inquiry.referenceCode}</InfoRow>
           <InfoRow label="Email">{inquiry.email}</InfoRow>
           <InfoRow label="Contact number">{inquiry.phone ?? <span className="text-zinc-400">Not given</span>}</InfoRow>
           <InfoRow label="Organization">

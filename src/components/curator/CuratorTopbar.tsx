@@ -1,6 +1,6 @@
 "use client";
 
-import { MenuIcon } from "@/components/icons";
+import { MenuIcon, SearchIcon } from "@/components/icons";
 import { AccountMenu } from "./AccountMenu";
 import { NotificationBell } from "./NotificationBell";
 import { useSyncStatus } from "@/features/offline/use-sync-status";
@@ -31,7 +31,7 @@ export function CuratorTopbar({
   const { online, lastSyncedAt } = useSyncStatus(ownerId);
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-black/10 bg-white/95 px-5 py-3.5 backdrop-blur">
+    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-black/10 bg-white/95 px-5 py-3 backdrop-blur">
       <button
         type="button"
         onClick={onMenuClick}
@@ -51,17 +51,35 @@ export function CuratorTopbar({
         <MenuIcon className="h-5 w-5" />
       </button>
 
-      <div className="ml-auto flex items-center gap-5">
-        <div className="hidden flex-col items-end text-xs leading-tight md:flex">
-          <span className="flex items-center gap-1.5 text-zinc-600">
-            <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-forest-600" : "bg-zinc-400"}`} />
-            {lastSyncedAt ? formatLastSynced(lastSyncedAt) : "No offline cache yet"}
+      {/* Global search (SRS 3.1.3 "search access"): a plain GET form, so it works without JavaScript. */}
+      <form action="/specimens" role="search" className="relative hidden w-full max-w-md md:block">
+        <label htmlFor="global-search" className="sr-only">
+          Search specimens
+        </label>
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <input
+          id="global-search"
+          type="search"
+          name="search"
+          maxLength={100}
+          placeholder="Search specimens by name or accession no.…"
+          className="w-full rounded-lg border border-black/10 bg-sage-50 py-2 pr-3 pl-9 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-forest-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-forest-700"
+        />
+      </form>
+
+      <div className="ml-auto flex items-center gap-4">
+        <span
+          title={lastSyncedAt ? formatLastSynced(lastSyncedAt) : "No offline copy saved on this device yet"}
+          className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${
+            online ? "bg-forest-100 text-forest-800" : "bg-zinc-200 text-zinc-700"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-forest-600" : "bg-zinc-500"}`} />
+          {online ? "Online" : "Offline"}
+          <span className="font-normal text-zinc-500">
+            · {lastSyncedAt ? formatLastSynced(lastSyncedAt).replace("Last sync ", "synced ") : "not synced yet"}
           </span>
-          <span className={`flex items-center gap-1.5 ${online ? "text-forest-700" : "text-zinc-500"}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-forest-600" : "bg-zinc-400"}`} />
-            {online ? "Online" : "Offline"}
-          </span>
-        </div>
+        </span>
 
         <NotificationBell />
 

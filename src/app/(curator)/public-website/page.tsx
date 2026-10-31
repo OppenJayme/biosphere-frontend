@@ -2,7 +2,6 @@
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { StatCard } from "@/components/ui/StatCard";
 import {
   PublicWebsiteWorkspace,
   type SubmissionSelection,
@@ -27,10 +26,13 @@ import type { VisitRequest } from "@/features/visit-requests/types";
 import { isUpcomingVisit } from "@/features/visit-requests/workflow";
 import { ApiError } from "@/lib/api-client";
 import { getAccountInfo, verifySession } from "@/lib/session";
+import { PageHeader } from "@/components/curator/PageHeader";
 
-export const metadata: Metadata = {
-  title: "Public Website",
-};
+// The page serves two menu items, so the browser tab follows the section shown.
+export async function generateMetadata({ searchParams }: PublicWebsitePageProps): Promise<Metadata> {
+  const tab = (await searchParams).tab;
+  return { title: tab === "visits" ? "Visit Requests" : "General Inquiries" };
+}
 
 type PublicWebsitePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -184,21 +186,37 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
     ? await loadSelection(kind, targetId, known)
     : { selection: null, error: undefined };
 
-  const pendingInquiries = inquiries?.filter((item) => item.status === "PENDING").length ?? null;
-  const pendingVisits = visits?.filter((item) => item.status === "PENDING").length ?? null;
   const upcomingVisits = visits?.filter((item) => isUpcomingVisit(item)).length ?? null;
-  const unavailable = "—";
+  // Counts per status for this section's filter chips, before search and date filters.
+  const tabRecords: { status: string }[] | null = query.tab === "inquiries" ? inquiries : visits;
+  const statusCounts = tabRecords
+    ? tabRecords.reduce<Record<string, number>>((counts, item) => {
+        counts[item.status] = (counts[item.status] ?? 0) + 1;
+        return counts;
+      }, {})
+    : null;
 
   const account = await getAccountInfo();
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Public Website</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Review general inquiries and visit requests submitted through the public website.
-        </p>
-      </div>
+      {query.tab === "inquiries" ? (
+        <PageHeader
+          title="General Inquiries"
+          description="Questions visitors sent through the museum website's inquiry form."
+          info="Replies are emailed from BioSphere. If a visitor writes back, their email goes to the museum's mailbox, not to BioSphere."
+        />
+      ) : (
+        <PageHeader
+          title="Visit Requests"
+          description={
+            upcomingVisits === null
+              ? "Requests from schools and groups to visit the museum."
+              : `Requests from schools and groups to visit the museum. ${upcomingVisits === 1 ? "1 approved visit is" : `${upcomingVisits.toLocaleString()} approved visits are`} coming up.`
+          }
+          info="To approve a request, choose one of the visitor's preferred dates. Campus entry is arranged separately; BioSphere does not connect to the campus entry system."
+        />
+      )}
 
       {notice !== undefined && (notice || emailNotice) && (
         <div
@@ -213,37 +231,6 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Total Inquiries"
-          value={inquiries ? inquiries.length.toLocaleString() : unavailable}
-          note={inquiries ? "All general inquiries on record" : "Could not load"}
-          tone="neutral"
-          icon="log"
-        />
-        <StatCard
-          label="Pending Inquiries"
-          value={pendingInquiries?.toLocaleString() ?? unavailable}
-          note="Waiting for a curator to review"
-          tone={pendingInquiries ? "warning" : "positive"}
-          icon="clock"
-        />
-        <StatCard
-          label="Pending Visit Requests"
-          value={pendingVisits?.toLocaleString() ?? unavailable}
-          note="Waiting for a schedule approval"
-          tone={pendingVisits ? "warning" : "positive"}
-          icon="calendar"
-        />
-        <StatCard
-          label="Upcoming Visits"
-          value={upcomingVisits?.toLocaleString() ?? unavailable}
-          note="Approved, from today onward"
-          tone="positive"
-          icon="shield"
-        />
-      </div>
-
       <PublicWebsiteWorkspace
         key={listFilterKey(query)}
         query={query}
@@ -251,8 +238,7 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         listError={listError}
         selection={selection}
         selectionError={selectionError}
-        pendingInquiries={pendingInquiries}
-        pendingVisits={pendingVisits}
+        statusCounts={statusCounts}
         currentAccountId={account?.accountId ?? null}
       />
     </div>

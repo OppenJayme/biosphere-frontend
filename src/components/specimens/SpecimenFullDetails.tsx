@@ -5,10 +5,16 @@ function text(value: string | null | undefined) {
   return value ?? "Not recorded";
 }
 
+const DATE = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
+
 function date(value: string | null | undefined) {
   if (!value) return "Not recorded";
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? "Not recorded" : value.slice(0, 10);
+  return Number.isNaN(parsed.getTime()) ? "Not recorded" : DATE.format(parsed);
+}
+
+function statusLabel(status: string) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
 }
 
 function DetailGrid({
@@ -20,7 +26,7 @@ function DetailGrid({
     <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
       {entries.map((entry) => (
         <div key={entry.label}>
-          <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+          <dt className="text-xs text-zinc-500">
             {entry.label}
           </dt>
           <dd className="mt-1 text-sm text-zinc-800">
@@ -44,7 +50,7 @@ function Section({
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-serif text-lg font-semibold text-forest-800">{title}</h2>
+        <h2 className="text-base font-semibold text-zinc-900">{title}</h2>
         {action}
       </div>
       {children}
@@ -63,16 +69,16 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
           { label: "Collection", value: collection?.collectionName ?? "Not assigned" },
           { label: "Active lots", value: lotOverview.activeLotCount },
           { label: "Total quantity", value: lotOverview.totalQuantity },
-          { label: "Media records", value: media.length },
+          { label: "Photos and files", value: media.length },
         ].map((item) => (
-          <div key={item.label} className="rounded-xl border border-black/10 bg-white p-4">
-            <p className="text-xs text-zinc-500">{item.label}</p>
+          <div key={item.label} className="rounded-xl border border-black/10 bg-white px-5 py-4">
+            <p className="text-sm text-zinc-600">{item.label}</p>
             <p className="mt-1 text-lg font-semibold text-zinc-900">{item.value}</p>
           </div>
         ))}
       </div>
 
-      <Section title="Core Record">
+      <Section title="Basic details">
         <DetailGrid
           entries={[
             { label: "Accession number", value: specimen.accessionNumber },
@@ -81,9 +87,9 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
             { label: "Scientific name", value: specimen.scientificName },
             { label: "Gender", value: specimen.gender },
             { label: "Classification status", value: specimen.classificationStatus },
-            { label: "Catalog status", value: specimen.status },
+            { label: "Catalog status", value: statusLabel(specimen.status) },
             {
-              label: "Public display eligibility",
+              label: "Public display",
               value: specimen.publicDisplay ? "Eligible" : "Not eligible",
             },
             { label: "Created", value: date(specimen.createdAt) },
@@ -92,7 +98,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         />
         {specimen.remarks && (
           <div className="mt-5 border-t border-black/5 pt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Remarks</p>
+            <p className="text-xs text-zinc-500">Remarks</p>
             <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-700">
               {specimen.remarks}
             </p>
@@ -134,7 +140,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
       </Section>
 
       <Section
-        title="Provenance and Preservation"
+        title="Where it came from"
         action={
           specimen.status !== "ARCHIVED" ? (
             <Link
@@ -163,7 +169,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
       </Section>
 
       <Section
-        title="Active Lots and Storage"
+        title="Lots and storage"
         action={
           <div className="flex flex-wrap gap-2">
             <Link
@@ -222,7 +228,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section
-          title="Media Metadata"
+          title="Photos and files"
           action={
             <Link
               href={`/specimens/${specimen.id}/media`}

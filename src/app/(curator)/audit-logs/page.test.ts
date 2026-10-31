@@ -40,7 +40,7 @@ async function renderPage() {
 function expectUnavailable(html: string) {
   expect(html).toContain("Audit history could not be loaded.");
   expect(html).not.toContain("<table");
-  expect(html).not.toContain("Selected log");
+  expect(html).not.toContain("Selected entry");
   expect(html).not.toContain("Matching logs");
   expect(html).not.toContain("No audit entries match these filters.");
 }
@@ -66,7 +66,7 @@ describe("Audit page failure and recovery output", () => {
     expectUnavailable(html);
     expect(html).toContain("Check the backend connection and try again. No sample audit events are shown.");
     expect(html).not.toContain("PRIVATE_DRIVER_DETAIL");
-    expect(html).toContain("Apply filters");
+    expect(html).toContain(">Search</button>");
   });
 
   it.each([500, 502, 503])("does not reveal an HTTP %s error body as audit content", async (status) => {
@@ -100,7 +100,7 @@ describe("Audit page failure and recovery output", () => {
     }));
     const html = await renderPage();
     expectUnavailable(html);
-    expect(html).not.toContain("TEST_AUDIT_RECOVERY");
+    expect(html).not.toContain("test audit recovery");
     expect(html).not.toContain("PRIVATE_INVALID_PAYLOAD");
   });
 
@@ -115,21 +115,23 @@ describe("Audit page failure and recovery output", () => {
     fetchMock.mockResolvedValueOnce(Response.json(auditResponse));
     const initial = await renderPage();
     expect(initial).toContain("<table");
-    expect(initial).toContain("TEST_AUDIT_RECOVERY");
-    expect(initial).toContain("Selected log");
+    // The table shows the plain-language sentence, never the raw action code.
+    expect(initial).toContain("test audit recovery");
+    expect(initial).not.toContain("TEST_AUDIT_RECOVERY");
+    expect(initial).toContain("Selected entry");
 
     fetchMock.mockRejectedValueOnce(new Error("Synthetic outage"));
     const failed = await renderPage();
     expectUnavailable(failed);
-    expect(failed).not.toContain("TEST_AUDIT_RECOVERY");
+    expect(failed).not.toContain("test audit recovery");
     expect(failed).not.toContain("Synthetic recovery detail");
 
     fetchMock.mockResolvedValueOnce(Response.json(auditResponse));
     const recovered = await renderPage();
     expect(recovered).toContain("<table");
-    expect(recovered).toContain("TEST_AUDIT_RECOVERY");
+    expect(recovered).toContain("test audit recovery");
     expect(recovered).toContain("Synthetic recovery detail");
-    expect(recovered).toContain("Selected log");
+    expect(recovered).toContain("Selected entry");
     expect(recovered).not.toContain("Audit history could not be loaded.");
   });
 });

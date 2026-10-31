@@ -3,12 +3,15 @@ import { Children, isValidElement, type ReactElement, type ReactNode } from "rea
 import { describe, expect, it } from "vitest";
 import { SpecimenToolbar } from "./SpecimenToolbar";
 import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
+import { FilterChips } from "../ui/FilterChips";
 import { parseSpecimenListQuery, type SpecimenListQuery } from "../../features/specimens/types";
 
 type ControlProps = {
   children?: ReactNode;
   name?: string;
+  type?: string;
   defaultValue?: string;
+  defaultChecked?: boolean;
   open?: boolean;
   href?: string;
 };
@@ -33,10 +36,11 @@ function toolbar(query: SpecimenListQuery, collectionLookupAvailable = true) {
   const form = nodes.find((node) => node.type === "form")!;
   const controls = Object.fromEntries(
     nodes
-      .filter((node) => node.type === "input" || node.type === "select")
+      .filter((node) => (node.type === "input" && node.props.type !== "checkbox") || node.type === "select")
       .map((node) => [node.props.name, node.props.defaultValue]),
   );
-  return { form, nodes, controls };
+  const archived = nodes.find((node) => node.type === "input" && node.props.name === "archived");
+  return { form, nodes, controls, archived };
 }
 
 const filtered = parseSpecimenListQuery({
@@ -89,5 +93,24 @@ describe("Cataloging filter reset", () => {
       const changed = { ...defaults, [name]: filtered[name] };
       expect(toolbar(changed).form.key, name).not.toBe(toolbar(defaults).form.key);
     }
+  });
+
+  it("filters status through chips that keep the other filters", () => {
+    const archivedQuery = parseSpecimenListQuery({ status: "", archived: "1" });
+    expect(archivedQuery.status).toBe("ARCHIVED");
+    expect(parseSpecimenListQuery({ status: "CATALOGED", archived: "1" }).status).toBe("ARCHIVED");
+
+    const form = toolbar(parseSpecimenListQuery({ status: "ARCHIVED", search: "beetle" }));
+    // The submitted form carries the chosen status in a hidden field.
+    expect(form.controls.status).toBe("ARCHIVED");
+    const chips = form.nodes.find((node) => node.type === FilterChips)?.props as unknown as {
+      chips: { label: string; active: boolean; href: string; count?: number }[];
+    };
+    const archived = chips.chips.find((chip) => chip.label === "Archived")!;
+    expect(archived.active).toBe(true);
+    expect(chips.chips.find((chip) => chip.label === "Cataloged")!.href).toContain("status=CATALOGED");
+    expect(chips.chips.find((chip) => chip.label === "Cataloged")!.href).toContain("search=beetle");
+    // Totals are hidden while a search narrows the list.
+    expect(archived.count).toBeUndefined();
   });
 });

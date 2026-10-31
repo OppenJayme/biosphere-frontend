@@ -7,15 +7,18 @@ function niceMax(rawMax: number): number {
 }
 
 export function CatalogingTrendChart({ data }: { data: CatalogingTrendPoint[] }) {
-  const width = 560;
-  const height = 200;
-  const paddingLeft = 28;
-  const paddingBottom = 22;
+  // Drawn close to the card's real width (~340px) so 11-unit text renders near 11px
+  // instead of being scaled down to an unreadable size.
+  const width = 360;
+  const height = 210;
+  const paddingLeft = 30;
+  const paddingRight = 14;
+  const paddingBottom = 24;
   const paddingTop = 10;
   const max = niceMax(Math.max(1, ...data.map((d) => d.value)));
   const tickCount = 4;
 
-  const chartWidth = width - paddingLeft;
+  const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingBottom - paddingTop;
 
   const points = data.map((d, i) => ({
@@ -49,8 +52,8 @@ export function CatalogingTrendChart({ data }: { data: CatalogingTrendPoint[] })
         const y = paddingTop + chartHeight - (tick / tickCount) * chartHeight;
         return (
           <g key={tick}>
-            <line x1={paddingLeft} x2={width} y1={y} y2={y} stroke="#eceded" strokeWidth={1} />
-            <text x={paddingLeft - 6} y={y + 3} textAnchor="end" fontSize="10" fill="#71717a">
+            <line x1={paddingLeft} x2={width - paddingRight} y1={y} y2={y} stroke="#eceded" strokeWidth={1} />
+            <text x={paddingLeft - 6} y={y + 4} textAnchor="end" fontSize="11" fill="#71717a">
               {Math.round(value)}
             </text>
           </g>
@@ -62,16 +65,16 @@ export function CatalogingTrendChart({ data }: { data: CatalogingTrendPoint[] })
         d={linePath}
         fill="none"
         stroke="#2c5c42"
-        strokeWidth={2.5}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {points.map((p, i) => (
-        <circle key={data[i].month} cx={p.x} cy={p.y} r={3.5} fill="#2c5c42" />
+        <circle key={data[i].month} cx={p.x} cy={p.y} r={3} fill="#2c5c42" />
       ))}
 
       {data.map((d, i) => (
-        <text key={d.month} x={points[i].x} y={height - 4} textAnchor="middle" fontSize="10" fill="#71717a">
+        <text key={d.month} x={points[i].x} y={height - 6} textAnchor="middle" fontSize="11" fill="#71717a">
           {d.month}
         </text>
       ))}

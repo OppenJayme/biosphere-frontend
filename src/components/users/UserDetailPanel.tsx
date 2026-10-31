@@ -38,7 +38,7 @@ function RecentActivity({ accountId }: { accountId: string }) {
   }, [accountId]);
 
   return (
-    <div className="rounded-xl border border-black/10 bg-white p-4">
+    <div className="rounded-xl border border-black/10 bg-white p-5">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-900">Recent Activity</h3>
         <Link href="/audit-logs" className="flex items-center gap-1 text-xs font-medium text-forest-700 hover:text-forest-800">
@@ -62,11 +62,9 @@ function RecentActivity({ accountId }: { accountId: string }) {
             <li key={entry.id} className="flex gap-2.5">
               <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${entry.failed ? "bg-red-500" : "bg-forest-600"}`} />
               <div className="min-w-0">
-                <p className="text-xs text-zinc-800">
-                  {entry.description}
-                  {entry.failed && <span className="ml-1 text-red-600">(failed)</span>}
-                </p>
-                <p className="text-[11px] text-zinc-400">{entry.timestamp}</p>
+                {/* The sentence already says when an action failed or was denied. */}
+                <p className="text-xs text-zinc-800">{entry.description}</p>
+                <p className="text-[11px] text-zinc-500">{entry.timestamp}</p>
               </div>
             </li>
           ))}
@@ -79,7 +77,7 @@ function RecentActivity({ accountId }: { accountId: string }) {
 export function UserDetailPanel({ user }: { user: AccountUser | null }) {
   if (!user) {
     return (
-      <div className="rounded-xl border border-black/10 bg-white p-4">
+      <div className="rounded-xl border border-black/10 bg-white p-5">
         <h3 className="mb-3 text-sm font-semibold text-zinc-900">Selected User</h3>
         <p className="py-6 text-center text-xs text-zinc-500">
           Select a user from the table to see their details here.
@@ -90,7 +88,7 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-black/10 bg-white p-4">
+      <div className="rounded-xl border border-black/10 bg-white p-5">
         <div className="flex items-center gap-3">
           <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${user.color}`}>
             {user.initials}
@@ -124,7 +122,7 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
 
         <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
           <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
-          Inviting curators, activating or deactivating accounts, and handover aren&rsquo;t available here yet.
+          Activating or deactivating an account is done through the restricted developer interface, only with formal authorization.
         </p>
       </div>
 

@@ -60,7 +60,7 @@ export function UserToolbar({
       </div>
       <FilterSelect
         label="Filter by status"
-        allLabel="All Statuses"
+        allLabel="All statuses"
         value={status}
         options={USER_STATUSES}
         onChange={onStatusChange}

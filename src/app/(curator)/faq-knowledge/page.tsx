@@ -10,6 +10,7 @@ import { faqKnowledgeHref, parseFaqListQuery } from "@/features/faq/query";
 import type { FaqEntryPage } from "@/features/faq/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { PageHeader, PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
 
 export const metadata: Metadata = { title: "FAQ Knowledge" };
 
@@ -58,14 +59,16 @@ export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePag
 
   return (
     <div className="space-y-5">
-      <header>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Controlled knowledge</p>
-        <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">FAQ Knowledge</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Review curator-approved questions and answers without generating unsupported responses.
-        </p>
-      </header>
-      <Link href="/faq-knowledge/review" className="text-sm text-forest-700 underline">Review opt-in unanswered questions</Link>
+      <PageHeader
+        title="FAQ Knowledge"
+        description="Approved questions and answers. The public FAQ assistant only answers from this list."
+        info="Only active answers are used. Visitors are matched on the question, its other wordings and keywords; anything that doesn't match is sent to the General Inquiry form."
+        actions={
+          <Link href="/faq-knowledge/review" className={PAGE_ACTION_SECONDARY}>
+            Review unanswered questions
+          </Link>
+        }
+      />
 
       {notice && (
         <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">

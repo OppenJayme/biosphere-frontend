@@ -2,6 +2,7 @@
 
 import { ClockIcon } from "@/components/icons";
 import type { StorageMovement, StorageUnit } from "@/features/storage-locations/types";
+import { InfoTip } from "@/components/ui/InfoTip";
 
 const DISPLAY_LIMIT = 10;
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
@@ -30,14 +31,15 @@ export function StorageMovementHistory({
     <section className="rounded-xl border border-black/10 bg-white p-5">
       <div className="flex items-center gap-2">
         <ClockIcon className="h-4 w-4 text-forest-700" />
-        <h3 className="text-sm font-semibold text-zinc-900">Location movement history</h3>
+        <h3 className="text-sm font-semibold text-zinc-900">Moves of this location</h3>
+        <InfoTip label="Moves of this location">
+          Shows when this storage unit itself was moved under a different parent, for example a cabinet moved to
+          another room. Specimen transfers are recorded on each specimen&rsquo;s lot history instead.
+        </InfoTip>
       </div>
-      <p className="mt-1 text-xs text-zinc-500">
-        Records changes to this storage unit&rsquo;s parent location, not specimen transfers.
-      </p>
 
       {loading ? (
-        <p className="mt-4 text-sm text-zinc-500" role="status">Loading movement history...</p>
+        <p className="mt-4 text-sm text-zinc-500" role="status">Loading moves…</p>
       ) : errorMessage ? (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           {errorMessage}
@@ -55,7 +57,7 @@ export function StorageMovementHistory({
                 {locationLabel(movement.toStorageUnitId, labelById)}
               </p>
               <p className="mt-0.5 text-xs text-zinc-500">
-                {formatDate(movement.movedAt)} &middot; account {shortId(movement.movedBy)}
+                {formatDate(movement.movedAt)}
               </p>
               {movement.reason && <p className="mt-1 text-sm text-zinc-700">{movement.reason}</p>}
             </li>

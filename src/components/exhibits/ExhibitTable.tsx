@@ -1,8 +1,15 @@
 "use client";
 
-import { ImageIcon } from "@/components/icons";
 import { EXHIBIT_STATUS_LABELS, exhibitDisplayName, type ExhibitRow } from "@/features/exhibits-qr/types";
-import { formatExhibitDate, STATUS_STYLES } from "./exhibit-format";
+import { STATUS_STYLES } from "./exhibit-format";
+
+const DATE_ONLY = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
+
+// The table shows the day only; the detail panel keeps the full time.
+function formatDateOnly(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : DATE_ONLY.format(date);
+}
 
 export function ExhibitTable({
   exhibits,
@@ -15,7 +22,7 @@ export function ExhibitTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] text-left text-sm">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
             <th className="py-2 pr-3 font-medium">Exhibit / Specimen</th>
@@ -45,20 +52,15 @@ export function ExhibitTable({
                 }`}
               >
                 <td className="py-2.5 pr-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
-                      <ImageIcon className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-medium whitespace-nowrap text-zinc-900">{exhibitDisplayName(exhibit)}</p>
-                      <p className="text-xs italic whitespace-nowrap text-zinc-500">
-                        {exhibit.specimen ? (exhibit.specimen.scientificName ?? "—") : "Specimen details unavailable"}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="font-medium whitespace-nowrap text-zinc-900">{exhibitDisplayName(exhibit)}</p>
+                  <p className="text-xs italic whitespace-nowrap text-zinc-500">
+                    {exhibit.specimen ? (exhibit.specimen.scientificName ?? "—") : "Specimen details unavailable"}
+                  </p>
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{exhibit.specimen?.accessionNumber ?? "—"}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">/exhibits/{exhibit.publicSlug}</td>
+                <td className="max-w-52 truncate py-2.5 pr-3 whitespace-nowrap text-zinc-600" title={`/exhibits/${exhibit.publicSlug}`}>
+                  /exhibits/{exhibit.publicSlug}
+                </td>
                 <td className="py-2.5 pr-3">
                   <span
                     className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${STATUS_STYLES[exhibit.status]}`}
@@ -66,7 +68,7 @@ export function ExhibitTable({
                     {EXHIBIT_STATUS_LABELS[exhibit.status]}
                   </span>
                 </td>
-                <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">{formatExhibitDate(exhibit.updatedAt)}</td>
+                <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">{formatDateOnly(exhibit.updatedAt)}</td>
               </tr>
             );
           })}

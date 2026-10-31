@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PlusIcon, SearchIcon } from "@/components/icons";
+import { ChevronDownIcon, PlusIcon, SearchIcon } from "@/components/icons";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   filterCachedSpecimens,
@@ -53,6 +53,10 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
     useState<CachedSpecimenStatusFilter>("ALL");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  // null = follow the default: open while offline or while drafts wait to sync.
+  const [expandedChoice, setExpandedChoice] = useState<boolean | null>(null);
+  const unsyncedCount = drafts.filter((draft) => draft.syncState !== "SYNCHRONIZED").length;
+  const expanded = expandedChoice ?? (!online || unsyncedCount > 0);
 
   const categoryOptions = useMemo(
     () => getCachedSpecimenCategories(cachedSpecimens),
@@ -112,7 +116,18 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
         <div>
           <div className="flex items-center gap-2">
             <h2 id="offline-records-heading" className="font-semibold text-zinc-900">
-              Offline specimen workspace
+              <button
+                type="button"
+                onClick={() => setExpandedChoice(!expanded)}
+                aria-expanded={expanded}
+                aria-controls="offline-records-body"
+                className="-m-1 flex items-center gap-1.5 rounded-md p-1 text-left hover:text-forest-800 focus-visible:outline-2 focus-visible:outline-forest-600"
+              >
+                <ChevronDownIcon
+                  className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform motion-reduce:transition-none ${expanded ? "" : "-rotate-90"}`}
+                />
+                Offline specimen workspace
+              </button>
             </h2>
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
@@ -122,9 +137,9 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
               {online ? "Online" : "Offline"}
             </span>
           </div>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
+          <p className="mt-1 pl-[22px] text-xs leading-5 text-zinc-500">
             {cachedSpecimens.length} read-only specimen record(s) cached on this device ·{" "}
-            {drafts.filter((draft) => draft.syncState !== "SYNCHRONIZED").length} local draft(s)
+            {unsyncedCount} local draft(s)
           </p>
         </div>
 
@@ -154,9 +169,9 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
         </p>
       )}
 
-      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div id="offline-records-body" hidden={!expanded} className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
         <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <h3 className="text-sm font-semibold text-zinc-700">
             Local draft queue
           </h3>
           <div className="mt-2 space-y-2">
@@ -245,7 +260,7 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <h3 className="text-sm font-semibold text-zinc-700">
               Cached server records (read-only)
             </h3>
             <div className="relative ml-auto w-full sm:w-48">

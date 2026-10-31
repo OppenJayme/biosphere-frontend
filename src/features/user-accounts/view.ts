@@ -9,13 +9,13 @@ const DATE_TIME = new Intl.DateTimeFormat("en-US", {
   timeZone: "Asia/Manila",
 });
 
+// Brand greens and earth tones only, so avatars match the rest of the curator UI.
 const AVATAR_COLORS = [
   "bg-forest-700",
-  "bg-amber-700",
-  "bg-sky-600",
-  "bg-violet-600",
-  "bg-rose-500",
   "bg-forest-900",
+  "bg-forest-600",
+  "bg-amber-700",
+  "bg-stone-600",
 ] as const;
 
 export function formatDate(iso: string) {
@@ -53,6 +53,7 @@ export function toAccountUser(account: UserAccount, currentAccountId: string | n
     status: userStatus(account),
     isCurrentUser: account.id === currentAccountId,
     lastSignIn: account.lastSignInAt ? formatDateTime(account.lastSignInAt) : null,
+    lastSignInDate: account.lastSignInAt ? formatDate(account.lastSignInAt) : null,
     createdOn: formatDate(account.createdAt),
     createdOnFull: formatDateTime(account.createdAt),
     initials: initialsOf(account.fullName),
@@ -109,12 +110,4 @@ export function filterUsers(users: AccountUser[], { search, status }: UserFilter
     if (!needle) return true;
     return user.name.toLowerCase().includes(needle) || (user.email?.toLowerCase().includes(needle) ?? false);
   });
-}
-
-export function humanizeAction(value: string) {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }

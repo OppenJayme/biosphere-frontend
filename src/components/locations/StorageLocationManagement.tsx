@@ -132,7 +132,7 @@ function CreateStorageLocationForm({ units, parentId }: { units: StorageUnit[]; 
   );
 
   return (
-    <details className="rounded-xl border border-black/10 bg-white p-4">
+    <details className="rounded-xl border border-black/10 bg-white p-5">
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Add storage location</summary>
       <form action={action} className="mt-4">
         <p className="mb-3 text-xs text-zinc-500">
@@ -161,7 +161,7 @@ function UpdateStorageLocationForm({ unit }: { unit: StorageUnit }) {
   );
 
   return (
-    <details className="rounded-xl border border-black/10 bg-white p-4">
+    <details className="rounded-xl border border-black/10 bg-white p-5">
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Edit selected location</summary>
       <form action={formAction} className="mt-4">
         <StorageFields values={state.values} parents={[]} includeParent={false} />
@@ -195,7 +195,7 @@ function MoveStorageLocationForm({ unit, units }: { unit: StorageUnit; units: St
   );
 
   return (
-    <details className="rounded-xl border border-black/10 bg-white p-4">
+    <details className="rounded-xl border border-black/10 bg-white p-5">
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Move selected location</summary>
       <form action={formAction} className="mt-4">
         <label className="text-xs font-medium text-zinc-700">
@@ -271,12 +271,10 @@ export function StorageLocationManagement({
   return (
     <section className="space-y-3" aria-labelledby="storage-management-heading">
       <div>
-        <h2 id="storage-management-heading" className="font-serif text-lg font-semibold text-forest-800">
+        <h2 id="storage-management-heading" className="text-sm font-semibold text-zinc-900">
           Manage storage locations
         </h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Changes are validated, audited, and applied by the protected backend.
-        </p>
+        <p className="mt-0.5 text-xs text-zinc-500">Every change is recorded in the audit log.</p>
       </div>
       <CreateStorageLocationForm units={units} parentId={defaultParentId} />
       {selected && !selected.archivedAt ? (
