@@ -25,7 +25,7 @@ const PAGE_SIZES = [10, 25, 50];
 
 function EmptyDetail({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-black/10 bg-white p-4">
+    <div className="rounded-xl border border-black/10 bg-white p-5">
       <p className="py-6 text-center text-xs text-zinc-500">{message}</p>
     </div>
   );
@@ -37,8 +37,7 @@ export function PublicWebsiteWorkspace({
   listError,
   selection,
   selectionError,
-  pendingInquiries,
-  pendingVisits,
+  statusCounts,
   currentAccountId,
 }: {
   query: PublicWebsiteQuery;
@@ -46,8 +45,7 @@ export function PublicWebsiteWorkspace({
   listError?: string;
   selection: SubmissionSelection | null;
   selectionError?: string;
-  pendingInquiries: number | null;
-  pendingVisits: number | null;
+  statusCounts: Record<string, number> | null;
   currentAccountId: string | null;
 }) {
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
@@ -81,7 +79,7 @@ export function PublicWebsiteWorkspace({
 
   return (
     <div className="space-y-4">
-      <PublicWebsiteToolbar query={query} pendingInquiries={pendingInquiries} pendingVisits={pendingVisits} />
+      <PublicWebsiteToolbar query={query} statusCounts={statusCounts} />
 
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section aria-label={`${recordLabel} list`} className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">

@@ -30,7 +30,7 @@ function CollectionCreateForm() {
 
   return (
     <form action={action} className="rounded-xl border border-black/10 bg-white p-5">
-      <h2 className="font-serif text-lg font-semibold text-forest-800">Add collection</h2>
+      <h2 className="text-base font-semibold text-zinc-900">Add collection</h2>
       <p className="mt-1 text-sm text-zinc-600">
         Add a curator-approved collection name for assignment to specimen records.
       </p>
@@ -164,7 +164,7 @@ export function CollectionManager({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[42rem] text-left text-sm">
-              <thead className="bg-sage-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              <thead className="border-b border-black/10 text-xs text-zinc-500 [&_th]:font-medium">
                 <tr>
                   <th scope="col" className="px-4 py-3">Collection</th>
                   <th scope="col" className="px-4 py-3">Rename</th>

@@ -6,10 +6,10 @@ import { PlusIcon, PencilIcon, ChartBarIcon, GridIcon, MailIcon, RefreshIcon } f
 const ACTIONS = [
   { label: "Add new specimen", icon: PlusIcon, href: "/specimens/new" },
   { label: "Review requests", icon: MailIcon, href: "/public-website?status=PENDING" },
-  { label: "Generate Report", icon: ChartBarIcon, href: "/reports" },
+  { label: "Generate report", icon: ChartBarIcon, href: "/reports" },
   { label: "Review offline drafts", icon: RefreshIcon, href: "/specimens#offline-records-heading" },
-  { label: "Continue Cataloging", icon: PencilIcon, href: "/cataloging" },
-  { label: "Create Exhibit", icon: GridIcon, href: "/exhibits/new" },
+  { label: "Continue cataloging", icon: PencilIcon, href: "/cataloging" },
+  { label: "Create exhibit", icon: GridIcon, href: "/exhibits?create=1" },
 ] as const;
 
 export function QuickActions() {

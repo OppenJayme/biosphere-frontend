@@ -99,7 +99,7 @@ export default async function SpecimenLotsPage({ params, searchParams }: Specime
       <BackLink specimenId={id} />
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <p className="text-sm text-zinc-500">
             {specimenName}
           </p>
           <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">
@@ -127,13 +127,13 @@ export default async function SpecimenLotsPage({ params, searchParams }: Specime
       </dl>
 
       <section className="rounded-xl border border-black/10 bg-white p-5">
-        <h2 className="mb-4 font-serif text-lg font-semibold text-forest-800">Lots</h2>
+        <h2 className="mb-4 text-base font-semibold text-zinc-900">Lots</h2>
         {lots.length === 0 ? (
           <p className="text-sm text-zinc-500">No lots have been recorded for this specimen.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-left text-sm">
-              <thead className="border-b border-black/10 text-xs uppercase tracking-wide text-zinc-400">
+              <thead className="border-b border-black/10 text-xs text-zinc-500">
                 <tr>
                   <th scope="col" className="py-2 pr-4 font-medium">Storage location</th>
                   <th scope="col" className="py-2 pr-4 font-medium">Condition</th>
@@ -179,7 +179,7 @@ export default async function SpecimenLotsPage({ params, searchParams }: Specime
 
       <form
         action={basePath}
-        className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 bg-white p-4"
+        className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 bg-white p-5"
       >
         <label className="min-w-56 flex-1 text-xs font-medium text-zinc-700">
           Transaction type
@@ -213,7 +213,7 @@ export default async function SpecimenLotsPage({ params, searchParams }: Specime
       </form>
 
       <section className="rounded-xl border border-black/10 bg-white p-5">
-        <h2 className="mb-4 font-serif text-lg font-semibold text-forest-800">
+        <h2 className="mb-4 text-base font-semibold text-zinc-900">
           Inventory history
         </h2>
         <HistoryPagination
@@ -236,8 +236,8 @@ export default async function SpecimenLotsPage({ params, searchParams }: Specime
 
 function SummaryTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-black/10 bg-white p-4">
-      <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">{label}</dt>
+    <div className="rounded-xl border border-black/10 bg-white p-5">
+      <dt className="text-xs text-zinc-500">{label}</dt>
       <dd className="mt-1 text-2xl font-semibold text-zinc-900">{value}</dd>
     </div>
   );

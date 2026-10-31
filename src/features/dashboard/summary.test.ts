@@ -69,6 +69,17 @@ describe("dashboard summary mapping", () => {
         { label: "Reptile", value: 1, pct: 25, color: "#c4922c" },
       ],
     });
+    const many = summary({
+      specimens: {
+        ...summary().specimens,
+        byCategory: Array.from({ length: 10 }, (_, index) => ({ category: `Type ${index + 1}`, count: index + 1 })),
+      },
+    });
+    const grouped = buildCollectionByType(many);
+    expect(grouped.total).toBe(55);
+    expect(grouped.segments).toHaveLength(8);
+    expect(grouped.segments[0]).toMatchObject({ label: "Type 10", value: 10 });
+    expect(grouped.segments[7]).toEqual({ label: "Others (3)", value: 6, pct: 10.9, color: "#a1a1aa" });
     expect(buildCatalogingTrend(summary())).toEqual([
       { month: "Nov", value: 0 },
       { month: "Oct", value: 3 },

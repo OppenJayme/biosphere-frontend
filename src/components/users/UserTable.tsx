@@ -19,7 +19,7 @@ export function UserTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] text-left text-sm">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
             <th className="py-2 pr-3 font-medium">Name</th>
@@ -67,7 +67,7 @@ export function UserTable({
                     {user.status}
                   </span>
                 </td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-500">{user.lastSignIn ?? "—"}</td>
+                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-500">{user.lastSignInDate ?? "—"}</td>
                 <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">{user.createdOn}</td>
               </tr>
             );

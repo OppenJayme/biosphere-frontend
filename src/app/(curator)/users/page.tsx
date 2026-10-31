@@ -9,6 +9,7 @@ import type { UserAccount } from "@/features/user-accounts/types";
 import { buildUserStats, toAccountUser } from "@/features/user-accounts/view";
 import { ApiError } from "@/lib/api-client";
 import { getAccountInfo, verifySession } from "@/lib/session";
+import { PageHeader } from "@/components/curator/PageHeader";
 
 export const metadata: Metadata = {
   title: "Users",
@@ -33,15 +34,11 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl font-semibold text-forest-800">Users</h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            View and invite curator accounts, and check invitation status and recent activity.
-          </p>
-        </div>
-        <InviteCuratorDialog />
-      </div>
+      <PageHeader
+        title="Users"
+        description="View and invite curator accounts, and check invitation status and recent activity."
+        actions={<InviteCuratorDialog />}
+      />
 
       {users ? (
         <>

@@ -12,6 +12,7 @@ import {
 import type { BackupHistoryPage } from "@/features/backup/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { PageHeader } from "@/components/curator/PageHeader";
 
 export const metadata: Metadata = { title: "Backup History" };
 
@@ -47,12 +48,10 @@ export default async function BackupHistoryPage({
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Backup History</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Review backup execution metadata without exposing private artifact paths or operational controls.
-        </p>
-      </header>
+      <PageHeader
+        title="Backup History"
+        description="When backups ran and whether they succeeded. Backup file locations and controls stay private."
+      />
       <BackupHistoryWorkspace history={history} query={query} errorMessage={errorMessage} />
     </div>
   );

@@ -1,17 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { MouseEvent } from "react";
 import { selectedSpecimenId, specimenSelectionHref } from "@/features/specimens/selection";
 import { SpecimenDetailPanel } from "./SpecimenDetailPanel";
 import { SpecimenTable } from "./SpecimenTable";
 import { SpecimenToolbar } from "./SpecimenToolbar";
+import { PrevNextPagination } from "@/components/ui/PrevNextPagination";
 import {
   specimenListHref,
   type MuseumCollection,
   type SpecimenListQuery,
   type SpecimenPage,
+  type SpecimenStatus,
 } from "@/features/specimens/types";
 import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
 import { OfflineSpecimenPanel } from "@/features/offline/components/OfflineSpecimenPanel";
@@ -25,6 +26,7 @@ export function SpecimensWorkspace({
   storageLookupAvailable,
   filterError,
   offlineOwnerId,
+  statusCounts,
 }: {
   specimenPage: SpecimenPage;
   query: SpecimenListQuery;
@@ -34,6 +36,7 @@ export function SpecimensWorkspace({
   storageLookupAvailable: boolean;
   filterError: string | null;
   offlineOwnerId: string;
+  statusCounts?: Record<SpecimenStatus, number>;
 }) {
   const { items, limit, page, total } = specimenPage;
   const searchParams = useSearchParams();
@@ -65,11 +68,10 @@ export function SpecimensWorkspace({
         storageOptions={storageOptions}
         storageLookupAvailable={storageLookupAvailable}
         filterError={filterError}
+        statusCounts={statusCounts}
       />
 
-      <OfflineSpecimenPanel ownerId={offlineOwnerId} />
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 rounded-xl border border-black/10 bg-white p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-zinc-600">
@@ -77,40 +79,12 @@ export function SpecimensWorkspace({
                 ? "No records found"
                 : `Showing ${firstRecord}–${lastRecord} of ${total} specimen records`}
             </p>
-            {totalPages > 1 && (
-              <nav
-                aria-label="Specimen catalog pages"
-                className="flex items-center gap-1.5 text-sm"
-              >
-                {page > 1 ? (
-                  <Link
-                    href={specimenListHref(query, page - 1)}
-                    className="rounded-md border border-black/15 px-3 py-1.5 font-medium text-zinc-700 hover:bg-sage-100"
-                  >
-                    Previous
-                  </Link>
-                ) : (
-                  <span className="rounded-md border border-black/10 px-3 py-1.5 text-zinc-400">
-                    Previous
-                  </span>
-                )}
-                <span className="px-1 text-xs text-zinc-500">
-                  Page {page} of {totalPages}
-                </span>
-                {page < totalPages ? (
-                  <Link
-                    href={specimenListHref(query, page + 1)}
-                    className="rounded-md border border-black/15 px-3 py-1.5 font-medium text-zinc-700 hover:bg-sage-100"
-                  >
-                    Next
-                  </Link>
-                ) : (
-                  <span className="rounded-md border border-black/10 px-3 py-1.5 text-zinc-400">
-                    Next
-                  </span>
-                )}
-              </nav>
-            )}
+            <PrevNextPagination
+              label="Specimen catalog pages"
+              page={page}
+              totalPages={totalPages}
+              hrefFor={(target) => specimenListHref(query, target)}
+            />
           </div>
 
           <SpecimenTable
@@ -127,6 +101,8 @@ export function SpecimensWorkspace({
           onClear={(event) => selectSpecimen(event, null)}
         />
       </div>
+
+      <OfflineSpecimenPanel ownerId={offlineOwnerId} />
     </div>
   );
 }

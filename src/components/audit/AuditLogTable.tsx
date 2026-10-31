@@ -11,8 +11,10 @@ import {
   MapPinIcon,
   UsersIcon,
 } from "@/components/icons";
+import { describeAuditEntry, moduleLabel } from "@/features/audit/describe";
 import type { AuditLogEntry } from "@/features/audit/types";
-import { UserAvatar, actorName } from "./UserAvatar";
+import { UserAvatar } from "./UserAvatar";
+import { labelFor } from "@/features/audit/label-key";
 
 const MODULE_ICONS: Record<string, typeof DocumentTextIcon> = {
   specimens: DocumentTextIcon,
@@ -27,10 +29,10 @@ const MODULE_ICONS: Record<string, typeof DocumentTextIcon> = {
   inquiries: ChatIcon,
 };
 
-const RESULT_STYLES = {
-  SUCCESS: "bg-forest-100 text-forest-700",
-  FAILED: "bg-red-100 text-red-700",
-  DENIED: "bg-amber-100 text-amber-700",
+/** Only outcomes that need attention get a badge; a successful entry reads as a plain sentence. */
+export const RESULT_BADGES = {
+  FAILED: { label: "Failed", className: "bg-red-100 text-red-700" },
+  DENIED: { label: "Denied", className: "bg-amber-100 text-amber-800" },
 } as const;
 
 function moduleIcon(module: string) {
@@ -47,30 +49,14 @@ export function formatAuditTimestamp(value: string) {
       }).format(date);
 }
 
-export function summarizeAuditDetails(details: unknown) {
-  if (details === null || details === undefined) return "No additional details";
-  if (typeof details === "string") return details;
-
-  try {
-    return JSON.stringify(details);
-  } catch {
-    return "Additional details could not be displayed";
-  }
-}
-
-function affectedRecordLabel(log: AuditLogEntry) {
-  if (!log.affectedRecordId && !log.affectedRecordType) return "—";
-  if (!log.affectedRecordId) return log.affectedRecordType ?? "—";
-  if (!log.affectedRecordType) return log.affectedRecordId;
-  return `${log.affectedRecordType} · ${log.affectedRecordId}`;
-}
-
 export function AuditLogTable({
   logs,
+  recordLabels,
   selectedId,
   onSelect,
 }: {
   logs: AuditLogEntry[];
+  recordLabels: Record<string, string>;
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -85,22 +71,19 @@ export function AuditLogTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1040px] text-left text-sm">
+      <table className="w-full min-w-[720px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className="py-2 pr-3 font-medium">Timestamp</th>
-            <th className="py-2 pr-3 font-medium">Actor</th>
-            <th className="py-2 pr-3 font-medium">Module</th>
-            <th className="py-2 pr-3 font-medium">Action</th>
-            <th className="py-2 pr-3 font-medium">Affected record</th>
-            <th className="py-2 pr-3 font-medium">Details</th>
-            <th className="py-2 pr-0 font-medium">Result</th>
+            <th className="py-2 pr-3 font-medium">When</th>
+            <th className="py-2 pr-3 font-medium">Activity</th>
+            <th className="py-2 pr-0 font-medium">Module</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-black/5">
           {logs.map((log) => {
             const Icon = moduleIcon(log.module);
             const selected = log.id === selectedId;
+            const badge = log.result === "SUCCESS" ? null : RESULT_BADGES[log.result];
 
             return (
               <tr
@@ -114,41 +97,34 @@ export function AuditLogTable({
                 }}
                 tabIndex={0}
                 aria-selected={selected}
-                className={`cursor-pointer border-l-4 transition-colors ${
+                className={`cursor-pointer border-l-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-forest-600 ${
                   selected
                     ? "border-forest-600 bg-forest-50"
                     : "border-transparent hover:bg-sage-50"
                 }`}
               >
-                <td className="whitespace-nowrap py-2.5 pr-3 text-zinc-600">
+                <td className="whitespace-nowrap py-3 pr-3 pl-2 text-zinc-600">
                   {formatAuditTimestamp(log.createdAt)}
                 </td>
-                <td className="py-2.5 pr-3">
+                <td className="py-3 pr-3">
                   <div className="flex items-center gap-2.5">
                     <UserAvatar actor={log.actor} size="h-7 w-7" />
-                    <span className="whitespace-nowrap font-medium text-zinc-800">
-                      {actorName(log.actor)}
-                    </span>
+                    <p className="text-zinc-800">
+                      {describeAuditEntry(log, labelFor(recordLabels, log))}
+                      {badge && (
+                        <span
+                          className={`ml-2 inline-block rounded-full px-2 py-0.5 align-middle text-[11px] font-medium whitespace-nowrap ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      )}
+                    </p>
                   </div>
                 </td>
-                <td className="py-2.5 pr-3">
-                  <span className="flex items-center gap-1.5 whitespace-nowrap text-zinc-700">
+                <td className="py-3 pr-0">
+                  <span className="flex items-center gap-1.5 whitespace-nowrap text-zinc-600">
                     <Icon className="h-4 w-4 text-zinc-400" />
-                    {log.module}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap py-2.5 pr-3 text-zinc-700">{log.action}</td>
-                <td className="max-w-[240px] truncate py-2.5 pr-3 text-zinc-600">
-                  {affectedRecordLabel(log)}
-                </td>
-                <td className="max-w-[260px] truncate py-2.5 pr-3 text-zinc-600">
-                  {summarizeAuditDetails(log.details)}
-                </td>
-                <td className="py-2.5 pr-0">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${RESULT_STYLES[log.result]}`}
-                  >
-                    {log.result}
+                    {moduleLabel(log.module)}
                   </span>
                 </td>
               </tr>

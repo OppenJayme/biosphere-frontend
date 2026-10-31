@@ -34,7 +34,7 @@ export function AvailableReportsList({
 }) {
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5">
-      <h2 className="mb-4 text-base font-semibold text-zinc-900">Available Reports</h2>
+      <h2 className="mb-4 text-sm font-semibold text-zinc-900">Available Reports</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Report type">
         {reports.map((report) => {
           const Icon = REPORT_ICONS[report.type];

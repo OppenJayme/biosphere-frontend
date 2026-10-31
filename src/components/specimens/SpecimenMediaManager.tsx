@@ -122,7 +122,7 @@ function UploadForm({ specimenId }: { specimenId: string }) {
 
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5 sm:p-6">
-      <h2 className="font-serif text-lg font-semibold text-forest-800">Upload specimen image</h2>
+      <h2 className="text-base font-semibold text-zinc-900">Upload specimen image</h2>
       <p className="mt-1 text-sm text-zinc-600">
         JPEG, PNG, or WebP only, up to 15 MB. Images stay private and are viewed through short-lived links.
       </p>

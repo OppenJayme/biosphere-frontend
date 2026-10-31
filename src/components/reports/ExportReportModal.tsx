@@ -182,7 +182,7 @@ export function ExportReportModal({
           </div>
         ) : (
           <fieldset disabled={generating}>
-            <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">File format</legend>
+            <legend className="mb-2 text-sm font-semibold text-zinc-700">File format</legend>
             <div className="space-y-2">
               {formats.map((value) => {
                 const option = FORMATS[value];

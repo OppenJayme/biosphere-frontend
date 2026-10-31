@@ -23,7 +23,7 @@ import {
 export type NoteState = CuratorActionState;
 export type NoteAction = (previousState: NoteState, formData: FormData) => Promise<NoteState>;
 
-export const panelClasses = "rounded-xl border border-black/10 bg-white p-4";
+export const panelClasses = "rounded-xl border border-black/10 bg-white p-5";
 export const textareaClasses =
   "mt-1 w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
 export const primaryButtonClasses =

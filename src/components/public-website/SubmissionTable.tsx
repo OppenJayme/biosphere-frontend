@@ -91,10 +91,8 @@ export function SubmissionTable({
                 <Received iso={inquiry.createdAt} />
                 <td className="py-3 pr-3">
                   <div className="min-w-0">
-                      {nameLink(inquiry.id, inquiry.name)}
-                      <p className="truncate text-xs text-zinc-500">
-                      <span className="font-mono">{inquiry.referenceCode}</span> · {inquiry.organization ?? inquiry.email}
-                    </p>
+                    {nameLink(inquiry.id, inquiry.name)}
+                    <p className="truncate text-xs text-zinc-500">{inquiry.organization ?? inquiry.email}</p>
                   </div>
                 </td>
                 <td className="whitespace-nowrap py-3 pr-3 text-zinc-700">{inquiryTypeLabel(inquiry.inquiryType)}</td>
@@ -132,16 +130,14 @@ export function SubmissionTable({
                 <Received iso={request.createdAt} />
                 <td className="py-3 pr-3">
                   <div className="min-w-0">
-                      {nameLink(request.id, request.name)}
-                      <p className="truncate text-xs text-zinc-500">
-                      <span className="font-mono">{request.referenceCode}</span> · {request.organization}
-                    </p>
+                    {nameLink(request.id, request.name)}
+                    <p className="truncate text-xs text-zinc-500">{request.organization}</p>
                   </div>
                 </td>
                 <td className="whitespace-nowrap py-3 pr-3 text-xs text-zinc-700">
                   {schedule ? (
                     <>
-                      <span className="block text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                      <span className="block text-xs text-zinc-500">
                         {schedule.approved ? "Approved" : "Preferred"}
                         {schedule.more > 0 && ` · +${schedule.more} more`}
                       </span>

@@ -1,4 +1,3 @@
-import { categoryIcon } from "./categoryIcon";
 import type { RecentSpecimenRow, SpecimenCatalogStatus, SpecimenPublicStatus } from "@/features/dashboard/types";
 
 const CATALOG_STATUS_STYLES: Record<SpecimenCatalogStatus, string> = {
@@ -9,7 +8,7 @@ const CATALOG_STATUS_STYLES: Record<SpecimenCatalogStatus, string> = {
 
 const PUBLIC_STATUS_STYLES: Record<SpecimenPublicStatus, string> = {
   Public: "bg-sky-100 text-sky-700",
-  Restricted: "bg-red-100 text-red-700",
+  Restricted: "bg-zinc-100 text-zinc-600",
 };
 
 function formatDate(iso: string) {
@@ -19,13 +18,11 @@ function formatDate(iso: string) {
 export function RecentSpecimensTable({ rows }: { rows: RecentSpecimenRow[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] text-left text-sm">
+      <table className="w-full min-w-[600px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
             <th className="py-2 pr-3 font-medium">Accession No.</th>
-            <th className="py-2 pr-3 font-medium">Specimen</th>
             <th className="py-2 pr-3 font-medium">Common Name</th>
-            <th className="py-2 pr-3 font-medium">Storage Location</th>
             <th className="py-2 pr-3 font-medium">Condition</th>
             <th className="py-2 pr-3 font-medium">Catalog Status</th>
             <th className="py-2 pr-3 font-medium">Public Status</th>
@@ -33,20 +30,12 @@ export function RecentSpecimensTable({ rows }: { rows: RecentSpecimenRow[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-black/5">
-          {rows.map((row) => {
-            const Icon = categoryIcon(row.category);
-            return (
+          {rows.map((row) => (
               <tr key={row.id}>
                 <td className="py-2.5 pr-3 font-medium whitespace-nowrap text-zinc-900">
                   {row.accessionNo}
                 </td>
-                <td className="py-2.5 pr-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-700">{row.commonName}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{row.storageLocation ?? "—"}</td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{row.condition ?? "—"}</td>
                 <td className="py-2.5 pr-3">
                   <span
@@ -64,8 +53,7 @@ export function RecentSpecimensTable({ rows }: { rows: RecentSpecimenRow[] }) {
                 </td>
                 <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">{formatDate(row.lastUpdated)}</td>
               </tr>
-            );
-          })}
+          ))}
         </tbody>
       </table>
     </div>

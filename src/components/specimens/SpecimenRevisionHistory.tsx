@@ -53,7 +53,7 @@ export function SpecimenRevisionHistory({
     <div className="space-y-4">
       <form
         action={`/specimens/${specimenId}/history`}
-        className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 bg-white p-4"
+        className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 bg-white p-5"
       >
         <label className="min-w-56 flex-1 text-xs font-medium text-zinc-700">
           Field changed
@@ -175,7 +175,7 @@ export function SpecimenRevisionHistory({
 
                 <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="rounded-lg bg-zinc-50 p-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    <dt className="text-xs text-zinc-500">
                       Previous value
                     </dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-700">
@@ -183,7 +183,7 @@ export function SpecimenRevisionHistory({
                     </dd>
                   </div>
                   <div className="rounded-lg bg-sage-50 p-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    <dt className="text-xs text-zinc-500">
                       New value
                     </dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-800">

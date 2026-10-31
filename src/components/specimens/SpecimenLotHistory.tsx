@@ -149,7 +149,7 @@ export function SpecimenLotHistoryList({
             </div>
             <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div className="rounded-lg bg-zinc-50 p-3">
-                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                <dt className="text-xs text-zinc-500">
                   Storage location
                 </dt>
                 <dd className="mt-1 break-words text-zinc-700">
@@ -160,7 +160,7 @@ export function SpecimenLotHistoryList({
                 </dd>
               </div>
               <div className="rounded-lg bg-zinc-50 p-3">
-                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                <dt className="text-xs text-zinc-500">
                   Condition
                 </dt>
                 <dd className="mt-1 break-words text-zinc-700">

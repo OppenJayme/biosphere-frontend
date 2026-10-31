@@ -206,7 +206,7 @@ export function SpecimenTagManager({
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-black/10 bg-white p-5">
-        <h2 className="font-serif text-lg font-semibold text-forest-800">Attached tags</h2>
+        <h2 className="text-base font-semibold text-zinc-900">Attached tags</h2>
         <p className="mt-1 text-sm text-zinc-600">
           Tags describe catalog information and reuse a shared curator-managed vocabulary.
         </p>
@@ -228,7 +228,7 @@ export function SpecimenTagManager({
         </div>
       ) : (
         <section className="rounded-xl border border-black/10 bg-white p-5">
-          <h2 className="font-serif text-lg font-semibold text-forest-800">Attach a tag</h2>
+          <h2 className="text-base font-semibold text-zinc-900">Attach a tag</h2>
           <p className="mt-1 text-sm text-zinc-600">
             Select an existing suggestion or enter a new curator-approved tag name.
           </p>

@@ -7,7 +7,6 @@ import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { auditLogListHref } from "@/features/audit/query";
 import type { AuditLogListQuery, AuditLogPage } from "@/features/audit/types";
-import { StatCard } from "@/components/ui/StatCard";
 import { AuditLogDetailPanel } from "./AuditLogDetailPanel";
 import { AuditLogTable } from "./AuditLogTable";
 import { AuditToolbar } from "./AuditToolbar";
@@ -20,18 +19,19 @@ function paginationPages(current: number, last: number) {
 
 export function AuditLogsWorkspace({
   auditPage,
+  recordLabels = {},
   query,
   errorMessage,
 }: {
   auditPage: AuditLogPage | null;
+  /** Record names keyed by `${recordType}:${recordId}`, from resolveAuditRecordLabels. */
+  recordLabels?: Record<string, string>;
   query: AuditLogListQuery;
   errorMessage?: string;
 }) {
   const logs = auditPage?.items ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(logs[0]?.id ?? null);
   const selected = logs.find((log) => log.id === selectedId) ?? null;
-  const successfulOnPage = logs.filter((log) => log.result === "SUCCESS").length;
-  const attentionOnPage = logs.length - successfulOnPage;
   const lastPage = auditPage ? Math.max(1, Math.ceil(auditPage.total / auditPage.limit)) : 1;
   const pages = useMemo(
     () => paginationPages(auditPage?.page ?? 1, lastPage),
@@ -40,39 +40,6 @@ export function AuditLogsWorkspace({
 
   return (
     <div className="space-y-4">
-      {auditPage && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Matching logs"
-            value={auditPage.total.toLocaleString()}
-            note="For the active filters"
-            tone="neutral"
-            icon="log"
-          />
-          <StatCard
-            label="Visible entries"
-            value={logs.length.toLocaleString()}
-            note={`Page ${auditPage.page} of ${lastPage}`}
-            tone="neutral"
-            icon="table"
-          />
-          <StatCard
-            label="Successful on page"
-            value={successfulOnPage.toLocaleString()}
-            note="Current page only"
-            tone="positive"
-            icon="shield"
-          />
-          <StatCard
-            label="Failed or denied"
-            value={attentionOnPage.toLocaleString()}
-            note="Current page only"
-            tone={attentionOnPage > 0 ? "danger" : "neutral"}
-            icon="lock"
-          />
-        </div>
-      )}
-
       <AuditToolbar query={query} />
 
       {errorMessage ? (
@@ -81,9 +48,9 @@ export function AuditLogsWorkspace({
           <p className="mt-1 text-amber-900">{errorMessage}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
-            <AuditLogTable logs={logs} selectedId={selectedId} onSelect={setSelectedId} />
+            <AuditLogTable logs={logs} recordLabels={recordLabels} selectedId={selectedId} onSelect={setSelectedId} />
 
             {auditPage && auditPage.total > 0 && (
               <nav
@@ -146,7 +113,7 @@ export function AuditLogsWorkspace({
             )}
           </div>
 
-          <AuditLogDetailPanel log={selected} onClear={() => setSelectedId(null)} />
+          <AuditLogDetailPanel log={selected} recordLabels={recordLabels} onClear={() => setSelectedId(null)} />
         </div>
       )}
     </div>

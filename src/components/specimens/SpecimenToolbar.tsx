@@ -1,14 +1,16 @@
-import Link from "next/link";
 import { SearchIcon } from "@/components/icons";
+import { FilterChips } from "@/components/ui/FilterChips";
+import { InfoTip } from "@/components/ui/InfoTip";
 import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
 import {
   hasAdvancedSpecimenFilters,
   SORT_DIRECTIONS,
   SPECIMEN_GENDERS,
   SPECIMEN_SORT_FIELDS,
-  SPECIMEN_STATUSES,
   type MuseumCollection,
+  specimenListHref,
   type SpecimenListQuery,
+  type SpecimenStatus,
 } from "@/features/specimens/types";
 import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
 
@@ -65,6 +67,7 @@ export function SpecimenToolbar({
   storageOptions,
   storageLookupAvailable,
   filterError,
+  statusCounts,
 }: {
   query: SpecimenListQuery;
   collections: MuseumCollection[];
@@ -72,39 +75,42 @@ export function SpecimenToolbar({
   storageOptions: StoragePathOption[];
   storageLookupAvailable: boolean;
   filterError: string | null;
+  /** Whole-catalog totals per status, for the chip counts. Omitted when unavailable. */
+  statusCounts?: Record<SpecimenStatus, number>;
 }) {
   const hasFilters = hasNonDefaultFilters(query);
-  const advancedOpen = hasAdvancedSpecimenFilters(query);
+  const advancedOpen =
+    hasAdvancedSpecimenFilters(query) ||
+    query.specimenCategory.length > 0 ||
+    query.gender !== null ||
+    query.publicDisplay !== null;
+  const hasOtherFilters =
+    query.search.length > 0 || query.collectionId !== null || advancedOpen;
   const selectedUnitMissing =
     Boolean(query.storageUnitId) && !storageOptions.some((option) => option.id === query.storageUnitId);
   const selectedCollectionMissing =
     query.collectionId !== null &&
     !collections.some((collection) => collection.id === query.collectionId);
 
+  const statusChip = (label: string, status: SpecimenListQuery["status"], count?: number) => ({
+    label,
+    // Totals describe the whole catalog, so they are hidden while other filters narrow the list.
+    count: hasOtherFilters ? undefined : count,
+    active: query.status === status,
+    href: specimenListHref({ ...query, status }, 1),
+  });
+
   return (
-    <div className="space-y-3 rounded-xl border border-black/10 bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900">Catalog search and filters</h2>
-          <p className="mt-0.5 text-xs text-zinc-500">
-            All values are validated against the backend&apos;s approved query fields.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/specimens/collections"
-            className="rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50"
-          >
-            Manage collections
-          </Link>
-          <Link
-            href="/specimens/new"
-            className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
-          >
-            Add specimen draft
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-5">
+      <FilterChips
+        label="Filter by catalog status"
+        chips={[
+          statusChip("All active", null, statusCounts ? statusCounts.UNCATALOGED + statusCounts.CATALOGED : undefined),
+          statusChip("Uncataloged", "UNCATALOGED", statusCounts?.UNCATALOGED),
+          statusChip("Cataloged", "CATALOGED", statusCounts?.CATALOGED),
+          statusChip("Archived", "ARCHIVED", statusCounts?.ARCHIVED),
+        ]}
+      />
 
       {/* Reset uncontrolled fields only when the applied query changes. This
           keeps Clear all and Back/Forward aligned with the displayed results. */}
@@ -113,6 +119,7 @@ export function SpecimenToolbar({
         action="/specimens"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
+        <input type="hidden" name="status" defaultValue={query.status ?? ""} />
         <label className="relative sm:col-span-2 xl:col-span-2">
           <span className="text-xs font-medium text-zinc-600">Search</span>
           <SearchIcon className="pointer-events-none absolute bottom-3 left-3.5 h-4 w-4 text-zinc-400" />
@@ -121,19 +128,9 @@ export function SpecimenToolbar({
             name="search"
             defaultValue={query.search}
             maxLength={100}
-            placeholder="Identifiers, names, category, remarks, or collection"
+            placeholder="Name, accession no., category, or collection…"
             className={`${controlClasses} pl-10`}
           />
-        </label>
-
-        <label className="text-xs font-medium text-zinc-600">
-          Catalog status
-          <select name="status" defaultValue={query.status ?? ""} className={controlClasses}>
-            <option value="">All statuses</option>
-            {SPECIMEN_STATUSES.map((status) => (
-              <option key={status} value={status}>{enumLabel(status)}</option>
-            ))}
-          </select>
         </label>
 
         <label className="text-xs font-medium text-zinc-600">
@@ -159,181 +156,184 @@ export function SpecimenToolbar({
           )}
         </label>
 
-        <label className="text-xs font-medium text-zinc-600">
-          Specimen category
-          <input
-            name="specimenCategory"
-            defaultValue={query.specimenCategory}
-            maxLength={100}
-            placeholder="Exact category"
-            className={controlClasses}
-          />
-        </label>
-
-        <label className="text-xs font-medium text-zinc-600">
-          Gender
-          <select name="gender" defaultValue={query.gender ?? ""} className={controlClasses}>
-            <option value="">All genders</option>
-            {SPECIMEN_GENDERS.map((gender) => (
-              <option key={gender} value={gender}>{enumLabel(gender)}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-xs font-medium text-zinc-600">
-          Public eligibility
-          <select
-            name="publicDisplay"
-            defaultValue={query.publicDisplay === null ? "" : String(query.publicDisplay)}
-            className={controlClasses}
-          >
-            <option value="">All eligibility states</option>
-            <option value="true">Eligible</option>
-            <option value="false">Not eligible</option>
-          </select>
-        </label>
-
-        <label className="text-xs font-medium text-zinc-600">
-          Sort by
-          <select name="sortBy" defaultValue={query.sortBy} className={controlClasses}>
-            {SPECIMEN_SORT_FIELDS.map((field) => (
-              <option key={field} value={field}>{SORT_LABELS[field]}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-xs font-medium text-zinc-600">
-          Sort direction
-          <select
-            name="sortDirection"
-            defaultValue={query.sortDirection}
-            className={controlClasses}
-          >
-            {SORT_DIRECTIONS.map((direction) => (
-              <option key={direction} value={direction}>
-                {direction === "asc" ? "Ascending" : "Descending"}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <details
-          open={advancedOpen}
-          className="rounded-lg border border-black/10 px-3 py-2 sm:col-span-2 xl:col-span-4"
-        >
-          <summary className="cursor-pointer text-xs font-semibold text-zinc-700">
-            More filters: taxonomy, condition, storage location, tag, date added
-          </summary>
-
-          <div className="mt-3 grid grid-cols-1 gap-3 pb-1 sm:grid-cols-2 xl:grid-cols-4">
-            <label className="text-xs font-medium text-zinc-600">
-              Classification status
-              <input
-                name="classificationStatus"
-                defaultValue={query.classificationStatus}
-                maxLength={100}
-                placeholder="e.g. Identified"
-                className={controlClasses}
-              />
-            </label>
-
-            <label className="text-xs font-medium text-zinc-600">
-              Condition (active lot)
-              <input
-                name="conditionClass"
-                defaultValue={query.conditionClass}
-                maxLength={100}
-                placeholder="e.g. Good"
-                className={controlClasses}
-              />
-            </label>
-
-            <label className="text-xs font-medium text-zinc-600">
-              Tag
-              <input
-                name="tag"
-                defaultValue={query.tag}
-                maxLength={100}
-                placeholder="Exact tag name"
-                className={controlClasses}
-              />
-            </label>
-
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs font-medium text-zinc-600">
-                Added from
-                <input type="date" name="createdFrom" defaultValue={query.createdFrom} className={controlClasses} />
-              </label>
-              <label className="text-xs font-medium text-zinc-600">
-                Added to
-                <input type="date" name="createdTo" defaultValue={query.createdTo} className={controlClasses} />
-              </label>
-            </div>
-
-            <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
-              Storage location (active lot)
-              <select
-                name="storageUnitId"
-                defaultValue={query.storageUnitId ?? ""}
-                disabled={!storageLookupAvailable}
-                className={controlClasses}
-              >
-                <option value="">
-                  {storageLookupAvailable ? "All locations" : "Location lookup unavailable"}
+        <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] gap-2">
+          <label className="text-xs font-medium text-zinc-600">
+            Sort by
+            <select name="sortBy" defaultValue={query.sortBy} className={controlClasses}>
+              {SPECIMEN_SORT_FIELDS.map((field) => (
+                <option key={field} value={field}>{SORT_LABELS[field]}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-zinc-600">
+            Order
+            <select
+              name="sortDirection"
+              defaultValue={query.sortDirection}
+              className={controlClasses}
+            >
+              {SORT_DIRECTIONS.map((direction) => (
+                <option key={direction} value={direction}>
+                  {direction === "asc" ? "Ascending" : "Descending"}
                 </option>
-                {selectedUnitMissing && query.storageUnitId && (
-                  <option value={query.storageUnitId}>Selected location unavailable</option>
-                )}
-                {storageOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.pathLabel}
-                    {option.archived ? " (archived)" : ""}
-                  </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-start gap-3 sm:col-span-2 xl:col-span-4">
+          <details
+            open={advancedOpen}
+            className="min-w-0 flex-1 rounded-lg border border-black/10 px-3 py-2"
+          >
+            <summary className="flex cursor-pointer items-center gap-1.5 text-sm font-medium text-forest-800">
+              More filters
+              <InfoTip label="More filters" align="start">
+                Category, gender, public display, condition, storage location, tag, date added and taxonomy. Text
+                filters must match the whole value (capital letters don&apos;t matter). Dates use Philippine time.
+              </InfoTip>
+            </summary>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="text-xs font-medium text-zinc-600">
+              Specimen category
+              <input
+                name="specimenCategory"
+                defaultValue={query.specimenCategory}
+                maxLength={100}
+                placeholder="Exact category"
+                className={controlClasses}
+              />
+            </label>
+            <label className="text-xs font-medium text-zinc-600">
+              Gender
+              <select name="gender" defaultValue={query.gender ?? ""} className={controlClasses}>
+                <option value="">All genders</option>
+                {SPECIMEN_GENDERS.map((gender) => (
+                  <option key={gender} value={gender}>{enumLabel(gender)}</option>
                 ))}
               </select>
-              {!storageLookupAvailable && query.storageUnitId && (
-                <input type="hidden" name="storageUnitId" value={query.storageUnitId} />
-              )}
             </label>
-
-            <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
-              Units inside the location
+            <label className="text-xs font-medium text-zinc-600">
+              Public eligibility
               <select
-                name="includeDescendantUnits"
-                defaultValue={query.includeDescendantUnits === false ? "false" : "true"}
+                name="publicDisplay"
+                defaultValue={query.publicDisplay === null ? "" : String(query.publicDisplay)}
                 className={controlClasses}
               >
-                <option value="true">Include cabinets, drawers, and other units inside it</option>
-                <option value="false">Only lots stored directly in it</option>
+                <option value="">All eligibility states</option>
+                <option value="true">Eligible</option>
+                <option value="false">Not eligible</option>
               </select>
             </label>
-
-            {TAXONOMY_FIELDS.map(([name, label]) => (
-              <label key={name} className="text-xs font-medium text-zinc-600">
-                {label}
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 pb-1 sm:grid-cols-2 xl:grid-cols-4">
+              <label className="text-xs font-medium text-zinc-600">
+                Classification status
                 <input
-                  name={name}
-                  defaultValue={query[name]}
+                  name="classificationStatus"
+                  defaultValue={query.classificationStatus}
                   maxLength={100}
-                  placeholder="Exact name"
+                  placeholder="e.g. Identified"
                   className={controlClasses}
                 />
               </label>
-            ))}
-          </div>
-          <p className="mt-2 text-[11px] text-zinc-500">
-            Text filters match the whole value, ignoring capital letters. Dates follow Philippine time.
-          </p>
-        </details>
 
-        <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-3">
-          <button
-            type="submit"
-            className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest-800"
-          >
-            Apply filters
-          </button>
-          {hasFilters && <ClearSpecimenFiltersLink />}
+              <label className="text-xs font-medium text-zinc-600">
+                Condition (active lot)
+                <input
+                  name="conditionClass"
+                  defaultValue={query.conditionClass}
+                  maxLength={100}
+                  placeholder="e.g. Good"
+                  className={controlClasses}
+                />
+              </label>
+
+              <label className="text-xs font-medium text-zinc-600">
+                Tag
+                <input
+                  name="tag"
+                  defaultValue={query.tag}
+                  maxLength={100}
+                  placeholder="Exact tag name"
+                  className={controlClasses}
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs font-medium text-zinc-600">
+                  Added from
+                  <input type="date" name="createdFrom" defaultValue={query.createdFrom} className={controlClasses} />
+                </label>
+                <label className="text-xs font-medium text-zinc-600">
+                  Added to
+                  <input type="date" name="createdTo" defaultValue={query.createdTo} className={controlClasses} />
+                </label>
+              </div>
+
+              <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
+                Storage location (active lot)
+                <select
+                  name="storageUnitId"
+                  defaultValue={query.storageUnitId ?? ""}
+                  disabled={!storageLookupAvailable}
+                  className={controlClasses}
+                >
+                  <option value="">
+                    {storageLookupAvailable ? "All locations" : "Location lookup unavailable"}
+                  </option>
+                  {selectedUnitMissing && query.storageUnitId && (
+                    <option value={query.storageUnitId}>Selected location unavailable</option>
+                  )}
+                  {storageOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.pathLabel}
+                      {option.archived ? " (archived)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {!storageLookupAvailable && query.storageUnitId && (
+                  <input type="hidden" name="storageUnitId" value={query.storageUnitId} />
+                )}
+              </label>
+
+              <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
+                Units inside the location
+                <select
+                  name="includeDescendantUnits"
+                  defaultValue={query.includeDescendantUnits === false ? "false" : "true"}
+                  className={controlClasses}
+                >
+                  <option value="true">Include cabinets, drawers, and other units inside it</option>
+                  <option value="false">Only lots stored directly in it</option>
+                </select>
+              </label>
+
+              {TAXONOMY_FIELDS.map(([name, label]) => (
+                <label key={name} className="text-xs font-medium text-zinc-600">
+                  {label}
+                  <input
+                    name={name}
+                    defaultValue={query[name]}
+                    maxLength={100}
+                    placeholder="Exact name"
+                    className={controlClasses}
+                  />
+                </label>
+              ))}
+            </div>
+          </details>
+
+          <div className="flex items-center gap-2">
+            {hasFilters && <ClearSpecimenFiltersLink />}
+            <button
+              type="submit"
+              className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest-800"
+            >
+              Search
+            </button>
+          </div>
         </div>
       </form>
 

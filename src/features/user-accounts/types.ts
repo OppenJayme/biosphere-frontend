@@ -32,6 +32,8 @@ export type AccountUser = {
   status: UserStatus;
   isCurrentUser: boolean;
   lastSignIn: string | null;
+  /** Date only, for the table; the detail panel shows `lastSignIn` with the time. */
+  lastSignInDate: string | null;
   createdOn: string;
   createdOnFull: string;
   initials: string;

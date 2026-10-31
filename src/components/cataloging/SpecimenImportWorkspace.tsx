@@ -245,7 +245,7 @@ export function SpecimenImportWorkspace() {
 
           <div className="overflow-x-auto rounded-lg border border-black/10">
             <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="bg-sage-50 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              <thead className="border-b border-black/10 text-xs text-zinc-500 [&_th]:font-medium">
                 <tr>
                   <th className="px-3 py-3">
                     <input type="checkbox" aria-label="Select all valid rows" checked={allValidSelected} onChange={toggleAllValid} disabled={validRows.length === 0 || isCommitting} />

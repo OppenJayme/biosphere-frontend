@@ -230,8 +230,7 @@ export function VisitRequestDetail({
               {request.organization}
             </h2>
             <p className="text-xs text-zinc-500">
-              Visit request <span className="font-mono">{request.referenceCode}</span> ·{" "}
-              {formatTimestamp(request.createdAt)}
+              Visit request · received {formatTimestamp(request.createdAt)}
             </p>
           </div>
           <VisitStatusBadge status={request.status} />
@@ -245,6 +244,8 @@ export function VisitRequestDetail({
         )}
 
         <dl className="divide-y divide-black/5 border-y border-black/5">
+          {/* The visitor's own reference number, quoted in emails and follow-ups. */}
+          <InfoRow label="Reference no.">{request.referenceCode}</InfoRow>
           <InfoRow label="Contact person">{request.name}</InfoRow>
           <InfoRow label="Email">{request.email}</InfoRow>
           <InfoRow label="Contact number">{request.phone}</InfoRow>

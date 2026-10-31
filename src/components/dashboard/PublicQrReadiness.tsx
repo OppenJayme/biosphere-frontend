@@ -61,7 +61,7 @@ export function PublicQrReadiness({ readiness }: { readiness: QrReadiness }) {
       {/* Plain text, not links: /exhibits on develop still renders placeholder data. */}
       {readiness.pending.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400">Awaiting publish</p>
+          <p className="mb-1.5 text-xs text-zinc-500">Awaiting publish</p>
           <ul className="space-y-1.5">
             {readiness.pending.map((exhibit) => (
               <li key={exhibit.id} className="min-w-0">

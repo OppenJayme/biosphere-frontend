@@ -67,7 +67,7 @@ export default async function CollectionManagementPage({
         &larr; Back to specimen catalog
       </Link>
       <header>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Cataloging</p>
+        <p className="text-sm text-zinc-500">Cataloging</p>
         <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">
           Manage collections
         </h1>

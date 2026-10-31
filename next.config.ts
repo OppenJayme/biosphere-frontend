@@ -17,6 +17,17 @@ const privateLanHosts = Object.values(networkInterfaces()).flatMap((interfaces) 
 const nextConfig: NextConfig = {
   // Local only: also allow the localhost.run tunnel.
   allowedDevOrigins: [...new Set(privateLanHosts), "*.lhr.life"],
+  experimental: {
+    // Curator pages render per request, and Next keeps none of them in the client
+    // cache by default, so switching Dashboard -> Specimen -> Dashboard refetched
+    // every page and showed loading.tsx each time. Reuse a visited page for 30s.
+    // Server actions that call revalidatePath/refresh still purge it, so a
+    // curator's own edits show immediately; changes made elsewhere appear once
+    // the 30s window expires.
+    staleTimes: {
+      dynamic: 30,
+    },
+  },
   images: {
     remotePatterns: [new URL("https://images.unsplash.com/**")],
   },

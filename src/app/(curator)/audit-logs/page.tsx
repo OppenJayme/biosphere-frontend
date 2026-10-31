@@ -12,9 +12,11 @@ import {
 import type { AuditLogPage } from "@/features/audit/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { PageHeader } from "@/components/curator/PageHeader";
+import { resolveAuditRecordLabels, type RecordLabels } from "@/features/audit/record-labels";
 
 export const metadata: Metadata = {
-  title: "Audit Logs",
+  title: "Audit Log",
 };
 
 type AuditLogsPageProps = {
@@ -26,11 +28,13 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
 
   const query = parseAuditLogListQuery(await searchParams);
   let auditPage: AuditLogPage | null = null;
+  let recordLabels: RecordLabels = {};
   let errorMessage = auditLogDateRangeError(query) ?? undefined;
 
   if (!errorMessage) {
     try {
       auditPage = await listAuditLogs(query);
+      recordLabels = await resolveAuditRecordLabels(auditPage.items);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         redirect("/login?from=/audit-logs");
@@ -49,16 +53,16 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Audit Logs</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Review immutable system activity and security outcomes recorded by the backend.
-        </p>
-      </header>
+      <PageHeader
+        title="Audit Log"
+        description="Everything that was done in BioSphere, who did it, and when."
+        info="This is a permanent record. Entries can't be edited or deleted, so it can be trusted when you need to check what happened."
+      />
 
       <AuditLogsWorkspace
         key={auditLogListHref(query)}
         auditPage={auditPage}
+        recordLabels={recordLabels}
         query={query}
         errorMessage={errorMessage}
       />

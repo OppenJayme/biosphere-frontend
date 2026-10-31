@@ -85,7 +85,7 @@ export default async function SpecimenMediaPage({
         ← Back to specimen details
       </Link>
       <header>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{specimenName}</p>
+        <p className="text-sm text-zinc-500">{specimenName}</p>
         <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">Specimen media</h1>
         <p className="mt-1 text-sm text-zinc-600">
           Manage private catalog images, captions, display order, and the specimen cover image.

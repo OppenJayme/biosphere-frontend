@@ -34,24 +34,6 @@ const ICONS = {
   export: DownloadIcon,
 } as const;
 
-const ICON_STYLES: Record<keyof typeof ICONS, string> = {
-  specimen: "bg-forest-100 text-forest-700",
-  mail: "bg-amber-100 text-amber-600",
-  lock: "bg-red-100 text-red-600",
-  shield: "bg-amber-100 text-amber-600",
-  qr: "bg-violet-100 text-violet-600",
-  cube: "bg-sage-100 text-forest-700",
-  scan: "bg-gold-100 text-gold-700",
-  ar: "bg-red-100 text-red-600",
-  draft: "bg-amber-100 text-amber-600",
-  log: "bg-sage-100 text-forest-700",
-  clock: "bg-sage-100 text-forest-700",
-  chart: "bg-sage-100 text-forest-700",
-  table: "bg-gold-100 text-gold-700",
-  calendar: "bg-sky-100 text-sky-700",
-  export: "bg-violet-100 text-violet-600",
-};
-
 const NOTE_STYLES = {
   positive: "text-forest-700",
   warning: "text-amber-600",
@@ -59,6 +41,10 @@ const NOTE_STYLES = {
   neutral: "text-zinc-500",
 } as const;
 
+/**
+ * Quiet summary number: label, value, and a short note. The icon is a small muted
+ * marker, not a coloured badge, so a row of cards reads as one calm group.
+ */
 export function StatCard({
   label,
   value,
@@ -78,19 +64,15 @@ export function StatCard({
   const Icon = ICONS[icon];
   const body = (
     <>
-      <span
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${ICON_STYLES[icon]}`}
-      >
-        <Icon className="h-5 w-5" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs text-zinc-500">{label}</p>
-        <p className="truncate text-2xl font-semibold text-zinc-900">{value}</p>
-        <p className={`text-xs font-medium ${NOTE_STYLES[tone]}`}>{note}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-zinc-600">{label}</p>
+        <Icon className="h-4 w-4 shrink-0 text-zinc-400" />
       </div>
+      <p className="mt-1 truncate text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums">{value}</p>
+      <p className={`mt-1 text-xs font-medium ${NOTE_STYLES[tone]}`}>{note}</p>
     </>
   );
-  const classes = "flex items-center gap-4 rounded-xl border border-black/10 bg-white p-5";
+  const classes = "block rounded-xl border border-black/10 bg-white px-5 py-4";
 
   return href ? (
     <Link

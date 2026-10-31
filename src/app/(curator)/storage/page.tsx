@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { LocationWorkspace } from "@/components/locations/LocationWorkspace";
+import { PageHeader } from "@/components/curator/PageHeader";
 import {
   getStorageLocationMovements,
   listStorageLocations,
@@ -14,7 +15,7 @@ import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "Location",
+  title: "Locations",
 };
 
 type LocationPageProps = {
@@ -78,10 +79,10 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Location</h1>
-        <p className="mt-1 text-sm text-zinc-600">Browse active storage locations, or include archived records for historical lookup.</p>
-      </div>
+      <PageHeader
+        title="Locations"
+        description="Where specimens are kept: rooms, cabinets, drawers, shelves and boxes."
+      />
 
       {notice && (
         <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">

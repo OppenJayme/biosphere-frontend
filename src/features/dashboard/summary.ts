@@ -1,6 +1,7 @@
 /** Pure mapping from the backend dashboard summary to the dashboard sections. */
 
 import type {
+  AttentionItem,
   CatalogingTrendPoint,
   CollectionByType,
   DashboardSpecimenRow,
@@ -98,14 +99,79 @@ export function buildStats(summary: DashboardSummary): DashboardStat[] {
   ];
 }
 
+/**
+ * Plain-language to-do list for the dashboard: only items with something waiting,
+ * each linking to the page where the curator acts on it.
+ */
+export function buildAttention(summary: DashboardSummary): AttentionItem[] {
+  const { specimens, submissions, exhibits } = summary;
+  const items: AttentionItem[] = [
+    {
+      key: "inquiries",
+      count: submissions.pendingInquiries,
+      text: countLabel(submissions.pendingInquiries, "general inquiry is", "general inquiries are") + " waiting for a reply",
+      action: "Review",
+      href: "/public-website?status=PENDING",
+    },
+    {
+      key: "visits",
+      count: submissions.pendingVisitRequests,
+      text: countLabel(submissions.pendingVisitRequests, "visit request needs", "visit requests need") + " a schedule decision",
+      action: "Review",
+      href: "/public-website?tab=visits&status=PENDING",
+    },
+    {
+      key: "uncataloged",
+      count: specimens.byStatus.UNCATALOGED,
+      text: countLabel(specimens.byStatus.UNCATALOGED, "specimen is", "specimens are") + " waiting to be cataloged",
+      action: "Continue",
+      href: "/cataloging",
+    },
+    {
+      key: "duplicates",
+      count: specimens.possibleDuplicates,
+      text:
+        countLabel(specimens.possibleDuplicates, "record looks", "records look") +
+        " like a possible duplicate (same scientific name and category)",
+      action: "Check",
+      // Sorting by name puts matching records next to each other.
+      href: "/specimens?sortBy=scientificName&sortDirection=asc",
+    },
+    {
+      key: "qr",
+      count: exhibits.publishedUnavailable,
+      text:
+        countLabel(exhibits.publishedUnavailable, "published QR exhibit shows", "published QR exhibits show") +
+        " nothing to visitors because the specimen is no longer public",
+      action: "Fix",
+      href: "/exhibits",
+    },
+  ];
+  return items.filter((item) => item.count > 0);
+}
+
+/** Legend size before smaller categories are grouped, so the card stays short and colours stay distinct. */
+const MAX_COLLECTION_SEGMENTS = 8;
+const OTHER_SEGMENT_COLOR = "#a1a1aa";
+
 export function buildCollectionByType(summary: DashboardSummary): CollectionByType {
   const total = summary.specimens.byCategory.reduce((sum, item) => sum + item.count, 0);
-  const segments = summary.specimens.byCategory.map((item, index) => ({
+  const pct = (count: number) => (total > 0 ? Math.round((count / total) * 1000) / 10 : 0);
+  const sorted = [...summary.specimens.byCategory].sort((a, b) => b.count - a.count);
+  const grouped = sorted.length > MAX_COLLECTION_SEGMENTS;
+  const shown = grouped ? sorted.slice(0, MAX_COLLECTION_SEGMENTS - 1) : sorted;
+
+  const segments = shown.map((item, index) => ({
     label: item.category,
     value: item.count,
-    pct: total > 0 ? Math.round((item.count / total) * 1000) / 10 : 0,
+    pct: pct(item.count),
     color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
   }));
+  if (grouped) {
+    const rest = sorted.slice(MAX_COLLECTION_SEGMENTS - 1);
+    const count = rest.reduce((sum, item) => sum + item.count, 0);
+    segments.push({ label: `Others (${rest.length})`, value: count, pct: pct(count), color: OTHER_SEGMENT_COLOR });
+  }
   return { segments, total };
 }
 

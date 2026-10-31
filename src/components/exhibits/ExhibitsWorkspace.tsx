@@ -8,7 +8,7 @@ import { ExhibitTable } from "./ExhibitTable";
 import { ExhibitDetailPanel } from "./ExhibitDetailPanel";
 import { CreateExhibitModal } from "./CreateExhibitModal";
 
-const PAGE_SIZES = [5, 10, 25];
+const PAGE_SIZES = [10, 25, 50];
 
 export type ExhibitNotice = { tone: "success" | "error"; message: string };
 
@@ -36,9 +36,12 @@ function pageList(current: number, count: number): (number | "gap")[] {
 export function ExhibitsWorkspace({
   exhibits,
   initialSelectedId,
+  openCreate = false,
 }: {
   exhibits: ExhibitRow[];
   initialSelectedId: string | null;
+  /** Opens the create dialog on arrival, e.g. from the dashboard's "Create exhibit" action. */
+  openCreate?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ExhibitStatus | "">("");
@@ -47,7 +50,7 @@ export function ExhibitsWorkspace({
   const [selectedId, setSelectedId] = useState<string | null>(
     exhibits.some((e) => e.id === initialSelectedId) ? initialSelectedId : (exhibits[0]?.id ?? null),
   );
-  const [modal, setModal] = useState<ModalState>(null);
+  const [modal, setModal] = useState<ModalState>(openCreate ? { mode: "create" } : null);
   const [notice, setNotice] = useState<ExhibitNotice | null>(null);
 
   const filtered = useMemo(() => {
@@ -59,6 +62,8 @@ export function ExhibitsWorkspace({
   const currentPage = Math.min(page, pageCount);
   const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const selected = exhibits.find((e) => e.id === selectedId) ?? null;
+  const statusCounts = { PUBLISHED: 0, UNPUBLISHED: 0, DISABLED: 0 };
+  for (const exhibit of exhibits) statusCounts[exhibit.status] += 1;
   const editing = modal?.mode === "edit" ? (exhibits.find((e) => e.id === modal.exhibitId) ?? null) : null;
 
   return (
@@ -74,6 +79,7 @@ export function ExhibitsWorkspace({
           setStatus(value);
           setPage(1);
         }}
+        counts={statusCounts}
         onAddClick={() => setModal({ mode: "create" })}
       />
 
@@ -93,7 +99,9 @@ export function ExhibitsWorkspace({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+      {/* items-start + a sticky, self-scrolling detail panel: the long panel no longer
+          stretches the row and leaves empty space under a short exhibit list. */}
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
           {visible.length > 0 ? (
             <ExhibitTable exhibits={visible} selectedId={selectedId} onSelect={setSelectedId} />
@@ -171,14 +179,16 @@ export function ExhibitsWorkspace({
           </div>
         </div>
 
-        <ExhibitDetailPanel
-          key={selected?.id ?? "none"}
-          exhibit={selected}
-          onClear={() => setSelectedId(null)}
-          onEdit={(id) => setModal({ mode: "edit", exhibitId: id })}
-          onNotice={setNotice}
-          onArchived={() => setSelectedId(null)}
-        />
+        <div className="xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:rounded-xl">
+          <ExhibitDetailPanel
+            key={selected?.id ?? "none"}
+            exhibit={selected}
+            onClear={() => setSelectedId(null)}
+            onEdit={(id) => setModal({ mode: "edit", exhibitId: id })}
+            onNotice={setNotice}
+            onArchived={() => setSelectedId(null)}
+          />
+        </div>
       </div>
 
       {(modal?.mode === "create" || editing) && (

@@ -114,7 +114,7 @@ export function ReportOptionsPanel({
   return (
     <section className="flex flex-col rounded-xl border border-black/10 bg-white p-5" aria-labelledby="report-options-heading">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h2 id="report-options-heading" className="text-base font-semibold text-zinc-900">Report Filters</h2>
+        <h2 id="report-options-heading" className="text-sm font-semibold text-zinc-900">Report Filters</h2>
         <button type="button" onClick={onClear} className="text-xs font-medium text-forest-700 hover:text-forest-800">
           Clear all
         </button>

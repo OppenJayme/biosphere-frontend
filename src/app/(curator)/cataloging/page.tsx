@@ -11,6 +11,7 @@ import {
   toSpecimenListQuery,
 } from "@/features/specimens/cataloging-queue";
 import { verifySession } from "@/lib/session";
+import { PageHeader, PAGE_ACTION_PRIMARY, PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
 
 export const metadata: Metadata = {
   title: "Cataloging Queue",
@@ -30,14 +31,10 @@ export default async function CatalogingPage({ searchParams }: CatalogingPagePro
   } catch {
     return (
       <div className="space-y-5">
-        <header>
-          <h1 className="font-serif text-2xl font-semibold text-forest-800">
-            Cataloging queue
-          </h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Continue work on protected Uncataloged specimen records.
-          </p>
-        </header>
+        <PageHeader
+          title="Cataloging"
+          description="Continue work on protected Uncataloged specimen records."
+        />
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-semibold">The Cataloging queue is temporarily unavailable.</p>
           <p className="mt-1 text-amber-900">
@@ -60,37 +57,23 @@ export default async function CatalogingPage({ searchParams }: CatalogingPagePro
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Cataloging</p>
-          <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">
-            Uncataloged queue
-          </h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Search and continue verified catalog work using live specimen records.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/cataloging/import"
-            className="rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50"
-          >
-            Import CSV / XLSX
-          </Link>
-          <Link
-            href="/specimens"
-            className="rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50"
-          >
-            Full specimen catalog
-          </Link>
-          <Link
-            href="/specimens/new"
-            className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
-          >
-            Add specimen draft
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Cataloging"
+        description="Search the Uncataloged queue and continue catalog work on live specimen records."
+        actions={
+          <>
+            <Link href="/cataloging/import" className={PAGE_ACTION_SECONDARY}>
+              Import CSV / XLSX
+            </Link>
+            <Link href="/specimens" className={PAGE_ACTION_SECONDARY}>
+              Full specimen catalog
+            </Link>
+            <Link href="/specimens/new" className={PAGE_ACTION_PRIMARY}>
+              Add specimen draft
+            </Link>
+          </>
+        }
+      />
 
       <LiveCatalogingQueue page={page} query={query} />
     </div>

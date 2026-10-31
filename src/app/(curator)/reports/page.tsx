@@ -16,6 +16,7 @@ import { parseReportHistoryQuery, reportHistoryHref } from "@/features/reports/q
 import type { ReportSummary } from "@/features/reports/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { PageHeader } from "@/components/curator/PageHeader";
 
 export const metadata: Metadata = {
   title: "Reports",
@@ -49,10 +50,9 @@ function statCards(summary: ReportSummary | null) {
     },
     {
       label: "Most Generated",
-      value: summary?.mostGenerated?.title ?? "None yet",
-      note: summary?.mostGenerated
-        ? `${summary.mostGenerated.count.toLocaleString()} time${summary.mostGenerated.count === 1 ? "" : "s"}`
-        : "—",
+      // The count is the big number; the report name goes underneath so long titles never truncate.
+      value: summary?.mostGenerated ? summary.mostGenerated.count.toLocaleString() : "0",
+      note: summary?.mostGenerated?.title ?? "None yet",
       tone: "neutral",
       icon: "table",
     },
@@ -101,13 +101,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">Reports</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          Generate and export the museum&apos;s operational reports. Reports with visitor details or storage locations are
-          confidential and for authorized staff only.
-        </p>
-      </header>
+      <PageHeader
+        title="Reports"
+        description="Generate and export the museum's operational reports. Reports with visitor details or storage locations are confidential and for authorized staff only."
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards(summary.status === "fulfilled" ? summary.value : null).map((stat) => (

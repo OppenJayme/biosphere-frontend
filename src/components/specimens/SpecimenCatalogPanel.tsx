@@ -19,6 +19,7 @@ import {
 } from "@/features/specimens/lifecycle-actions";
 import { catalogCheckHref, REOPEN_REASON_MAX } from "@/features/specimens/lifecycle";
 import type { CatalogReadiness, SpecimenStatus } from "@/features/specimens/types";
+import { InfoTip } from "@/components/ui/InfoTip";
 
 type SpecimenCatalogPanelProps = {
   specimenId: string;
@@ -61,15 +62,19 @@ function CompleteCataloging({
     <>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl">
-          <h2 id="catalog-specimen-heading" className="font-serif text-lg font-semibold text-forest-800">
-            Catalog specimen
+          <h2 id="catalog-specimen-heading" className="flex items-center gap-2 text-base font-semibold text-zinc-900">
+            Catalog this specimen
+            <InfoTip label="Cataloging" align="start">
+              Cataloging marks the record as complete. Only cataloged specimens can be made eligible for public
+              display.
+            </InfoTip>
           </h2>
           <p className="mt-1 text-sm text-zinc-600">
             {!readiness
-              ? "Catalog readiness could not be checked. You can still try; the backend verifies every requirement."
+              ? "The checklist could not be loaded. You can still try; every requirement is checked when you confirm."
               : readiness.canComplete
-                ? "Every requirement is met. Cataloging makes the record eligible to be marked for public display."
-                : "Complete the requirements marked below before this record can move from Uncataloged to Cataloged."}
+                ? "Everything required is filled in. You can catalog this specimen now."
+                : "Finish the items marked below first."}
           </p>
         </div>
 
@@ -103,8 +108,8 @@ function CompleteCataloging({
 
       {readiness && readiness.checks.length > 0 && (
         <div className="mt-4">
-          <p id="catalog-requirements-heading" className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Catalog requirements
+          <p id="catalog-requirements-heading" className="text-sm font-medium text-zinc-700">
+            Checklist
           </p>
           <ul className="mt-2 divide-y divide-black/5 rounded-lg border border-black/10">
             {readiness.checks.map((check) => {
@@ -164,13 +169,13 @@ function ReopenCataloging({ specimenId }: { specimenId: string }) {
     <>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl">
-          <h2 id="catalog-specimen-heading" className="font-serif text-lg font-semibold text-forest-800">
-            Cataloged record
+          <h2 id="catalog-specimen-heading" className="flex items-center gap-2 text-base font-semibold text-zinc-900">
+            This specimen is cataloged
+            <InfoTip label="Cataloged records" align="start">
+              Required fields can&apos;t be emptied while a record is cataloged. To correct one, reopen cataloging; the
+              reason you give is kept in the revision and audit history.
+            </InfoTip>
           </h2>
-          <p className="mt-1 text-sm text-zinc-600">
-            Required catalog fields cannot be cleared while the record is Cataloged. Reopen
-            cataloging to make corrections; the reason is kept in revision and audit history.
-          </p>
         </div>
         <button
           ref={triggerRef}

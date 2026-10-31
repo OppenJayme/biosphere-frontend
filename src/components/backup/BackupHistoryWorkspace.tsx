@@ -20,6 +20,12 @@ import {
 const inputClasses =
   "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
 
+/** "SCHEDULED_FULL" -> "Scheduled full", matching how other pages show stored codes. */
+function codeLabel(code: string) {
+  const words = code.toLowerCase().split("_").join(" ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 const STATUS_STYLES: Record<BackupStatus, string> = {
   IN_PROGRESS: "bg-blue-100 text-blue-700",
   COMPLETED: "bg-forest-100 text-forest-700",
@@ -60,7 +66,7 @@ export function BackupHistoryWorkspace({
       <form
         action="/backup-history"
         method="get"
-        className="space-y-3 rounded-xl border border-black/10 bg-white p-4"
+        className="space-y-3 rounded-xl border border-black/10 bg-white p-5"
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="xl:col-span-2">
@@ -85,7 +91,7 @@ export function BackupHistoryWorkspace({
             <select name="status" defaultValue={query.status} className={inputClasses}>
               <option value="">All statuses</option>
               {BACKUP_STATUSES.map((status) => (
-                <option key={status} value={status}>{status.replaceAll("_", " ")}</option>
+                <option key={status} value={status}>{codeLabel(status)}</option>
               ))}
             </select>
           </label>
@@ -161,14 +167,14 @@ export function BackupHistoryWorkspace({
                     {history.items.map((entry) => (
                       <tr key={entry.id} className="hover:bg-sage-50">
                         <td className="whitespace-nowrap py-3 pr-3 text-zinc-600">{formatTimestamp(entry.startedAt)}</td>
-                        <td className="py-3 pr-3 font-medium text-zinc-800">{entry.backupType}</td>
+                        <td className="py-3 pr-3 font-medium text-zinc-800">{codeLabel(entry.backupType)}</td>
                         <td className="py-3 pr-3">
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${STATUS_STYLES[entry.status]}`}>
-                            {entry.status.replaceAll("_", " ")}
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_STYLES[entry.status]}`}>
+                            {codeLabel(entry.status)}
                           </span>
                         </td>
                         <td className="py-3 pr-3 text-zinc-700">
-                          {entry.creator ? `${entry.creator.fullName} · ${entry.creator.role}` : "Automated process"}
+                          {entry.creator ? `${entry.creator.fullName} (${codeLabel(entry.creator.role)})` : "Automated process"}
                         </td>
                         <td className="whitespace-nowrap py-3 pr-3 text-zinc-600">{formatTimestamp(entry.completedAt)}</td>
                         <td className="py-3 text-zinc-600">{entry.artifactAvailable ? "Recorded" : "Not recorded"}</td>

@@ -115,12 +115,21 @@ export type StorageOverviewItem = {
 
 export type ActivityItem = {
   id: string;
-  action: string;
-  detail: string;
-  by: string;
+  /** Plain-language sentence from describeAuditEntry, e.g. "Maria Santos archived the exhibit." */
+  summary: string;
   timestamp: string;
   module: string;
   failed: boolean;
+};
+
+/** One line of the dashboard's "Needs your attention" list. */
+export type AttentionItem = {
+  key: string;
+  count: number;
+  /** Full sentence including the count, e.g. "5 general inquiries are waiting for a reply". */
+  text: string;
+  action: string;
+  href: string;
 };
 
 export type QrReadinessPending = {
@@ -141,6 +150,7 @@ export type QrReadiness = {
 
 export type DashboardData = {
   stats: SectionResult<DashboardStat[]>;
+  attention: SectionResult<AttentionItem[]>;
   collectionByType: SectionResult<CollectionByType>;
   catalogingTrend: SectionResult<CatalogingTrendPoint[]>;
   catalogingQueue: SectionResult<QueueItem[]>;

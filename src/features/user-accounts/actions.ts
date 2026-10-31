@@ -7,10 +7,13 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { listAuditLogs } from "../audit/api";
+import { describeAuditEntry } from "../audit/describe";
 import { inviteCurator } from "./api";
 import { EMPTY_INVITE_VALUES, fieldErrors, readInviteCuratorForm, type InviteCuratorState } from "./form";
 import type { RecentActivityResult } from "./types";
-import { formatDateTime, humanizeAction } from "./view";
+import { formatDateTime } from "./view";
+import { resolveAuditRecordLabels } from "../audit/record-labels";
+import { labelFor } from "../audit/label-key";
 
 const RECENT_ACTIVITY_LIMIT = 5;
 
@@ -24,13 +27,12 @@ export async function getUserRecentActivity(accountId: string): Promise<RecentAc
 
   try {
     const page = await listAuditLogs({ page: 1, limit: RECENT_ACTIVITY_LIMIT, actorId: accountId });
+    const labels = await resolveAuditRecordLabels(page.items).catch(() => ({}));
     return {
       status: "ok",
       items: page.items.map((item) => ({
         id: item.id,
-        description: item.affectedRecordType
-          ? `${humanizeAction(item.action)} · ${humanizeAction(item.affectedRecordType)}`
-          : humanizeAction(item.action),
+        description: describeAuditEntry(item, labelFor(labels, item)),
         timestamp: formatDateTime(item.createdAt),
         failed: item.result !== "SUCCESS",
       })),

@@ -49,7 +49,7 @@ export function ReportHistoryTable({
     <section id="report-history" className="scroll-mt-4 rounded-xl border border-black/10 bg-white p-5">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-zinc-900">Report History</h2>
+          <h2 className="text-sm font-semibold text-zinc-900">Report History</h2>
           <p className="text-xs text-zinc-500">
             Every generation attempt, from the audit log. Files are not stored; export again for current data.
           </p>
