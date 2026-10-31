@@ -58,16 +58,39 @@ describe("readVisitRequestForm", () => {
       TODAY,
     );
     expect(missingPlate.success).toBe(false);
-    if (!missingPlate.success) expect(missingPlate.errors.plateNumber).toMatch(/plate number/);
+    if (!missingPlate.success) expect(missingPlate.vehicleErrors[0]?.plateNumber).toMatch(/plate number/);
 
     const withVehicle = readVisitRequestForm(
       formData({ ...base, bringingVehicle: "true", plateNumber: "ABC 1234", carBrand: "Toyota", carType: "" }),
       TODAY,
     );
-    expect(withVehicle.success && withVehicle.data.plateNumber).toBe("ABC 1234");
+    expect(withVehicle.success && JSON.parse(JSON.stringify(withVehicle.data.vehicles))).toEqual([
+      { plateNumber: "ABC 1234", carBrand: "Toyota" },
+    ]);
 
     const hiddenVehicle = readVisitRequestForm(formData({ ...base, plateNumber: "ABC 1234" }), TODAY);
-    expect(hiddenVehicle.success && hiddenVehicle.data.plateNumber).toBeUndefined();
+    expect(hiddenVehicle.success && hiddenVehicle.data.vehicles).toBeUndefined();
+  });
+
+  it("keeps each vehicle's details together and reports problems on the row they belong to", () => {
+    const vehicles = {
+      ...base,
+      bringingVehicle: "true",
+      plateNumber: ["ABC 1234", "XYZ 5678"],
+      carBrand: ["Toyota", ""],
+      carType: ["", "School Bus"],
+    };
+
+    const valid = readVisitRequestForm(formData(vehicles), TODAY);
+    expect(valid.success && JSON.parse(JSON.stringify(valid.data.vehicles))).toEqual([
+      { plateNumber: "ABC 1234", carBrand: "Toyota" },
+      { plateNumber: "XYZ 5678", carType: "School Bus" },
+    ]);
+
+    const secondBlank = readVisitRequestForm(formData({ ...vehicles, plateNumber: ["ABC 1234", " "] }), TODAY);
+    expect(secondBlank.success).toBe(false);
+    if (secondBlank.success) return;
+    expect(secondBlank.vehicleErrors).toEqual([{}, { plateNumber: expect.stringMatching(/plate number/) }]);
   });
 
   it("rejects more named visitors than the visitor count, and last names without first names", () => {
