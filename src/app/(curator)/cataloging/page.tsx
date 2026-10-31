@@ -63,7 +63,7 @@ export default async function CatalogingPage({ searchParams }: CatalogingPagePro
         actions={
           <>
             <Link href="/cataloging/import" className={PAGE_ACTION_SECONDARY}>
-              Import CSV
+              Import CSV / XLSX
             </Link>
             <Link href="/specimens" className={PAGE_ACTION_SECONDARY}>
               Full specimen catalog
