@@ -41,6 +41,7 @@ describe("catalog navigation without JavaScript", () => {
         specimens: [specimen, another],
         selectedId: specimen.id,
         onSelect,
+        onOpen: vi.fn(),
         previewHref: (id: string) => `/specimens?selected=${id}`,
       }),
     );

@@ -74,7 +74,7 @@ export function AuditLogTable({
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className="py-2 pr-3 font-medium">When</th>
+            <th className="py-2 pr-3 pl-3 font-medium">When</th>
             <th className="py-2 pr-3 font-medium">Activity</th>
             <th className="py-2 pr-0 font-medium">Module</th>
           </tr>
@@ -103,7 +103,7 @@ export function AuditLogTable({
                     : "border-transparent hover:bg-sage-50"
                 }`}
               >
-                <td className="whitespace-nowrap py-3 pr-3 pl-2 text-zinc-600">
+                <td className="whitespace-nowrap py-3 pr-3 pl-3 text-zinc-600">
                   {formatAuditTimestamp(log.createdAt)}
                 </td>
                 <td className="py-3 pr-3">

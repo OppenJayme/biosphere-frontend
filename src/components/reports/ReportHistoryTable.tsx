@@ -1,15 +1,16 @@
 /** Read-only report generation history, sourced from the audit log. */
 
 import Link from "next/link";
-import { ChevronLeftIcon, ChevronRightIcon, ClipboardIcon } from "@/components/icons";
+import { ClipboardIcon } from "@/components/icons";
+import { TablePagination } from "@/components/ui/TablePagination";
 import { describeReportParameters, formatReportTimestamp } from "@/features/reports/history";
-import { reportHistoryHref } from "@/features/reports/query";
-import {
-  REPORT_HISTORY_PAGE_SIZES,
-  type ReportDefinition,
-  type ReportFormat,
-  type ReportHistoryPage,
-  type ReportHistoryQuery,
+import { DEFAULT_REPORT_HISTORY_PAGE_SIZE, reportHistoryHref } from "@/features/reports/query";
+import type {
+  ReportDefinition,
+  ReportFormat,
+  ReportHistoryPage,
+  ReportHistoryPageSize,
+  ReportHistoryQuery,
 } from "@/features/reports/types";
 
 const FORMAT_STYLES: Record<ReportFormat, string> = {
@@ -21,12 +22,6 @@ const FORMAT_NAMES: Record<ReportFormat, string> = { PDF: "PDF", DOCX: "Word", C
 
 const selectClasses =
   "rounded-lg border border-black/15 bg-white px-2.5 py-1.5 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
-
-function paginationPages(current: number, last: number) {
-  return [...new Set([1, current - 1, current, current + 1, last])]
-    .filter((page) => page >= 1 && page <= last)
-    .sort((a, b) => a - b);
-}
 
 export function ReportHistoryTable({
   history,
@@ -41,8 +36,6 @@ export function ReportHistoryTable({
   storageLabels: ReadonlyMap<string, string>;
   errorMessage?: string;
 }) {
-  const lastPage = history ? Math.max(1, Math.ceil(history.total / history.limit)) : 1;
-  const pages = paginationPages(history?.page ?? 1, lastPage);
   const filtered = Boolean(query.type || query.result);
 
   return (
@@ -68,12 +61,9 @@ export function ReportHistoryTable({
             <option value="SUCCESS">Generated</option>
             <option value="FAILED">Failed</option>
           </select>
-          <label className="sr-only" htmlFor="historyLimit">Rows per page</label>
-          <select id="historyLimit" name="historyLimit" defaultValue={query.limit} className={selectClasses}>
-            {REPORT_HISTORY_PAGE_SIZES.map((size) => (
-              <option key={size} value={size}>{size} / page</option>
-            ))}
-          </select>
+          {query.limit !== DEFAULT_REPORT_HISTORY_PAGE_SIZE && (
+            <input type="hidden" name="historyLimit" value={query.limit} />
+          )}
           <button type="submit" className="rounded-lg bg-forest-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-forest-800">
             Apply
           </button>
@@ -149,45 +139,16 @@ export function ReportHistoryTable({
             </table>
           </div>
 
-          <nav
-            aria-label="Report history pagination"
-            className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500"
-          >
-            <p>
-              Showing {(history.page - 1) * history.limit + 1}–{Math.min(history.page * history.limit, history.total)} of{" "}
-              {history.total.toLocaleString()}
-            </p>
-            <div className="flex items-center gap-1">
-              {history.page > 1 ? (
-                <Link href={reportHistoryHref(query, history.page - 1)} aria-label="Previous page" className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                  <ChevronLeftIcon className="h-3.5 w-3.5" />
-                </Link>
-              ) : (
-                <span className="flex h-8 w-8 items-center justify-center text-zinc-300"><ChevronLeftIcon className="h-3.5 w-3.5" /></span>
-              )}
-              {pages.map((page, index) => (
-                <span key={page} className="contents">
-                  {index > 0 && pages[index - 1] !== page - 1 && <span className="px-1 text-zinc-400">…</span>}
-                  <Link
-                    href={reportHistoryHref(query, page)}
-                    aria-current={page === history.page ? "page" : undefined}
-                    className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 font-medium ${
-                      page === history.page ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
-                    }`}
-                  >
-                    {page}
-                  </Link>
-                </span>
-              ))}
-              {history.page < lastPage ? (
-                <Link href={reportHistoryHref(query, history.page + 1)} aria-label="Next page" className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                  <ChevronRightIcon className="h-3.5 w-3.5" />
-                </Link>
-              ) : (
-                <span className="flex h-8 w-8 items-center justify-center text-zinc-300"><ChevronRightIcon className="h-3.5 w-3.5" /></span>
-              )}
-            </div>
-          </nav>
+          <TablePagination
+            className="mt-4"
+            label="Report history pages"
+            noun="reports"
+            page={history.page}
+            pageSize={query.limit}
+            total={history.total}
+            hrefFor={(target) => reportHistoryHref(query, target)}
+            sizeHrefFor={(size) => reportHistoryHref({ ...query, limit: size as ReportHistoryPageSize }, 1)}
+          />
         </>
       ) : (
         <div className="rounded-lg border border-dashed border-black/15 px-4 py-10 text-center">

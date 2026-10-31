@@ -16,7 +16,7 @@ const headerClasses = "py-2 pr-3 font-medium";
 function Received({ iso }: { iso: string }) {
   const { date, time } = timestampParts(iso);
   return (
-    <td className="whitespace-nowrap py-3 pr-3 pl-2 text-xs text-zinc-600">
+    <td className="whitespace-nowrap py-3 pr-3 pl-3 text-xs text-zinc-600">
       <time dateTime={iso}>
         <span className="block">{date}</span>
         <span className="block text-zinc-400">{time}</span>
@@ -78,7 +78,7 @@ export function SubmissionTable({
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-black/10 text-xs text-zinc-500">
-              <th className={headerClasses}>Received</th>
+              <th className={`${headerClasses} pl-3`}>Received</th>
               <th className={headerClasses}>From</th>
               <th className={headerClasses}>Topic</th>
               <th className={headerClasses}>Message</th>
@@ -115,7 +115,7 @@ export function SubmissionTable({
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className={headerClasses}>Received</th>
+            <th className={`${headerClasses} pl-3`}>Received</th>
             <th className={headerClasses}>Contact</th>
             <th className={headerClasses}>Schedule</th>
             <th className={`${headerClasses} text-right`}>Visitors</th>

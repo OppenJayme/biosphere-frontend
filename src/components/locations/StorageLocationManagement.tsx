@@ -20,6 +20,9 @@ import type {
 import type { StorageUnit } from "@/features/storage-locations/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
+/** Lets the Add location button beside the hierarchy reach this form. */
+export const ADD_LOCATION_FORM_ID = "add-storage-location";
+
 const inputClasses =
   "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
 
@@ -62,11 +65,24 @@ function StorageFields({
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <Field label="Location label" name="label" defaultValue={values.label} required />
-      <Field label="Unit type" name="unitType" defaultValue={values.unitType} required />
-      <Field label="Storage type" name="storageType" defaultValue={values.storageType} required />
-      <Field label="Size (optional)" name="size" defaultValue={values.size} />
-      <Field label="Capacity (optional)" name="capacity" defaultValue={values.capacity} type="number" min="1" />
+      <Field label="Location label" name="label" defaultValue={values.label} placeholder="e.g. Cabinet A" required />
+      <Field label="Unit type" name="unitType" defaultValue={values.unitType} placeholder="e.g. Cabinet" required />
+      <Field
+        label="Storage type"
+        name="storageType"
+        defaultValue={values.storageType}
+        placeholder="e.g. Dry storage"
+        required
+      />
+      <Field label="Size (optional)" name="size" defaultValue={values.size} placeholder="e.g. Large" />
+      <Field
+        label="Capacity (optional)"
+        name="capacity"
+        defaultValue={values.capacity}
+        placeholder="e.g. 50"
+        type="number"
+        min="1"
+      />
       {includeParent && (
         <label className="text-xs font-medium text-zinc-700">
           Parent location
@@ -97,6 +113,7 @@ function Field({
   label,
   name,
   defaultValue,
+  placeholder,
   required = false,
   type = "text",
   min,
@@ -104,6 +121,7 @@ function Field({
   label: string;
   name: string;
   defaultValue: string;
+  placeholder?: string;
   required?: boolean;
   type?: "text" | "number";
   min?: string;
@@ -117,6 +135,7 @@ function Field({
         min={min}
         step={type === "number" ? "1" : undefined}
         defaultValue={defaultValue}
+        placeholder={placeholder}
         required={required}
         className={`${inputClasses} mt-1`}
       />
@@ -124,7 +143,17 @@ function Field({
   );
 }
 
-function CreateStorageLocationForm({ units, parentId }: { units: StorageUnit[]; parentId: string }) {
+function CreateStorageLocationForm({
+  units,
+  parentId,
+  open,
+  onOpenChange,
+}: {
+  units: StorageUnit[];
+  parentId: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const activeParents = units.filter((unit) => !unit.archivedAt);
   const [state, action, pending] = useActionState<StorageLocationFormState, FormData>(
     createStorageLocationAction,
@@ -132,7 +161,12 @@ function CreateStorageLocationForm({ units, parentId }: { units: StorageUnit[]; 
   );
 
   return (
-    <details className="rounded-xl border border-black/10 bg-white p-5">
+    <details
+      id={ADD_LOCATION_FORM_ID}
+      open={open}
+      onToggle={(event) => onOpenChange?.(event.currentTarget.open)}
+      className="scroll-mt-20 rounded-xl border border-black/10 bg-white p-5"
+    >
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Add storage location</summary>
       <form action={action} className="mt-4">
         <p className="mb-3 text-xs text-zinc-500">
@@ -262,9 +296,13 @@ function ArchiveStorageLocationForm({ unit }: { unit: StorageUnit }) {
 export function StorageLocationManagement({
   selected,
   units,
+  addOpen,
+  onAddOpenChange,
 }: {
   selected?: StorageUnit;
   units: StorageUnit[];
+  addOpen?: boolean;
+  onAddOpenChange?: (open: boolean) => void;
 }) {
   const defaultParentId = selected && !selected.archivedAt ? selected.id : "";
 
@@ -276,7 +314,12 @@ export function StorageLocationManagement({
         </h2>
         <p className="mt-0.5 text-xs text-zinc-500">Every change is recorded in the audit log.</p>
       </div>
-      <CreateStorageLocationForm units={units} parentId={defaultParentId} />
+      <CreateStorageLocationForm
+        units={units}
+        parentId={defaultParentId}
+        open={addOpen}
+        onOpenChange={onAddOpenChange}
+      />
       {selected && !selected.archivedAt ? (
         <>
           <UpdateStorageLocationForm unit={selected} />

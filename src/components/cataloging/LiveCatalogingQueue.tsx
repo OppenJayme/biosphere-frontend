@@ -9,8 +9,8 @@ import {
   catalogingQueueHref,
   type CatalogingQueueQuery,
 } from "@/features/specimens/cataloging-queue";
-import type { SpecimenPage } from "@/features/specimens/types";
-import { PrevNextPagination } from "@/components/ui/PrevNextPagination";
+import { DEFAULT_SPECIMEN_PAGE_SIZE, type SpecimenPage, type SpecimenPageSize } from "@/features/specimens/types";
+import { TablePagination } from "@/components/ui/TablePagination";
 
 function displayName(commonName: string | null, scientificName: string | null) {
   return commonName ?? scientificName ?? "Unnamed specimen";
@@ -33,9 +33,6 @@ export function LiveCatalogingQueue({
   page: SpecimenPage;
   query: CatalogingQueueQuery;
 }) {
-  const first = page.total === 0 ? 0 : (page.page - 1) * page.limit + 1;
-  const last = Math.min(page.page * page.limit, page.total);
-
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5">
       <div>
@@ -50,6 +47,9 @@ export function LiveCatalogingQueue({
         </div>
 
         <form action="/cataloging" className="mt-4 flex flex-col gap-2 sm:flex-row">
+          {query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE && (
+            <input type="hidden" name="limit" value={query.limit} />
+          )}
           <label htmlFor="cataloging-search" className="sr-only">
             Search uncataloged specimens
           </label>
@@ -148,15 +148,16 @@ export function LiveCatalogingQueue({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-sm text-zinc-600">
-        <p>{page.total === 0 ? "No records" : `Showing ${first}-${last} of ${page.total} records`}</p>
-        <PrevNextPagination
-          label="Cataloging queue pages"
-          page={page.page}
-          totalPages={Math.max(1, Math.ceil(page.total / page.limit))}
-          hrefFor={(target) => catalogingQueueHref(query, target)}
-        />
-      </div>
+      <TablePagination
+        className="mt-4"
+        label="Cataloging queue pages"
+        noun="records"
+        page={page.page}
+        pageSize={query.limit}
+        total={page.total}
+        hrefFor={(target) => catalogingQueueHref(query, target)}
+        sizeHrefFor={(size) => catalogingQueueHref({ ...query, limit: size as SpecimenPageSize }, 1)}
+      />
     </section>
   );
 }

@@ -134,7 +134,7 @@ export async function listSpecimens(): Promise<SpecimenSummary[]> {
 export async function searchSpecimens(query: SpecimenListQuery) {
   const params = new URLSearchParams({
     page: String(query.page),
-    limit: String(SPECIMEN_PAGE_LIMIT),
+    limit: String(query.limit ?? SPECIMEN_PAGE_LIMIT),
     sortBy: "updatedAt",
     sortDirection: "desc",
   });

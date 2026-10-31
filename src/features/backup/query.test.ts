@@ -43,7 +43,7 @@ describe("backup-history query handling", () => {
     expect(query.status).toBe("");
     expect(query.fromDate).toBe("");
     expect(query.page).toBe(1);
-    expect(query.limit).toBe(25);
+    expect(query.limit).toBe(10);
     expect(backupHistoryHref(query)).toBe("/backup-history");
   });
 

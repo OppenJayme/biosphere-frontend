@@ -49,7 +49,7 @@ describe("audit-log query handling", () => {
     expect(query.fromDate).toBe("");
     expect(query.toDate).toBe("");
     expect(query.page).toBe(1);
-    expect(query.limit).toBe(25);
+    expect(query.limit).toBe(10);
     expect(auditLogListHref(query)).toBe("/audit-logs");
   });
 

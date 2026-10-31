@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ArchiveIcon, ChevronDownIcon, ClockIcon, SearchIcon } from "@/components/icons";
+import { ArchiveIcon, ChevronDownIcon, ClockIcon, PlusIcon, SearchIcon } from "@/components/icons";
 import {
   buildStorageHierarchy,
   filterStorageUnits,
@@ -14,7 +14,7 @@ import {
 import type { StorageMovement, StorageUnit } from "@/features/storage-locations/types";
 import { storageBrowserHref, storageBrowserView } from "@/features/storage-locations/browser-view";
 import { LocationTree } from "./LocationTree";
-import { StorageLocationManagement } from "./StorageLocationManagement";
+import { ADD_LOCATION_FORM_ID, StorageLocationManagement } from "./StorageLocationManagement";
 import { StorageMovementHistory } from "./StorageMovementHistory";
 import { StorageLifecycleBadge } from "./StorageLifecycleBadge";
 import { InfoTip } from "@/components/ui/InfoTip";
@@ -61,6 +61,17 @@ export function LocationWorkspace({
   const hierarchy = useMemo(() => buildStorageHierarchy(activeUnits), [activeUnits]);
   const [query, setQuery] = useState("");
   const [hierarchyOpen, setHierarchyOpen] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+
+  // The form sits below the location details, so take the curator straight to its first field.
+  const openAddForm = () => {
+    setAddOpen(true);
+    requestAnimationFrame(() => {
+      const form = document.getElementById(ADD_LOCATION_FORM_ID);
+      form?.scrollIntoView({ block: "start", behavior: "smooth" });
+      form?.querySelector("input")?.focus({ preventScroll: true });
+    });
+  };
 
   const selected = view.selected;
   const matches = useMemo(() => filterStorageUnits(view.visibleUnits, query), [query, view.visibleUnits]);
@@ -115,20 +126,30 @@ export function LocationWorkspace({
   return (
     <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
       <aside className="flex h-fit flex-col rounded-xl border border-black/10 bg-white p-5">
-        <h2 className={`text-sm font-semibold text-zinc-900 ${hierarchyOpen ? "mb-3" : ""}`}>
+        <div className={`flex items-center justify-between gap-2 ${hierarchyOpen ? "mb-3" : ""}`}>
+          <h2 className="text-sm font-semibold text-zinc-900">
+            <button
+              type="button"
+              onClick={() => setHierarchyOpen((open) => !open)}
+              aria-expanded={hierarchyOpen}
+              aria-controls="storage-hierarchy-body"
+              className="-m-1 flex items-center gap-1.5 rounded-md p-1 text-left hover:text-forest-800 focus-visible:outline-2 focus-visible:outline-forest-600"
+            >
+              <ChevronDownIcon
+                className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform motion-reduce:transition-none ${hierarchyOpen ? "" : "-rotate-90"}`}
+              />
+              Storage Hierarchy
+            </button>
+          </h2>
           <button
             type="button"
-            onClick={() => setHierarchyOpen((open) => !open)}
-            aria-expanded={hierarchyOpen}
-            aria-controls="storage-hierarchy-body"
-            className="-m-1 flex items-center gap-1.5 rounded-md p-1 text-left hover:text-forest-800 focus-visible:outline-2 focus-visible:outline-forest-600"
+            onClick={openAddForm}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-forest-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-forest-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
           >
-            <ChevronDownIcon
-              className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform motion-reduce:transition-none ${hierarchyOpen ? "" : "-rotate-90"}`}
-            />
-            Storage Hierarchy
+            <PlusIcon className="h-3.5 w-3.5" />
+            Add location
           </button>
-        </h2>
+        </div>
         <div id="storage-hierarchy-body" hidden={!hierarchyOpen}>
           <ArchiveVisibilityToggle showArchived={showArchived} pending={selectionPending} onChange={toggleArchived} />
           <label className="relative mb-3 block">
@@ -223,9 +244,6 @@ export function LocationWorkspace({
 
         <section className="rounded-xl border border-black/10 bg-white p-5">
           <div className="flex flex-wrap items-start gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
-              <ArchiveIcon className="h-7 w-7" />
-            </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-semibold text-zinc-900">{selected.label}</h2>
@@ -280,7 +298,13 @@ export function LocationWorkspace({
           loading={selectionPending || selected.id !== initialSelectedId}
         />
 
-        <StorageLocationManagement key={selected.id} selected={selected} units={units} />
+        <StorageLocationManagement
+          key={selected.id}
+          selected={selected}
+          units={units}
+          addOpen={addOpen}
+          onAddOpenChange={setAddOpen}
+        />
       </main>
 
     </div>

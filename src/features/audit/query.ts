@@ -2,6 +2,7 @@
 
 import {
   AUDIT_PAGE_SIZES,
+  DEFAULT_AUDIT_PAGE_SIZE,
   AUDIT_RESULTS,
   type AuditLogListQuery,
   type AuditPageSize,
@@ -41,10 +42,10 @@ export function parseAuditLogListQuery(
   const result = AUDIT_RESULTS.includes(resultCandidate as AuditResult)
     ? (resultCandidate as AuditResult)
     : "";
-  const limitCandidate = positiveInteger(params.limit, 25);
+  const limitCandidate = positiveInteger(params.limit, DEFAULT_AUDIT_PAGE_SIZE);
   const limit = AUDIT_PAGE_SIZES.includes(limitCandidate as AuditPageSize)
     ? (limitCandidate as AuditPageSize)
-    : 25;
+    : DEFAULT_AUDIT_PAGE_SIZE;
 
   return {
     search: boundedText(params.search),
@@ -78,7 +79,7 @@ export function auditLogListHref(query: AuditLogListQuery, page = query.page) {
   }
   if (query.fromDate) params.set("fromDate", query.fromDate);
   if (query.toDate) params.set("toDate", query.toDate);
-  if (query.limit !== 25) params.set("limit", String(query.limit));
+  if (query.limit !== DEFAULT_AUDIT_PAGE_SIZE) params.set("limit", String(query.limit));
   if (page > 1) params.set("page", String(page));
 
   const serialized = params.toString();

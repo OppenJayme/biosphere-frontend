@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { FilterChips } from "@/components/ui/FilterChips";
+import { FILTER_TOGGLE_CLASSES, FilterToggleContent } from "@/components/ui/FilterToggle";
 import { SearchIcon } from "@/components/icons";
 import { INQUIRY_STATUSES } from "@/features/inquiries/types";
 import { INQUIRY_STATUS_LABELS } from "@/features/inquiries/workflow";
@@ -68,6 +72,56 @@ function DateRange({
   );
 }
 
+/**
+ * The Search and Clear buttons share this row, so the panel is ordered onto its own line
+ * below them. Its fields come first in the page order, so Tab still reaches them before Search.
+ * Closed fields stay in the form, so an applied date keeps filtering.
+ */
+function DateFilters({ query }: { query: PublicWebsiteQuery }) {
+  const inUse = Boolean(
+    query.submittedFrom || query.submittedTo || query.visitDateFrom || query.visitDateTo,
+  );
+  const [open, setOpen] = useState(inUse);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-controls="submission-date-filters"
+        className={`${FILTER_TOGGLE_CLASSES} order-2 shrink-0 justify-center`}
+      >
+        <FilterToggleContent open={open}>Date filters</FilterToggleContent>
+      </button>
+      <div
+        id="submission-date-filters"
+        hidden={!open}
+        className="order-last basis-full rounded-lg border border-black/10 bg-sage-50 p-3"
+      >
+        <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:gap-x-5">
+          <DateRange
+            legend="Submitted"
+            fromName="submittedFrom"
+            toName="submittedTo"
+            query={query}
+            hint="Date the visitor submitted it (museum time)"
+          />
+          {query.tab === "visits" && (
+            <DateRange
+              legend="Visit date"
+              fromName="visitDateFrom"
+              toName="visitDateTo"
+              query={query}
+              hint="Approved visit date, or any preferred date while none is approved"
+            />
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function PublicWebsiteToolbar({
   query,
   statusCounts,
@@ -106,65 +160,46 @@ export function PublicWebsiteToolbar({
       <form
         action={PUBLIC_WEBSITE_PATH}
         role="search"
-        className="flex flex-col gap-2.5"
+        className="flex flex-wrap items-center gap-2.5"
         key={listFilterKey(query)}
       >
         {query.tab === "visits" && <input type="hidden" name="tab" value="visits" />}
         {query.status && <input type="hidden" name="status" value={query.status} />}
-        <div className="flex flex-col gap-2.5 md:flex-row md:items-center">
-          <div className="relative md:flex-1">
-            <label htmlFor="submission-search" className="sr-only">
+        <div className="relative order-1 min-w-64 flex-1">
+          <label htmlFor="submission-search" className="sr-only">
               Search {query.tab === "inquiries" ? "inquiries" : "visit requests"}
             </label>
-            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <input
-              id="submission-search"
-              type="search"
-              name="search"
-              defaultValue={query.search}
-              maxLength={SEARCH_MAX}
-              placeholder={
-                query.tab === "inquiries"
-                  ? "Search name, email, organization, topic, message, or reference no.…"
-                  : "Search contact, email, organization, purpose, or reference no.…"
-              }
-              className={`${inputClasses} pl-10 pr-3`}
-            />
-          </div>
-        </div>
-        <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:gap-x-5">
-          <DateRange
-            legend="Submitted"
-            fromName="submittedFrom"
-            toName="submittedTo"
-            query={query}
-            hint="Date the visitor submitted it (museum time)"
+          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <input
+            id="submission-search"
+            type="search"
+            name="search"
+            defaultValue={query.search}
+            maxLength={SEARCH_MAX}
+            placeholder={
+              query.tab === "inquiries"
+                ? "Search name, email, organization, topic, message, or reference no.…"
+                : "Search contact, email, organization, purpose, or reference no.…"
+            }
+            className={`${inputClasses} h-10 pl-10 pr-3`}
           />
-          {query.tab === "visits" && (
-            <DateRange
-              legend="Visit date"
-              fromName="visitDateFrom"
-              toName="visitDateTo"
-              query={query}
-              hint="Approved visit date, or any preferred date while none is approved"
-            />
-          )}
-          <div className="flex gap-2 md:ml-auto">
-            <button
-              type="submit"
-              className="rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2"
+        </div>
+        <DateFilters query={query} />
+        <div className="order-3 flex gap-2">
+          <button
+            type="submit"
+            className="h-10 rounded-lg bg-forest-700 px-4 text-sm font-semibold text-white hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2"
+          >
+            Search
+          </button>
+          {filtered && (
+            <Link
+              href={publicWebsiteHref({ tab: query.tab })}
+              className="inline-flex h-10 items-center rounded-lg border border-black/15 px-4 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
             >
-              Search
-            </button>
-            {filtered && (
-              <Link
-                href={publicWebsiteHref({ tab: query.tab })}
-                className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
-              >
-                Clear
-              </Link>
-            )}
-          </div>
+              Clear
+            </Link>
+          )}
         </div>
       </form>
     </div>

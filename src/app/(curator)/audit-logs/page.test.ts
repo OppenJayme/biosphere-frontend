@@ -5,6 +5,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 // Keep external session/HTTP boundaries synthetic; run the real audit client and UI.
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/env", () => ({ env: { NEXT_PUBLIC_API_URL: "http://audit.test" } }));
+// No app router is mounted here; the rows-per-page menu only needs one to exist.
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ push: vi.fn() }),
+}));
 vi.mock("@/lib/session", () => ({
   verifySession: vi.fn(),
   getAccessToken: vi.fn().mockResolvedValue("synthetic-test-token"),

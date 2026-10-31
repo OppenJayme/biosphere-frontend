@@ -15,7 +15,7 @@ describe("Cataloging queue query", () => {
       status: "CATALOGED",
     });
 
-    expect(query).toEqual({ search: "Philippine eagle", page: 2 });
+    expect(query).toEqual({ search: "Philippine eagle", page: 2, limit: 10 });
     expect(toSpecimenListQuery(query)).toMatchObject({
       search: "Philippine eagle",
       status: "UNCATALOGED",
@@ -33,6 +33,13 @@ describe("Cataloging queue query", () => {
 
     expect(query.search).toHaveLength(100);
     expect(query.page).toBe(1);
-    expect(catalogingQueueHref({ search: "", page: 1 })).toBe("/cataloging");
+    expect(catalogingQueueHref({ search: "", page: 1, limit: 10 })).toBe("/cataloging");
+  });
+
+  it("keeps a chosen page size and ignores sizes the table does not offer", () => {
+    const query = parseCatalogingQueueQuery({ limit: "50" });
+    expect(toSpecimenListQuery(query).limit).toBe(50);
+    expect(catalogingQueueHref(query, 2)).toBe("/cataloging?limit=50&page=2");
+    expect(parseCatalogingQueueQuery({ limit: "1000" }).limit).toBe(10);
   });
 });

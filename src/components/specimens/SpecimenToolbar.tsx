@@ -1,8 +1,10 @@
 import { SearchIcon } from "@/components/icons";
 import { FilterChips } from "@/components/ui/FilterChips";
+import { FILTER_TOGGLE_CLASSES, FilterToggleContent } from "@/components/ui/FilterToggle";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
 import {
+  DEFAULT_SPECIMEN_PAGE_SIZE,
   hasAdvancedSpecimenFilters,
   SORT_DIRECTIONS,
   SPECIMEN_GENDERS,
@@ -57,8 +59,10 @@ function hasNonDefaultFilters(query: SpecimenListQuery) {
   );
 }
 
-const controlClasses =
-  "mt-1.5 w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:bg-zinc-100 disabled:text-zinc-500";
+// A fixed height keeps text boxes and dropdowns level; browsers size them differently otherwise.
+const baseControlClasses =
+  "block h-11 w-full rounded-lg border border-black/15 bg-white px-3 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:bg-zinc-100 disabled:text-zinc-500";
+const controlClasses = `mt-1.5 ${baseControlClasses}`;
 
 export function SpecimenToolbar({
   query,
@@ -120,17 +124,22 @@ export function SpecimenToolbar({
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
         <input type="hidden" name="status" defaultValue={query.status ?? ""} />
-        <label className="relative sm:col-span-2 xl:col-span-2">
-          <span className="text-xs font-medium text-zinc-600">Search</span>
-          <SearchIcon className="pointer-events-none absolute bottom-3 left-3.5 h-4 w-4 text-zinc-400" />
-          <input
-            type="search"
-            name="search"
-            defaultValue={query.search}
-            maxLength={100}
-            placeholder="Name, accession no., category, or collection…"
-            className={`${controlClasses} pl-10`}
-          />
+        {query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE && (
+          <input type="hidden" name="limit" defaultValue={query.limit} />
+        )}
+        <label className="text-xs font-medium text-zinc-600 sm:col-span-2 xl:col-span-2">
+          Search
+          <span className="relative mt-1.5 block">
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="search"
+              name="search"
+              defaultValue={query.search}
+              maxLength={100}
+              placeholder="Name, accession no., category, or collection…"
+              className={`${baseControlClasses} pl-10`}
+            />
+          </span>
         </label>
 
         <label className="text-xs font-medium text-zinc-600">
@@ -182,16 +191,15 @@ export function SpecimenToolbar({
         </div>
 
         <div className="flex flex-wrap items-start gap-3 sm:col-span-2 xl:col-span-4">
-          <details
-            open={advancedOpen}
-            className="min-w-0 flex-1 rounded-lg border border-black/10 px-3 py-2"
-          >
-            <summary className="flex cursor-pointer items-center gap-1.5 text-sm font-medium text-forest-800">
-              More filters
-              <InfoTip label="More filters" align="start">
-                Category, gender, public display, condition, storage location, tag, date added and taxonomy. Text
-                filters must match the whole value (capital letters don&apos;t matter). Dates use Philippine time.
-              </InfoTip>
+          <details open={advancedOpen} className="group min-w-0 flex-1">
+            <summary className={FILTER_TOGGLE_CLASSES}>
+              <FilterToggleContent>
+                More filters
+                <InfoTip label="More filters" align="start">
+                  Category, gender, public display, condition, storage location, tag, date added and taxonomy. Text
+                  filters must match the whole value (capital letters don&apos;t matter). Dates use Philippine time.
+                </InfoTip>
+              </FilterToggleContent>
             </summary>
 
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -329,7 +337,7 @@ export function SpecimenToolbar({
             {hasFilters && <ClearSpecimenFiltersLink />}
             <button
               type="submit"
-              className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest-800"
+              className="h-10 rounded-lg bg-forest-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-forest-800"
             >
               Search
             </button>

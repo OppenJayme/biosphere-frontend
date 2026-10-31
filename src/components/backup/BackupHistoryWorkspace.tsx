@@ -1,19 +1,15 @@
 /** Read-only backup metadata table with server-backed filters and pagination. */
 
 import Link from "next/link";
-import {
-  ArchiveIcon,
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SearchIcon,
-} from "@/components/icons";
+import { ArchiveIcon, CalendarIcon, SearchIcon } from "@/components/icons";
+import { TablePagination } from "@/components/ui/TablePagination";
 import { backupHistoryHref } from "@/features/backup/query";
 import {
-  BACKUP_PAGE_SIZES,
   BACKUP_STATUSES,
+  DEFAULT_BACKUP_PAGE_SIZE,
   type BackupHistoryListQuery,
   type BackupHistoryPage,
+  type BackupPageSize,
   type BackupStatus,
 } from "@/features/backup/types";
 
@@ -43,12 +39,6 @@ function formatTimestamp(value: string | null) {
       }).format(date);
 }
 
-function paginationPages(current: number, last: number) {
-  return [...new Set([1, current - 1, current, current + 1, last])]
-    .filter((page) => page >= 1 && page <= last)
-    .sort((a, b) => a - b);
-}
-
 export function BackupHistoryWorkspace({
   history,
   query,
@@ -58,9 +48,6 @@ export function BackupHistoryWorkspace({
   query: BackupHistoryListQuery;
   errorMessage?: string;
 }) {
-  const lastPage = history ? Math.max(1, Math.ceil(history.total / history.limit)) : 1;
-  const pages = paginationPages(history?.page ?? 1, lastPage);
-
   return (
     <div className="space-y-4">
       <form
@@ -68,6 +55,7 @@ export function BackupHistoryWorkspace({
         method="get"
         className="space-y-3 rounded-xl border border-black/10 bg-white p-5"
       >
+        {query.limit !== DEFAULT_BACKUP_PAGE_SIZE && <input type="hidden" name="limit" value={query.limit} />}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="xl:col-span-2">
             <span className="mb-1 block text-xs font-medium text-zinc-600">
@@ -92,15 +80,6 @@ export function BackupHistoryWorkspace({
               <option value="">All statuses</option>
               {BACKUP_STATUSES.map((status) => (
                 <option key={status} value={status}>{codeLabel(status)}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span className="mb-1 block text-xs font-medium text-zinc-600">Rows per page</span>
-            <select name="limit" defaultValue={query.limit} className={inputClasses}>
-              {BACKUP_PAGE_SIZES.map((size) => (
-                <option key={size} value={size}>{size} rows</option>
               ))}
             </select>
           </label>
@@ -184,31 +163,16 @@ export function BackupHistoryWorkspace({
                 </table>
               </div>
 
-              <nav aria-label="Backup history pagination" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
-                <p>
-                  Showing {(history.page - 1) * history.limit + 1}–{Math.min(history.page * history.limit, history.total)} of {history.total.toLocaleString()}
-                </p>
-                <div className="flex items-center gap-1">
-                  {history.page > 1 ? (
-                    <Link href={backupHistoryHref(query, history.page - 1)} aria-label="Previous page" className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                      <ChevronLeftIcon className="h-3.5 w-3.5" />
-                    </Link>
-                  ) : <span className="flex h-8 w-8 items-center justify-center text-zinc-300"><ChevronLeftIcon className="h-3.5 w-3.5" /></span>}
-                  {pages.map((page, index) => (
-                    <span key={page} className="contents">
-                      {index > 0 && pages[index - 1] !== page - 1 && <span className="px-1 text-zinc-400">…</span>}
-                      <Link href={backupHistoryHref(query, page)} aria-current={page === history.page ? "page" : undefined} className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 font-medium ${page === history.page ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"}`}>
-                        {page}
-                      </Link>
-                    </span>
-                  ))}
-                  {history.page < lastPage ? (
-                    <Link href={backupHistoryHref(query, history.page + 1)} aria-label="Next page" className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                      <ChevronRightIcon className="h-3.5 w-3.5" />
-                    </Link>
-                  ) : <span className="flex h-8 w-8 items-center justify-center text-zinc-300"><ChevronRightIcon className="h-3.5 w-3.5" /></span>}
-                </div>
-              </nav>
+              <TablePagination
+                className="mt-4"
+                label="Backup history pages"
+                noun="backups"
+                page={history.page}
+                pageSize={query.limit}
+                total={history.total}
+                hrefFor={(target) => backupHistoryHref(query, target)}
+                sizeHrefFor={(size) => backupHistoryHref({ ...query, limit: size as BackupPageSize }, 1)}
+              />
             </>
           ) : (
             <div className="rounded-lg border border-dashed border-black/15 px-4 py-12 text-center">

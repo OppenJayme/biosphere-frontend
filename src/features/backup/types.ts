@@ -3,7 +3,8 @@
 import { z } from "zod";
 
 export const BACKUP_STATUSES = ["IN_PROGRESS", "COMPLETED", "FAILED"] as const;
-export const BACKUP_PAGE_SIZES = [10, 25, 50, 100] as const;
+export const BACKUP_PAGE_SIZES = [10, 25, 50] as const;
+export const DEFAULT_BACKUP_PAGE_SIZE = 10;
 
 const backupCreatorSchema = z.object({
   id: z.uuid(),
