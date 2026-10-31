@@ -100,6 +100,13 @@ export const QUANTITY_ADJUSTMENT_TYPES = [
 export type LotTransactionType = (typeof LOT_TRANSACTION_TYPES)[number];
 export type QuantityAdjustmentType = (typeof QUANTITY_ADJUSTMENT_TYPES)[number];
 
+/** Read compatibility for retained history; never used to populate write commands. */
+export const RECORDED_QUANTITY_ADJUSTMENT_TYPES = [
+  ...QUANTITY_ADJUSTMENT_TYPES,
+  "TEMPORARY_ABSENCE",
+] as const;
+export type RecordedQuantityAdjustmentType = (typeof RECORDED_QUANTITY_ADJUSTMENT_TYPES)[number];
+
 export const storageCapacityWarningSchema = z.object({
   storageUnitId: z.uuid(),
   storageUnitLabel: z.string(),
@@ -114,7 +121,7 @@ export const specimenLotTransactionSchema = z.object({
   targetLotId: z.uuid().nullable(),
   transactionType: z.enum(LOT_TRANSACTION_TYPES),
   quantityAffected: z.number().int().nullable(),
-  adjustmentType: z.enum(QUANTITY_ADJUSTMENT_TYPES).nullable(),
+  adjustmentType: z.enum(RECORDED_QUANTITY_ADJUSTMENT_TYPES).nullable(),
   reason: z.string().nullable(),
   performedBy: z.uuid(),
   createdAt: z.string().min(1),

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADJUSTMENT_TYPE_OPTIONS,
+  adjustmentTypeLabel,
   adjustQuantityFormSchema,
   changeConditionFormSchema,
   lotHistoryHref,
@@ -9,6 +11,19 @@ import {
   parseLotHistorySearch,
   readableLotMessage,
 } from "./operations";
+
+describe("historical adjustment compatibility", () => {
+  it("labels temporary absence without offering it as a new write command", () => {
+    expect(adjustmentTypeLabel("TEMPORARY_ABSENCE")).toBe("Temporary absence");
+    expect(ADJUSTMENT_TYPE_OPTIONS.map((option) => option.value)).not.toContain("TEMPORARY_ABSENCE");
+    const values = { direction: "decrease", quantity: "1", reason: "Synthetic unsupported command" };
+    const schema = adjustQuantityFormSchema(4);
+    expect(schema.safeParse({ ...values, adjustmentType: "REMOVAL" }).success).toBe(true);
+    const result = schema.safeParse({ ...values, adjustmentType: "TEMPORARY_ABSENCE" });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues.some((issue) => issue.path[0] === "adjustmentType")).toBe(true);
+  });
+});
 
 const CURRENT_UNIT = "30000000-0000-4000-8000-000000000001";
 const OTHER_UNIT = "30000000-0000-4000-8000-000000000002";
