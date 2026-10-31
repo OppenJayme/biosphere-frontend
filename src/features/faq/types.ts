@@ -3,7 +3,8 @@
 import { z } from "zod";
 
 export const FAQ_STATUSES = ["ACTIVE", "INACTIVE", "ARCHIVED"] as const;
-export const FAQ_PAGE_LIMIT = 25;
+export const FAQ_PAGE_SIZES = [10, 25, 50] as const;
+export const DEFAULT_FAQ_PAGE_SIZE = 10;
 
 export const faqEntrySchema = z.object({
   id: z.uuid(),
@@ -27,6 +28,7 @@ export const faqEntryPageSchema = z.object({
 });
 
 export type FaqStatus = (typeof FAQ_STATUSES)[number];
+export type FaqPageSize = (typeof FAQ_PAGE_SIZES)[number];
 export type FaqEntry = z.infer<typeof faqEntrySchema>;
 export type FaqEntryPage = z.infer<typeof faqEntryPageSchema>;
 
@@ -35,5 +37,5 @@ export type FaqListQuery = {
   category: string;
   search: string;
   page: number;
-  limit: typeof FAQ_PAGE_LIMIT;
+  limit: FaqPageSize;
 };

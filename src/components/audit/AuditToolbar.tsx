@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { SearchIcon } from "@/components/icons";
 import { FilterChips } from "@/components/ui/FilterChips";
+import { FILTER_TOGGLE_CLASSES, FilterToggleContent } from "@/components/ui/FilterToggle";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { auditLogListHref } from "@/features/audit/query";
-import { AUDIT_PAGE_SIZES, type AuditLogListQuery } from "@/features/audit/types";
+import { DEFAULT_AUDIT_PAGE_SIZE, type AuditLogListQuery } from "@/features/audit/types";
 
 const inputClasses =
   "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
@@ -20,7 +21,7 @@ const RESULT_CHIPS = [
 
 export function AuditToolbar({ query }: { query: AuditLogListQuery }) {
   // The code-level filters stay available but folded away, opened automatically when in use.
-  const advancedInUse = Boolean(query.module || query.action || query.affectedRecordType || query.limit !== 25);
+  const advancedInUse = Boolean(query.module || query.action || query.affectedRecordType);
   const anyFilter = Boolean(query.search || query.result || query.fromDate || query.toDate || advancedInUse);
 
   return (
@@ -36,6 +37,7 @@ export function AuditToolbar({ query }: { query: AuditLogListQuery }) {
 
       <form action="/audit-logs" method="get" className="space-y-3">
         {query.result && <input type="hidden" name="result" value={query.result} />}
+        {query.limit !== DEFAULT_AUDIT_PAGE_SIZE && <input type="hidden" name="limit" value={query.limit} />}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
           <label>
             <span className={labelClasses}>Search</span>
@@ -62,8 +64,10 @@ export function AuditToolbar({ query }: { query: AuditLogListQuery }) {
         </div>
 
         <details open={advancedInUse} className="group">
-          <summary className="cursor-pointer text-sm font-medium text-forest-800 hover:underline">More filters</summary>
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <summary className={FILTER_TOGGLE_CLASSES}>
+            <FilterToggleContent>More filters</FilterToggleContent>
+          </summary>
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
             <label>
               <span className={labelClasses}>
                 Module
@@ -91,16 +95,6 @@ export function AuditToolbar({ query }: { query: AuditLogListQuery }) {
                 placeholder="e.g. specimen"
                 className={inputClasses}
               />
-            </label>
-            <label>
-              <span className={labelClasses}>Rows per page</span>
-              <select name="limit" defaultValue={query.limit} className={inputClasses}>
-                {AUDIT_PAGE_SIZES.map((size) => (
-                  <option key={size} value={size}>
-                    {size} rows
-                  </option>
-                ))}
-              </select>
             </label>
           </div>
         </details>

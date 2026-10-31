@@ -31,7 +31,8 @@ export type AuditLogEntry = z.infer<typeof auditLogEntrySchema>;
 export type AuditLogPage = z.infer<typeof auditLogPageSchema>;
 
 export const AUDIT_RESULTS = ["SUCCESS", "FAILED", "DENIED"] as const;
-export const AUDIT_PAGE_SIZES = [10, 25, 50, 100] as const;
+export const AUDIT_PAGE_SIZES = [10, 25, 50] as const;
+export const DEFAULT_AUDIT_PAGE_SIZE = 10;
 
 export type AuditResult = (typeof AUDIT_RESULTS)[number];
 export type AuditPageSize = (typeof AUDIT_PAGE_SIZES)[number];

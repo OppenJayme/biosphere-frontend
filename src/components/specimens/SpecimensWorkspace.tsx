@@ -1,12 +1,12 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { MouseEvent } from "react";
 import { selectedSpecimenId, specimenSelectionHref } from "@/features/specimens/selection";
 import { SpecimenDetailPanel } from "./SpecimenDetailPanel";
 import { SpecimenTable } from "./SpecimenTable";
 import { SpecimenToolbar } from "./SpecimenToolbar";
-import { PrevNextPagination } from "@/components/ui/PrevNextPagination";
+import { TablePagination } from "@/components/ui/TablePagination";
 import {
   specimenListHref,
   type MuseumCollection,
@@ -39,6 +39,7 @@ export function SpecimensWorkspace({
   statusCounts?: Record<SpecimenStatus, number>;
 }) {
   const { items, limit, page, total } = specimenPage;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const selectedId = selectedSpecimenId(searchParams.get("selected"), items);
 
@@ -48,16 +49,14 @@ export function SpecimensWorkspace({
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
       return;
     event.preventDefault();
-    window.history.pushState(null, "", specimenSelectionHref(query, id));
+    // A double-click selects twice; one history entry keeps Back on the list.
+    if (id !== selectedId) window.history.pushState(null, "", specimenSelectionHref(query, id));
     if (window.matchMedia("(max-width: 1279px)").matches) {
       document.getElementById("selected-specimen")?.scrollIntoView({ block: "start" });
     }
   }
 
   const selected = items.find((specimen) => specimen.id === selectedId) ?? null;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const firstRecord = total === 0 ? 0 : (page - 1) * limit + 1;
-  const lastRecord = Math.min(page * limit, total);
 
   return (
     <div className="space-y-4">
@@ -72,26 +71,23 @@ export function SpecimensWorkspace({
       />
 
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 rounded-xl border border-black/10 bg-white p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-zinc-600">
-              {total === 0
-                ? "No records found"
-                : `Showing ${firstRecord}–${lastRecord} of ${total} specimen records`}
-            </p>
-            <PrevNextPagination
-              label="Specimen catalog pages"
-              page={page}
-              totalPages={totalPages}
-              hrefFor={(target) => specimenListHref(query, target)}
-            />
-          </div>
-
+        <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
           <SpecimenTable
             specimens={items}
             selectedId={selectedId}
             previewHref={(id) => specimenSelectionHref(query, id)}
             onSelect={selectSpecimen}
+            onOpen={(id) => router.push(`/specimens/${id}`)}
+          />
+
+          <TablePagination
+            label="Specimen catalog pages"
+            noun="records"
+            page={page}
+            pageSize={limit}
+            total={total}
+            hrefFor={(target) => specimenListHref(query, target)}
+            sizeHrefFor={(size) => specimenListHref({ ...query, limit: size }, 1)}
           />
         </div>
 

@@ -116,6 +116,7 @@ describe("specimen catalog query handling", () => {
       sortBy: "scientificName",
       sortDirection: "asc",
       page: 3,
+      limit: 10,
       ...NO_ADVANCED_FILTERS,
     });
     expect(specimenListHref(query)).toBe(
@@ -146,8 +147,16 @@ describe("specimen catalog query handling", () => {
       sortBy: "updatedAt",
       sortDirection: "desc",
       page: 1,
+      limit: 10,
       ...NO_ADVANCED_FILTERS,
     });
+  });
+
+  it("keeps a chosen page size in links and ignores sizes the table does not offer", () => {
+    const query = parseSpecimenListQuery({ limit: "25" });
+    expect(query.limit).toBe(25);
+    expect(specimenListHref(query, 2)).toBe("/specimens?limit=25&page=2");
+    expect(parseSpecimenListQuery({ limit: "100" }).limit).toBe(10);
   });
 
   it("omits defaults from pagination links", () => {

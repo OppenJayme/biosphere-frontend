@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
+import { TablePagination } from "@/components/ui/TablePagination";
 import { UserToolbar } from "./UserToolbar";
 import { UserTable } from "./UserTable";
 import { UserDetailPanel } from "./UserDetailPanel";
@@ -53,64 +53,18 @@ export function UsersWorkspace({ users }: { users: AccountUser[] }) {
             </p>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
-            <p>
-              {filtered.length === 0
-                ? "Showing 0 users"
-                : `Showing ${start + 1} to ${start + visible.length} of ${filtered.length} users`}
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Previous page"
-                disabled={currentPage === 1}
-                onClick={() => setPage(currentPage - 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
-              >
-                <ChevronLeftIcon className="h-3.5 w-3.5" />
-              </button>
-              {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
-                <button
-                  key={number}
-                  type="button"
-                  aria-current={number === currentPage ? "page" : undefined}
-                  onClick={() => setPage(number)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
-                    number === currentPage ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
-                  }`}
-                >
-                  {number}
-                </button>
-              ))}
-              <button
-                type="button"
-                aria-label="Next page"
-                disabled={currentPage === pageCount}
-                onClick={() => setPage(currentPage + 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
-              >
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="relative">
-              <select
-                value={pageSize}
-                aria-label="Users per page"
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value) as UserPageSize);
-                  setPage(1);
-                }}
-                className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
-              >
-                {USER_PAGE_SIZES.map((size) => (
-                  <option key={size} value={size}>
-                    {size} / page
-                  </option>
-                ))}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
-            </div>
-          </div>
+          <TablePagination
+            label="User pages"
+            noun="users"
+            page={currentPage}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size as UserPageSize);
+              setPage(1);
+            }}
+          />
         </div>
 
         <UserDetailPanel user={selected} />

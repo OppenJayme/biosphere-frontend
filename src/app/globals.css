@@ -10,6 +10,7 @@
   --color-forest-700: #1f4732;
   --color-forest-600: #2c5c42;
   --color-forest-100: #dfe9e0;
+  --color-forest-50: #ebf2ec;
 
   --color-gold-700: #8a6a1c;
   --color-gold-600: #a9791b;
@@ -59,6 +60,7 @@
   --color-forest-700: var(--color-forest-700);
   --color-forest-600: var(--color-forest-600);
   --color-forest-100: var(--color-forest-100);
+  --color-forest-50: var(--color-forest-50);
 
   --color-gold-700: var(--color-gold-700);
   --color-gold-600: var(--color-gold-600);
@@ -67,6 +69,28 @@
 
   --color-sage-50: var(--color-sage-50);
   --color-sage-100: var(--color-sage-100);
+}
+
+/* Tailwind 4 and native form controls keep the arrow cursor, so they did not look clickable.
+   In the base layer, so utilities such as cursor-grab, cursor-wait and cursor-not-allowed still win. */
+@layer base {
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  input:is([type="checkbox"], [type="radio"], [type="file"]):not(:disabled),
+  label:has(input:is([type="checkbox"], [type="radio"], [type="file"]):not(:disabled)),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  ::file-selector-button {
+    cursor: pointer;
+  }
+}
+
+/* Kept apart: a browser that does not know this pseudo-element would drop a whole selector list. */
+::-webkit-calendar-picker-indicator {
+  cursor: pointer;
 }
 
 body {

@@ -8,13 +8,15 @@ import { ChatIcon, ClockIcon } from "@/components/icons";
 import { FaqKnowledgeManagement } from "./FaqKnowledgeManagement";
 import { faqKnowledgeHref } from "@/features/faq/query";
 import {
+  DEFAULT_FAQ_PAGE_SIZE,
   FAQ_STATUSES,
   type FaqEntry,
   type FaqEntryPage,
   type FaqListQuery,
+  type FaqPageSize,
   type FaqStatus,
 } from "@/features/faq/types";
-import { PrevNextPagination } from "@/components/ui/PrevNextPagination";
+import { TablePagination } from "@/components/ui/TablePagination";
 
 type FaqKnowledgeWorkspaceProps = {
   page: FaqEntryPage | null;
@@ -63,6 +65,7 @@ export function FaqKnowledgeWorkspace({
     <div className="space-y-4">
       <section className="rounded-xl border border-black/10 bg-white p-5">
         <form action="/faq-knowledge" className="flex flex-col gap-3 md:flex-row md:items-end">
+          {query.limit !== DEFAULT_FAQ_PAGE_SIZE && <input type="hidden" name="limit" value={query.limit} />}
           <label className="min-w-0 flex-[2] text-xs font-medium text-zinc-700">
             Search
             <input
@@ -117,7 +120,7 @@ export function FaqKnowledgeWorkspace({
               <table className="w-full min-w-[44rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-black/10 text-xs text-zinc-500">
-                    <th scope="col" className="py-2 pr-3 font-medium">Question</th>
+                    <th scope="col" className="py-2 pr-3 pl-3 font-medium">Question</th>
                     <th scope="col" className="py-2 pr-3 font-medium">Category</th>
                     <th scope="col" className="py-2 pr-3 font-medium">Status</th>
                     <th scope="col" className="py-2 pr-0 font-medium">Last Updated</th>
@@ -125,13 +128,18 @@ export function FaqKnowledgeWorkspace({
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {page.items.map((entry) => (
-                    <tr key={entry.id} className={entry.id === selected?.id ? "bg-forest-50" : "hover:bg-sage-50"}>
+                    <tr
+                      key={entry.id}
+                      className={`border-l-4 transition-colors ${
+                        entry.id === selected?.id ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
+                      }`}
+                    >
                       <td className="p-0">
                         <button
                           type="button"
                           onClick={() => setSelectedId(entry.id)}
                           aria-pressed={entry.id === selected?.id}
-                          className="w-full py-2.5 pr-3 text-left font-medium text-zinc-900 focus-visible:outline-2 focus-visible:outline-forest-700"
+                          className="w-full py-2.5 pr-3 pl-3 text-left font-medium text-zinc-900 focus-visible:outline-2 focus-visible:outline-forest-700"
                         >
                           {entry.question}
                         </button>
@@ -146,7 +154,16 @@ export function FaqKnowledgeWorkspace({
             </div>
           )}
 
-          <Pagination page={page} query={query} />
+          <TablePagination
+            className="mt-4"
+            label="FAQ knowledge pages"
+            noun="entries"
+            page={page.page}
+            pageSize={query.limit}
+            total={page.total}
+            hrefFor={(target) => faqKnowledgeHref(query, target)}
+            sizeHrefFor={(size) => faqKnowledgeHref({ ...query, limit: size as FaqPageSize }, 1)}
+          />
         </section>
 
         <FaqDetail entry={selected} />
@@ -220,22 +237,6 @@ function StatusBadge({ status }: { status: FaqStatus }) {
     ARCHIVED: "bg-zinc-100 text-zinc-600",
   };
   return <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${styles[status]}`}>{humanize(status)}</span>;
-}
-
-function Pagination({ page, query }: { page: FaqEntryPage; query: FaqListQuery }) {
-  const first = page.total === 0 ? 0 : (page.page - 1) * page.limit + 1;
-  const last = Math.min(page.page * page.limit, page.total);
-  return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-sm text-zinc-600">
-      <p>{page.total === 0 ? "No entries" : `Showing ${first}-${last} of ${page.total} entries`}</p>
-      <PrevNextPagination
-        label="FAQ knowledge pages"
-        page={page.page}
-        totalPages={Math.max(1, Math.ceil(page.total / page.limit))}
-        hrefFor={(target) => faqKnowledgeHref(query, target)}
-      />
-    </div>
-  );
 }
 
 function humanize(value: string) {

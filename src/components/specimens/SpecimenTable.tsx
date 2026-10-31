@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { MouseEvent } from "react";
+import { EyeIcon } from "@/components/icons";
 import type { SpecimenSearchItem, SpecimenSummary } from "@/features/specimens/types";
 
 const STATUS_STYLES: Record<SpecimenSummary["status"], string> = {
@@ -45,11 +46,14 @@ export function SpecimenTable({
   specimens,
   selectedId,
   onSelect,
+  onOpen,
   previewHref,
 }: {
   specimens: SpecimenSearchItem[];
   selectedId: string | null;
   onSelect: (event: MouseEvent<HTMLElement>, id: string) => void;
+  /** Double-click: open the full record. */
+  onOpen: (id: string) => void;
   previewHref: (id: string) => string;
 }) {
   if (specimens.length === 0) {
@@ -65,7 +69,7 @@ export function SpecimenTable({
       <table className="w-full min-w-[680px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className="py-2 pr-3 font-medium">Accession No.</th>
+            <th className="py-2 pr-3 pl-3 font-medium">Accession No.</th>
             <th className="py-2 pr-3 font-medium">Specimen</th>
             <th className="py-2 pr-3 font-medium">Category</th>
             <th className="py-2 pr-3 font-medium">Catalog Status</th>
@@ -89,9 +93,17 @@ export function SpecimenTable({
                   if ((event.target as HTMLElement).closest("a,button")) return;
                   onSelect(event, specimen.id);
                 }}
-                className={`cursor-pointer transition-colors ${selected ? "bg-forest-50" : "hover:bg-sage-50"}`}
+                onDoubleClick={(event) => {
+                  // The eye link already opens the record from its first click.
+                  if ((event.target as HTMLElement).closest("[data-open-record]")) return;
+                  onOpen(specimen.id);
+                }}
+                title="Click to preview. Double-click to open the full record."
+                className={`cursor-pointer border-l-4 transition-colors ${
+                  selected ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
+                }`}
               >
-                <td className="py-2.5 pr-3 font-medium whitespace-nowrap text-zinc-900">
+                <td className="py-2.5 pr-3 pl-3 font-medium whitespace-nowrap text-zinc-900">
                   {specimen.accessionNumber ?? <span className="font-normal text-zinc-500">Unassigned</span>}
                 </td>
                 <td className="max-w-56 py-2.5 pr-3 text-zinc-700">
@@ -132,10 +144,12 @@ export function SpecimenTable({
                   <Link
                     href={`/specimens/${specimen.id}`}
                     prefetch={false}
+                    data-open-record
                     aria-label={`View details for ${specimen.commonName ?? specimen.accessionNumber ?? "specimen"}`}
-                    className="rounded-md px-2 py-1 text-xs font-semibold text-forest-700 hover:bg-forest-50 focus-visible:outline-2 focus-visible:outline-forest-700"
+                    title="View full details"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-forest-700 hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-forest-700"
                   >
-                    Details
+                    <EyeIcon className="h-4 w-4" />
                   </Link>
                 </td>
               </tr>

@@ -2,6 +2,7 @@
 
 import {
   BACKUP_PAGE_SIZES,
+  DEFAULT_BACKUP_PAGE_SIZE,
   BACKUP_STATUSES,
   type BackupHistoryListQuery,
   type BackupPageSize,
@@ -41,10 +42,10 @@ export function parseBackupHistoryQuery(
   const status = BACKUP_STATUSES.includes(statusCandidate as BackupStatus)
     ? (statusCandidate as BackupStatus)
     : "";
-  const limitCandidate = positiveInteger(params.limit, 25);
+  const limitCandidate = positiveInteger(params.limit, DEFAULT_BACKUP_PAGE_SIZE);
   const limit = BACKUP_PAGE_SIZES.includes(limitCandidate as BackupPageSize)
     ? (limitCandidate as BackupPageSize)
-    : 25;
+    : DEFAULT_BACKUP_PAGE_SIZE;
 
   return {
     search: boundedText(params.search),
@@ -86,7 +87,7 @@ export function backupHistoryHref(
   if (query.backupType) params.set("backupType", query.backupType);
   if (query.fromDate) params.set("fromDate", query.fromDate);
   if (query.toDate) params.set("toDate", query.toDate);
-  if (query.limit !== 25) params.set("limit", String(query.limit));
+  if (query.limit !== DEFAULT_BACKUP_PAGE_SIZE) params.set("limit", String(query.limit));
   if (page > 1) params.set("page", String(page));
 
   const serialized = params.toString();

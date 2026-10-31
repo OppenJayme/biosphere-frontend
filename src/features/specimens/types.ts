@@ -19,8 +19,12 @@ export type SpecimenStatus = (typeof SPECIMEN_STATUSES)[number];
 export type SpecimenGender = (typeof SPECIMEN_GENDERS)[number];
 export type SpecimenSortField = (typeof SPECIMEN_SORT_FIELDS)[number];
 export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+export type SpecimenPageSize = (typeof SPECIMEN_PAGE_SIZES)[number];
 
 export const SPECIMEN_PAGE_LIMIT = 25;
+/** Rows-per-page choices on the catalog and Cataloging tables; other callers keep SPECIMEN_PAGE_LIMIT. */
+export const SPECIMEN_PAGE_SIZES = [10, 25, 50] as const;
+export const DEFAULT_SPECIMEN_PAGE_SIZE = 10;
 
 export const specimenSummarySchema = z.object({
   id: z.uuid(),
@@ -292,6 +296,7 @@ export type SpecimenListQuery = {
   sortBy: SpecimenSortField;
   sortDirection: SortDirection;
   page: number;
+  limit?: number;
 } & Partial<SpecimenAdvancedFilters>;
 
 /**
@@ -355,6 +360,14 @@ function parsePage(value: string | undefined) {
   return Number.isSafeInteger(page) && page > 0 && page <= 1_000_000 ? page : 1;
 }
 
+/** Unknown sizes fall back to the default, so a hand-edited URL cannot request other page sizes. */
+export function parseSpecimenPageSize(value: string | undefined): SpecimenPageSize {
+  const size = Number(value);
+  return SPECIMEN_PAGE_SIZES.includes(size as SpecimenPageSize)
+    ? (size as SpecimenPageSize)
+    : DEFAULT_SPECIMEN_PAGE_SIZE;
+}
+
 export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenListQuery {
   const rawSearch = firstValue(searchParams.search) ?? "";
   const search = rawSearch.trim().slice(0, 100);
@@ -405,6 +418,7 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
     sortBy,
     sortDirection,
     page: parsePage(firstValue(searchParams.page)),
+    limit: parseSpecimenPageSize(firstValue(searchParams.limit)),
     classificationStatus: boundedText(firstValue(searchParams.classificationStatus)),
     kingdom: boundedText(firstValue(searchParams.kingdom)),
     phylum: boundedText(firstValue(searchParams.phylum)),
@@ -469,6 +483,7 @@ export function specimenListHref(query: SpecimenListQuery, page = query.page) {
   if (query.createdTo) params.set("createdTo", query.createdTo);
   if (query.sortBy !== "updatedAt") params.set("sortBy", query.sortBy);
   if (query.sortDirection !== "desc") params.set("sortDirection", query.sortDirection);
+  if (query.limit && query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE) params.set("limit", String(query.limit));
   if (page > 1) params.set("page", String(page));
 
   const serialized = params.toString();

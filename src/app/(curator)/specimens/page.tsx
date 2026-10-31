@@ -31,7 +31,7 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
   const query = parseSpecimenListQuery(await searchParams);
   // A reversed date range would be refused by the backend; explain it here instead.
   const filterError = specimenDateRangeError(query);
-  const emptyPage: SpecimenPage = { items: [], total: 0, page: 1, limit: SPECIMEN_PAGE_LIMIT };
+  const emptyPage: SpecimenPage = { items: [], total: 0, page: 1, limit: query.limit ?? SPECIMEN_PAGE_LIMIT };
   const [specimenResult, collectionResult, storageResult, summaryResult] = await Promise.allSettled([
     filterError ? Promise.resolve(emptyPage) : searchSpecimens(query),
     listCollections(),

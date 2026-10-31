@@ -25,7 +25,7 @@ export function ExhibitTable({
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className="py-2 pr-3 font-medium">Exhibit / Specimen</th>
+            <th className="py-2 pr-3 pl-3 font-medium">Exhibit / Specimen</th>
             <th className="py-2 pr-3 font-medium">Accession No.</th>
             <th className="py-2 pr-3 font-medium">Public URL</th>
             <th className="py-2 pr-3 font-medium">Publish Status</th>
@@ -51,7 +51,7 @@ export function ExhibitTable({
                   selected ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
                 }`}
               >
-                <td className="py-2.5 pr-3">
+                <td className="py-2.5 pr-3 pl-3">
                   <p className="font-medium whitespace-nowrap text-zinc-900">{exhibitDisplayName(exhibit)}</p>
                   <p className="text-xs italic whitespace-nowrap text-zinc-500">
                     {exhibit.specimen ? (exhibit.specimen.scientificName ?? "—") : "Specimen details unavailable"}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition, type ComponentType, type ReactNode, type SVGProps } from "react";
 import Link from "next/link";
+import { LogoMark } from "@/components/layout/LogoMark";
 import {
   ExternalLinkIcon,
   PrinterIcon,
@@ -33,15 +34,52 @@ import { EXHIBIT_STATUS_LABELS, exhibitDisplayName, type ExhibitRow } from "@/fe
 import { formatExhibitDate, layoutLabel, STATUS_STYLES } from "./exhibit-format";
 import type { ExhibitNotice } from "./ExhibitsWorkspace";
 
+/** Covers the photo frame while a photo downloads; the previous/next buttons stay usable above it. */
+function PhotoLoading() {
+  return (
+    <div role="status" className="absolute inset-0 flex flex-col items-center justify-center bg-sage-100 px-10 text-center">
+      <LogoMark className="h-10 w-10 motion-safe:animate-[loading-breathe_1.8s_ease-in-out_infinite]" />
+      <p className="mt-2 text-xs font-semibold text-forest-900">Loading photo…</p>
+      <div className="mt-2 h-1 w-full max-w-32 overflow-hidden rounded-full bg-forest-100">
+        <div className="h-full w-2/5 rounded-full bg-forest-700 motion-safe:animate-[loading-bar_1.2s_ease-in-out_infinite] motion-reduce:w-full motion-reduce:animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 function Carousel({ images, alt }: { images: { mediaUrl: string; caption: string | null }[]; alt: string }) {
   const [index, setIndex] = useState(0);
+  // Remembered per photo: one already downloaded shows straight away when revisited.
+  const [photoStatus, setPhotoStatus] = useState<Record<string, "loaded" | "failed">>({});
   const image = images[index];
+  const status = photoStatus[image.mediaUrl];
+  const settle = (next: "loaded" | "failed") =>
+    setPhotoStatus((current) => ({ ...current, [image.mediaUrl]: next }));
 
   return (
     <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-sage-100">
       {/* Short-lived signed storage links, so next/image optimisation is not used. */}
+      {/* The key replaces the element, so the previous photo never lingers as if nothing happened. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image.mediaUrl} alt={image.caption ?? alt} className="h-full w-full object-cover" />
+      <img
+        key={image.mediaUrl}
+        src={image.mediaUrl}
+        alt={image.caption ?? alt}
+        decoding="async"
+        onLoad={() => settle("loaded")}
+        onError={() => settle("failed")}
+        className="h-full w-full object-cover"
+      />
+      {!status && <PhotoLoading />}
+      {status === "failed" && (
+        <div
+          role="alert"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-sage-100 px-10 text-center text-xs text-zinc-600"
+        >
+          <ImageIcon className="h-6 w-6 text-forest-700/60" />
+          This photo could not be loaded.
+        </div>
+      )}
       {images.length > 1 && (
         <>
           <button

@@ -1,14 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
+import { TABLE_PAGE_SIZES, TablePagination } from "@/components/ui/TablePagination";
 import type { ExhibitRow, ExhibitStatus } from "@/features/exhibits-qr/types";
 import { ExhibitToolbar } from "./ExhibitToolbar";
 import { ExhibitTable } from "./ExhibitTable";
 import { ExhibitDetailPanel } from "./ExhibitDetailPanel";
 import { CreateExhibitModal } from "./CreateExhibitModal";
-
-const PAGE_SIZES = [10, 25, 50];
 
 export type ExhibitNotice = { tone: "success" | "error"; message: string };
 
@@ -19,18 +17,6 @@ function matches(row: ExhibitRow, term: string) {
   return [row.specimen?.commonName, row.specimen?.scientificName, row.specimen?.accessionNumber, row.publicSlug].some(
     (value) => value?.toLowerCase().includes(term),
   );
-}
-
-/** Page numbers to show: first, last, and a window around the current page. */
-function pageList(current: number, count: number): (number | "gap")[] {
-  const pages = new Set([1, count, current - 1, current, current + 1]);
-  const sorted = [...pages].filter((page) => page >= 1 && page <= count).sort((a, b) => a - b);
-  const result: (number | "gap")[] = [];
-  sorted.forEach((page, index) => {
-    if (index > 0 && page - sorted[index - 1] > 1) result.push("gap");
-    result.push(page);
-  });
-  return result;
 }
 
 export function ExhibitsWorkspace({
@@ -46,7 +32,7 @@ export function ExhibitsWorkspace({
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ExhibitStatus | "">("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZES[0]);
   const [selectedId, setSelectedId] = useState<string | null>(
     exhibits.some((e) => e.id === initialSelectedId) ? initialSelectedId : (exhibits[0]?.id ?? null),
   );
@@ -113,70 +99,18 @@ export function ExhibitsWorkspace({
             </p>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
-            <p>
-              {filtered.length === 0
-                ? "Showing 0 exhibits"
-                : `Showing ${(currentPage - 1) * pageSize + 1} to ${(currentPage - 1) * pageSize + visible.length} of ${filtered.length} exhibits`}
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Previous page"
-                disabled={currentPage === 1}
-                onClick={() => setPage(currentPage - 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-sage-100 disabled:opacity-40 disabled:hover:bg-transparent"
-              >
-                <ChevronLeftIcon className="h-3.5 w-3.5" />
-              </button>
-              {pageList(currentPage, pageCount).map((item, index) =>
-                item === "gap" ? (
-                  <span key={`gap-${index}`} className="px-1">
-                    &hellip;
-                  </span>
-                ) : (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setPage(item)}
-                    aria-current={item === currentPage ? "page" : undefined}
-                    className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
-                      item === currentPage ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
-              <button
-                type="button"
-                aria-label="Next page"
-                disabled={currentPage === pageCount}
-                onClick={() => setPage(currentPage + 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:bg-sage-100 disabled:opacity-40 disabled:hover:bg-transparent"
-              >
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="relative">
-              <select
-                aria-label="Exhibits per page"
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
-              >
-                {PAGE_SIZES.map((size) => (
-                  <option key={size} value={size}>
-                    {size} / page
-                  </option>
-                ))}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
-            </div>
-          </div>
+          <TablePagination
+            label="Exhibit pages"
+            noun="exhibits"
+            page={currentPage}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
         </div>
 
         <div className="xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:rounded-xl">

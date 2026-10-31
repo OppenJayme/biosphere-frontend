@@ -22,7 +22,7 @@ export function UserTable({
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className="py-2 pr-3 font-medium">Name</th>
+            <th className="py-2 pr-3 pl-3 font-medium">Name</th>
             <th className="py-2 pr-3 font-medium">Email</th>
             <th className="py-2 pr-3 font-medium">Status</th>
             <th className="py-2 pr-3 font-medium">Last Sign-in</th>
@@ -48,7 +48,7 @@ export function UserTable({
                   selected ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
                 }`}
               >
-                <td className="py-2.5 pr-3">
+                <td className="py-2.5 pr-3 pl-3">
                   <div className="flex items-center gap-3">
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${user.color}`}

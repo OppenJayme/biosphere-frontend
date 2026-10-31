@@ -3,11 +3,17 @@
  * Queue status stays fixed to Uncataloged; readiness is not inferred from unapproved rules.
  */
 
-import type { SpecimenListQuery } from "./types";
+import {
+  DEFAULT_SPECIMEN_PAGE_SIZE,
+  parseSpecimenPageSize,
+  type SpecimenListQuery,
+  type SpecimenPageSize,
+} from "./types";
 
 export type CatalogingQueueQuery = {
   search: string;
   page: number;
+  limit: SpecimenPageSize;
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -26,6 +32,7 @@ export function parseCatalogingQueueQuery(searchParams: SearchParams): Catalogin
   return {
     search: (firstValue(searchParams.search) ?? "").trim().slice(0, 100),
     page: parsePage(firstValue(searchParams.page)),
+    limit: parseSpecimenPageSize(firstValue(searchParams.limit)),
   };
 }
 
@@ -40,12 +47,14 @@ export function toSpecimenListQuery(query: CatalogingQueueQuery): SpecimenListQu
     sortBy: "updatedAt",
     sortDirection: "desc",
     page: query.page,
+    limit: query.limit,
   };
 }
 
 export function catalogingQueueHref(query: CatalogingQueueQuery, page = query.page) {
   const params = new URLSearchParams();
   if (query.search) params.set("search", query.search);
+  if (query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE) params.set("limit", String(query.limit));
   if (page > 1) params.set("page", String(page));
   const serialized = params.toString();
   return serialized ? `/cataloging?${serialized}` : "/cataloging";
