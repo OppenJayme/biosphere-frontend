@@ -12,7 +12,12 @@ import {
   type SubmissionReceipt,
   type SubmissionResult,
 } from "@/features/public-submissions/submit";
-import { readVisitRequestForm, type VisitFormField } from "@/features/visit-requests/form";
+import {
+  MAX_VEHICLES,
+  readVisitRequestForm,
+  type VehicleField,
+  type VisitFormField,
+} from "@/features/visit-requests/form";
 
 let rowIdCounter = 0;
 function nextRowId() {
@@ -35,8 +40,10 @@ export function RequestVisitForm({
   const [scheduleRows, setScheduleRows] = useState<number[]>(() => [nextRowId()]);
   const [visitorRows, setVisitorRows] = useState<number[]>(() => [nextRowId()]);
   const [bringingVehicle, setBringingVehicle] = useState(false);
+  const [vehicleRows, setVehicleRows] = useState<number[]>(() => [nextRowId()]);
   const [errors, setErrors] = useState<FieldErrors<VisitFormField>>({});
   const [scheduleErrors, setScheduleErrors] = useState<(string | undefined)[]>([]);
+  const [vehicleErrors, setVehicleErrors] = useState<FieldErrors<VehicleField>[]>([]);
   const [failure, setFailure] = useState<Extract<SubmissionResult, { ok: false }> | null>(null);
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -55,6 +62,7 @@ export function RequestVisitForm({
           setScheduleRows([nextRowId()]);
           setVisitorRows([nextRowId()]);
           setBringingVehicle(false);
+          setVehicleRows([nextRowId()]);
           setFormKey((key) => key + 1);
         }}
       >
@@ -79,12 +87,14 @@ export function RequestVisitForm({
     if (!parsed.success) {
       setErrors(parsed.errors);
       setScheduleErrors(parsed.scheduleErrors);
+      setVehicleErrors(parsed.vehicleErrors);
       focusFirstInvalid(formRef.current);
       return;
     }
 
     setErrors({});
     setScheduleErrors([]);
+    setVehicleErrors([]);
     setRetryAllowed(false);
     setSubmitting(true);
     const result = await postPublicSubmission("/visit-requests", parsed.data);
@@ -366,42 +376,81 @@ export function RequestVisitForm({
         </div>
 
         {bringingVehicle && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Plate Number" htmlFor="visit-plate" error={errors.plateNumber}>
-              <input
-                id="visit-plate"
-                name="plateNumber"
-                type="text"
-                placeholder="ABC 1234"
-                required
-                maxLength={20}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-plate", errors.plateNumber)}
-              />
-            </Field>
-            <Field label="Car Brand" htmlFor="visit-car-brand" optional error={errors.carBrand}>
-              <input
-                id="visit-car-brand"
-                name="carBrand"
-                type="text"
-                placeholder="Toyota"
-                maxLength={100}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-car-brand", errors.carBrand)}
-              />
-            </Field>
-            <Field label="Car Type" htmlFor="visit-car-type" optional error={errors.carType}>
-              <input
-                id="visit-car-type"
-                name="carType"
-                type="text"
-                placeholder="Van, Sedan, School Bus"
-                maxLength={100}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-car-type", errors.carType)}
-              />
-            </Field>
-          </div>
+          <>
+            <p className="text-sm text-ink-muted">List each vehicle coming to campus, up to {MAX_VEHICLES}.</p>
+            <ol className="space-y-3">
+              {vehicleRows.map((rowId, index) => {
+                const rowErrors = vehicleErrors[index];
+                return (
+                  <li key={rowId} className="rounded-xl border border-line p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-ink">Vehicle {index + 1}</p>
+                      {vehicleRows.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVehicleRows((rows) => rows.filter((id) => id !== rowId));
+                            setVehicleErrors([]);
+                          }}
+                          aria-label={`Remove vehicle ${index + 1}`}
+                          className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
+                        >
+                          <CloseIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 grid gap-4 sm:grid-cols-3">
+                      <Field label="Plate Number" htmlFor={`visit-plate-${rowId}`} error={rowErrors?.plateNumber}>
+                        <input
+                          id={`visit-plate-${rowId}`}
+                          name="plateNumber"
+                          type="text"
+                          placeholder="ABC 1234"
+                          required
+                          maxLength={20}
+                          className={fieldClasses}
+                          {...fieldErrorProps(`visit-plate-${rowId}`, rowErrors?.plateNumber)}
+                        />
+                      </Field>
+                      <Field label="Car Brand" htmlFor={`visit-car-brand-${rowId}`} optional error={rowErrors?.carBrand}>
+                        <input
+                          id={`visit-car-brand-${rowId}`}
+                          name="carBrand"
+                          type="text"
+                          placeholder="Toyota"
+                          maxLength={100}
+                          className={fieldClasses}
+                          {...fieldErrorProps(`visit-car-brand-${rowId}`, rowErrors?.carBrand)}
+                        />
+                      </Field>
+                      <Field label="Car Type" htmlFor={`visit-car-type-${rowId}`} optional error={rowErrors?.carType}>
+                        <input
+                          id={`visit-car-type-${rowId}`}
+                          name="carType"
+                          type="text"
+                          placeholder="Van, Sedan, School Bus"
+                          maxLength={100}
+                          className={fieldClasses}
+                          {...fieldErrorProps(`visit-car-type-${rowId}`, rowErrors?.carType)}
+                        />
+                      </Field>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {vehicleRows.length < MAX_VEHICLES && (
+              <button
+                type="button"
+                onClick={() => setVehicleRows((rows) => [...rows, nextRowId()])}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add another vehicle
+              </button>
+            )}
+          </>
         )}
       </fieldset>
 
