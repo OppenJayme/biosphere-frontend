@@ -98,3 +98,21 @@ offline mode, and verify both the open workspace and a fresh navigation. A fresh
 navigation must show only `offline.html`; it must not display curator identity or
 museum records. Reconnect and use **Try again** to return to the requested online
 workflow.
+
+## Unsupported offline request regression - 2026-10-31
+
+The real POST-handler suite passes 29/29 cases, including 24 new negative
+requests. Each supplies one unsupported field inside a valid draft or in its
+envelope: `media`, `taxonomy`, `provenance`, `lots`, `quantity`, `storageUnitId`,
+`movements`, `status`, `publicDisplay`, `qrCode`, `reportId` and `createdBy`.
+Every case returns uncached 400 naming the field, with no credential lookup or
+backend forwarding. Existing successful forwarding, 401/403 and invalid-success
+cases remain green. Session/config/remote HTTP are synthetic; the actual handler,
+API client and schemas execute. Changed-test lint and `git diff --check` pass.
+
+This is test-only coverage of existing behavior, not a new feature or application
+repair. Paired protected Nest HTTP checks cover the same 24 rejected inputs and
+verify no receipt lookup or specimen/receipt/audit write through synthetic
+adapters. Neither suite proves live Next middleware, actual login expiry,
+database concurrency, PWA behavior or independent module acceptance. No app
+server, shared record, browser session, dependency or production source changed.

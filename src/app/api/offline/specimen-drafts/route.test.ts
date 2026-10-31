@@ -123,4 +123,35 @@ describe("offline draft route adapter", () => {
     expect(fetcher).not.toHaveBeenCalled();
     expect(getAccessToken).not.toHaveBeenCalled();
   });
+
+  describe.each(["draft", "envelope"] as const)("unsupported fields in the %s", (placement) => {
+    it.each([
+      { field: "media", value: [{ filePath: "synthetic/not-an-upload.jpg" }] },
+      { field: "taxonomy", value: { kingdom: "Animalia" } },
+      { field: "provenance", value: { collectionDate: "2026-01-01" } },
+      { field: "lots", value: [{ quantity: 1 }] },
+      { field: "quantity", value: 5 },
+      { field: "storageUnitId", value: "77777777-7777-4777-8777-777777777777" },
+      { field: "movements", value: [{ reason: "Synthetic move request" }] },
+      { field: "status", value: "ARCHIVED" },
+      { field: "publicDisplay", value: true },
+      { field: "qrCode", value: "synthetic-qr" },
+      { field: "reportId", value: "88888888-8888-4888-8888-888888888888" },
+      { field: "createdBy", value: "99999999-9999-4999-8999-999999999999" },
+    ])("rejects $field before reading credentials or forwarding", async ({ field, value }) => {
+      const body = placement === "draft"
+        ? { ...payload, draft: { ...payload.draft, [field]: value } }
+        : { ...payload, [field]: value };
+
+      const response = await post(request(body));
+
+      expect(response.status).toBe(400);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect((await response.json()).message).toEqual(expect.arrayContaining([
+        expect.stringContaining(field),
+      ]));
+      expect(getAccessToken).not.toHaveBeenCalled();
+      expect(fetcher).not.toHaveBeenCalled();
+    });
+  });
 });
