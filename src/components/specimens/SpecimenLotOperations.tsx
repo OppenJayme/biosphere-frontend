@@ -7,6 +7,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ConditionField } from "@/components/specimens/ConditionField";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import {
@@ -237,18 +238,15 @@ function ChangeConditionForm({ lot }: { lot: LotSnapshot }) {
           <label htmlFor="condition-target" className="block text-xs font-medium text-zinc-700">
             New condition <span aria-hidden="true">*</span>
           </label>
-          <input
+          <ConditionField
+            key={state.values.targetConditionClass}
             id="condition-target"
             name="targetConditionClass"
-            type="text"
             required
             defaultValue={state.values.targetConditionClass}
-            placeholder="Enter the curator-confirmed condition"
-            aria-invalid={Boolean(state.errors?.targetConditionClass?.length)}
-            aria-describedby={describedBy(
-              "condition-target",
-              state.errors?.targetConditionClass,
-            )}
+            emptyLabel="Select a condition"
+            invalid={Boolean(state.errors?.targetConditionClass?.length)}
+            describedBy={describedBy("condition-target", state.errors?.targetConditionClass)}
             className={inputClasses}
           />
           <FieldError id="condition-target" errors={state.errors?.targetConditionClass} />

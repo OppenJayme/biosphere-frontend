@@ -9,6 +9,7 @@ import {
   type CreateLotFormState,
 } from "@/features/specimen-lots/form";
 import type { StorageUnitOption } from "@/features/specimen-lots/types";
+import { ConditionField } from "@/components/specimens/ConditionField";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenLotCreationFormProps = {
@@ -97,21 +98,21 @@ export function SpecimenLotCreationForm({
             <label htmlFor="conditionClass" className="block text-xs font-medium text-zinc-700">
               Condition classification <span aria-hidden="true">*</span>
             </label>
-            <input
+            <ConditionField
+              key={state.values.conditionClass}
               id="conditionClass"
               name="conditionClass"
-              type="text"
               required
               defaultValue={state.values.conditionClass}
-              placeholder="Enter the curator-confirmed condition"
-              aria-invalid={Boolean(state.errors?.conditionClass?.length)}
-              aria-describedby={
+              emptyLabel="Select a condition"
+              invalid={Boolean(state.errors?.conditionClass?.length)}
+              describedBy={
                 state.errors?.conditionClass?.length ? "conditionClass-error" : undefined
               }
               className={inputClasses}
             />
             <p className="mt-1 text-xs text-zinc-500">
-              This remains curator-managed text until the museum approves a controlled list.
+              Choose Other if none of these fits.
             </p>
             <FieldError field="conditionClass" errors={state.errors?.conditionClass} />
           </div>

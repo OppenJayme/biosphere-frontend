@@ -25,6 +25,32 @@ describe("specimen-lot creation form validation", () => {
     });
   });
 
+  it("saves typed conditions under the listed spelling and keeps unlisted ones", () => {
+    const parse = (conditionClass: string) =>
+      createSpecimenLotFormSchema.parse({
+        storageUnitId: STORAGE_ID,
+        conditionClass,
+        quantity: "1",
+        storageNotes: "",
+        reason: "",
+      }).conditionClass;
+
+    expect(parse("  gOOd ")).toBe("Good");
+    expect(parse("Fair  -  cracked")).toBe("Fair - cracked");
+  });
+
+  it("rejects the Other marker instead of saving it as a condition", () => {
+    expect(
+      createSpecimenLotFormSchema.safeParse({
+        storageUnitId: STORAGE_ID,
+        conditionClass: "__other__",
+        quantity: "1",
+        storageNotes: "",
+        reason: "",
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects invalid storage identifiers and unsafe quantities", () => {
     for (const quantity of ["", "0", "-1", "1.5", "2147483648"]) {
       expect(
@@ -51,7 +77,7 @@ describe("specimen-lot creation form validation", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.conditionClass).toEqual([
-        "Enter the specimen condition.",
+        "Select the specimen condition.",
       ]);
     }
   });
