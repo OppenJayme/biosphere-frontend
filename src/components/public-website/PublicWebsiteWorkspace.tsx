@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from "@/components/icons";
 import type { Inquiry } from "@/features/inquiries/types";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
 import { hasListFilters, publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
@@ -75,14 +75,31 @@ export function PublicWebsiteWorkspace({
   };
   const hrefFor = (id: string) => publicWebsiteHref(query, { selected: id });
   const recordLabel = query.tab === "inquiries" ? "inquiries" : "visit requests";
+  const managementTitle = query.tab === "inquiries" ? "General Inquiry Management" : "Visit Request Management";
   const filtered = hasListFilters(query);
+
+  // The management section sits below the table, so bring it into view when another row is
+  // picked. The first load and saves within a record keep the curator where they are.
+  const managementRef = useRef<HTMLElement>(null);
+  const selectedId = selection?.record.id;
+  const previousSelectedId = useRef(selectedId);
+  useEffect(() => {
+    if (selectedId && selectedId !== previousSelectedId.current) {
+      managementRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+    previousSelectedId.current = selectedId;
+  }, [selectedId]);
 
   return (
     <div className="space-y-4">
       <PublicWebsiteToolbar query={query} statusCounts={statusCounts} />
 
-      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section aria-label={`${recordLabel} list`} className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
+      <div className="space-y-6">
+        <section
+          id="submission-list"
+          aria-label={`${recordLabel} list`}
+          className="min-w-0 scroll-mt-20 space-y-4 rounded-xl border border-black/10 bg-white p-5"
+        >
           {listError ? (
             <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
               <p className="font-semibold">Unable to load {recordLabel}</p>
@@ -157,7 +174,23 @@ export function PublicWebsiteWorkspace({
           )}
         </section>
 
-        <aside aria-label="Selected record">
+        <section
+          ref={managementRef}
+          aria-labelledby="submission-management-heading"
+          className="min-w-0 scroll-mt-20 space-y-3"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="submission-management-heading" className="text-lg font-semibold text-zinc-900">
+              {managementTitle}
+            </h2>
+            <a
+              href="#submission-list"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-forest-800 hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-forest-700"
+            >
+              <ChevronUpIcon className="h-3.5 w-3.5" />
+              Back to list
+            </a>
+          </div>
           {selectionError ? (
             <EmptyDetail message={selectionError} />
           ) : selection?.kind === "inquiry" ? (
@@ -178,7 +211,7 @@ export function PublicWebsiteWorkspace({
           ) : (
             <EmptyDetail message={`Select one of the ${recordLabel} to see its details here.`} />
           )}
-        </aside>
+        </section>
       </div>
     </div>
   );
