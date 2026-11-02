@@ -40,10 +40,13 @@ export function SubmissionTable({
   rows,
   selectedId,
   hrefFor,
+  onSelectedRowActivate,
 }: {
   rows: SubmissionRows;
   selectedId: string | null;
   hrefFor: (id: string) => string;
+  /** The selection won't change for the row already selected, so the caller responds here instead. */
+  onSelectedRowActivate: () => void;
 }) {
   const router = useRouter();
 
@@ -51,7 +54,7 @@ export function SubmissionTable({
     const selected = id === selectedId;
     return {
       // The name cell holds the keyboard-focusable link; the whole row is a larger mouse target.
-      onClick: () => router.push(hrefFor(id), { scroll: false }),
+      onClick: () => (selected ? onSelectedRowActivate() : router.push(hrefFor(id), { scroll: false })),
       className: `cursor-pointer border-l-4 align-top transition-colors ${
         selected ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
       }`,
@@ -65,6 +68,12 @@ export function SubmissionTable({
         aria-current={id === selectedId ? "true" : undefined}
         scroll={false}
         onClick={(event) => event.stopPropagation()}
+        onNavigate={(event) => {
+          // onNavigate excludes modified/new-tab clicks, so those still open the record.
+          if (id !== selectedId) return;
+          event.preventDefault();
+          onSelectedRowActivate();
+        }}
         className="font-medium text-zinc-900 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
       >
         {name}

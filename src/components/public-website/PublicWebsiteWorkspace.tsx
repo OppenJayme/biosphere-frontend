@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from "@/components/icons";
 import type { Inquiry } from "@/features/inquiries/types";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
@@ -78,17 +78,19 @@ export function PublicWebsiteWorkspace({
   const managementTitle = query.tab === "inquiries" ? "General Inquiry Management" : "Visit Request Management";
   const filtered = hasListFilters(query);
 
-  // The management section sits below the table, so bring it into view when another row is
-  // picked. The first load and saves within a record keep the curator where they are.
+  // The management section sits below the table, so bring it into view when a row is picked,
+  // including the one already selected. The first load and saves within a record keep the
+  // curator where they are.
   const managementRef = useRef<HTMLElement>(null);
   const selectedId = selection?.record.id;
   const previousSelectedId = useRef(selectedId);
+  const showManagement = useCallback(() => {
+    managementRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, []);
   useEffect(() => {
-    if (selectedId && selectedId !== previousSelectedId.current) {
-      managementRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    }
+    if (selectedId && selectedId !== previousSelectedId.current) showManagement();
     previousSelectedId.current = selectedId;
-  }, [selectedId]);
+  }, [selectedId, showManagement]);
 
   return (
     <div className="space-y-4">
@@ -112,7 +114,12 @@ export function PublicWebsiteWorkspace({
               </Link>
             </div>
           ) : pageRows && total > 0 ? (
-            <SubmissionTable rows={pageRows} selectedId={selection?.record.id ?? null} hrefFor={hrefFor} />
+            <SubmissionTable
+              rows={pageRows}
+              selectedId={selection?.record.id ?? null}
+              hrefFor={hrefFor}
+              onSelectedRowActivate={showManagement}
+            />
           ) : (
             <p className="py-10 text-center text-sm text-zinc-500">
               {filtered
