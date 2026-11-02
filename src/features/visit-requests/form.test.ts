@@ -91,6 +91,11 @@ describe("readVisitRequestForm", () => {
     expect(secondBlank.success).toBe(false);
     if (secondBlank.success) return;
     expect(secondBlank.vehicleErrors).toEqual([{}, { plateNumber: expect.stringMatching(/plate number/) }]);
+
+    const repeated = readVisitRequestForm(formData({ ...vehicles, plateNumber: ["ABC 1234", "abc-1234"] }), TODAY);
+    expect(repeated.success).toBe(false);
+    if (repeated.success) return;
+    expect(repeated.vehicleErrors).toEqual([{}, { plateNumber: "This plate number is already listed." }]);
   });
 
   it("rejects more named visitors than the visitor count, and last names without first names", () => {

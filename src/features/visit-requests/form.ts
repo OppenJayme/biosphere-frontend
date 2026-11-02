@@ -118,10 +118,21 @@ function readVehicles(formData: FormData) {
     vehicleSchema.safeParse({ plateNumber, carBrand: brands[index] ?? "", carType: types[index] ?? "" }),
   );
 
+  // Matches the backend: spacing, hyphens and case don't change a plate.
+  const seenPlates = new Set<string>();
+  const rowErrors = rows.map((row): FieldErrors<VehicleField> => {
+    if (!row.success) return collectFieldErrors<VehicleField>(row.error);
+
+    const plate = row.data.plateNumber.replace(/[\s-]+/g, "").toUpperCase();
+    if (seenPlates.has(plate)) return { plateNumber: "This plate number is already listed." };
+    seenPlates.add(plate);
+    return {};
+  });
+
   return {
     vehicles: rows.flatMap((row) => (row.success ? [row.data] : [])),
-    rowErrors: rows.map((row) => (row.success ? {} : collectFieldErrors<VehicleField>(row.error))),
-    valid: rows.every((row) => row.success),
+    rowErrors,
+    valid: rowErrors.every((errors) => Object.keys(errors).length === 0),
   };
 }
 
