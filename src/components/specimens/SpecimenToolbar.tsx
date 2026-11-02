@@ -3,6 +3,7 @@ import { FilterChips } from "@/components/ui/FilterChips";
 import { FILTER_TOGGLE_CLASSES, FilterToggleContent } from "@/components/ui/FilterToggle";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
+import { ConditionField } from "./ConditionField";
 import {
   DEFAULT_SPECIMEN_PAGE_SIZE,
   hasAdvancedSpecimenFilters,
@@ -249,11 +250,10 @@ export function SpecimenToolbar({
 
               <label className="text-xs font-medium text-zinc-600">
                 Condition (active lot)
-                <input
+                <ConditionField
                   name="conditionClass"
                   defaultValue={query.conditionClass}
-                  maxLength={100}
-                  placeholder="e.g. Good"
+                  emptyLabel="All conditions"
                   className={controlClasses}
                 />
               </label>

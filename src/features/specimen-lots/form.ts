@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeConditionClass } from "./condition-options";
 
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
 
@@ -47,7 +48,10 @@ const optionalText = z
 
 export const createSpecimenLotFormSchema = z.object({
   storageUnitId: z.uuid("Select a valid storage location."),
-  conditionClass: z.string().trim().min(1, "Enter the specimen condition."),
+  conditionClass: z
+    .string()
+    .transform(normalizeConditionClass)
+    .pipe(z.string().min(1, "Select the specimen condition.")),
   quantity: positivePostgresInteger,
   storageNotes: optionalText,
   reason: optionalText,

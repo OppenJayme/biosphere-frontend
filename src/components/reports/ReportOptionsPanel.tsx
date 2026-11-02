@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { DownloadIcon, InfoIcon } from "@/components/icons";
+import { ConditionField } from "@/components/specimens/ConditionField";
 import type { ReportFormState } from "@/features/reports/form";
 import {
   AUDIT_RESULT_OPTIONS,
@@ -44,7 +46,6 @@ function TextFilter({
     | "family"
     | "genus"
     | "species"
-    | "conditionClass"
     | "inquiryType"
     | "auditModule"
     | "auditAction";
@@ -110,12 +111,18 @@ export function ReportOptionsPanel({
   onExport: () => void;
 }) {
   const accepts = new Set(definition.filters);
+  const [clearCount, setClearCount] = useState(0);
+
+  function clearAll() {
+    setClearCount((count) => count + 1);
+    onClear();
+  }
 
   return (
     <section className="flex flex-col rounded-xl border border-black/10 bg-white p-5" aria-labelledby="report-options-heading">
       <div className="mb-1 flex items-center justify-between gap-3">
         <h2 id="report-options-heading" className="text-sm font-semibold text-zinc-900">Report Filters</h2>
-        <button type="button" onClick={onClear} className="text-xs font-medium text-forest-700 hover:text-forest-800">
+        <button type="button" onClick={clearAll} className="text-xs font-medium text-forest-700 hover:text-forest-800">
           Clear all
         </button>
       </div>
@@ -183,7 +190,16 @@ export function ReportOptionsPanel({
               </select>
             </Field>
             <TextFilter label="Category" name="category" form={form} update={update} placeholder="e.g. Insect" />
-            <TextFilter label="Condition" name="conditionClass" form={form} update={update} placeholder="e.g. Good" />
+            <Field label="Condition">
+              <ConditionField
+                // The field keeps its own selection, so restart it whenever filters reset.
+                key={`${definition.type}:${clearCount}`}
+                defaultValue={form.conditionClass}
+                emptyLabel="All conditions"
+                className={inputClasses}
+                onValueChange={(value) => update("conditionClass", value)}
+              />
+            </Field>
           </div>
         )}
 

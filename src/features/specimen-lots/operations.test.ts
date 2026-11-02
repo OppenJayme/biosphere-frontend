@@ -63,6 +63,26 @@ describe("lot condition-change form", () => {
     ).toMatchObject({ targetConditionClass: "Fair - cracked", quantity: 3 });
   });
 
+  it("saves a typed condition under the listed spelling", () => {
+    expect(
+      changeConditionFormSchema(3, "Good").parse({
+        targetConditionClass: " fair ",
+        quantity: "1",
+        reason: "",
+      }).targetConditionClass,
+    ).toBe("Fair");
+  });
+
+  it("rejects the Other marker instead of saving it as a condition", () => {
+    expect(
+      changeConditionFormSchema(3, "Good").safeParse({
+        targetConditionClass: "__other__",
+        quantity: "1",
+        reason: "",
+      }).success,
+    ).toBe(false);
+  });
+
   it("treats a case-only change as unchanged", () => {
     expect(
       changeConditionFormSchema(3, "Good").safeParse({
