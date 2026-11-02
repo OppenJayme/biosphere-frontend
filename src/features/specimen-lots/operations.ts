@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { normalizeConditionClass } from "./condition-options";
 import {
   LOT_TRANSACTION_TYPES,
   QUANTITY_ADJUSTMENT_TYPES,
@@ -52,11 +53,10 @@ function quantityWithin(max: number) {
     );
 }
 
-/** Collapse internal whitespace the same way the backend normalizes condition classes. */
 function conditionText(message: string) {
   return z
     .string()
-    .transform((value) => value.trim().replace(/\s+/g, " "))
+    .transform(normalizeConditionClass)
     .pipe(z.string().min(1, message));
 }
 
@@ -114,10 +114,10 @@ export function emptyChangeConditionValues(
 
 export function changeConditionFormSchema(lotQuantity: number, currentCondition: string) {
   return z.object({
-    targetConditionClass: conditionText("Enter the new condition.").refine(
+    targetConditionClass: conditionText("Select the new condition.").refine(
       // Matching is case-insensitive on the backend, so "good" is not a change from "Good".
       (value) => value.toLocaleLowerCase() !== currentCondition.toLocaleLowerCase(),
-      "Enter a condition different from the current one.",
+      "Select a condition different from the current one.",
     ),
     quantity: quantityWithin(lotQuantity),
     reason: optionalText,
