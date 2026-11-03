@@ -38,17 +38,17 @@ const visitFieldsSchema = z.object({
   consent: consentField,
 });
 
+export const MAX_VEHICLES = 10;
+
 const vehicleSchema = z.object({
   plateNumber: requiredText("the plate number", 20),
   carBrand: optionalText("the car brand", 100),
   carType: optionalText("the car type", 100),
 });
 
-export type VisitFormField =
-  | keyof z.input<typeof visitFieldsSchema>
-  | keyof z.input<typeof vehicleSchema>
-  | "schedules"
-  | "visitors";
+export type VehicleField = keyof z.input<typeof vehicleSchema>;
+
+export type VisitFormField = keyof z.input<typeof visitFieldsSchema> | "schedules" | "visitors";
 
 export type VisitRequestSubmission = {
   name: string;
@@ -61,9 +61,7 @@ export type VisitRequestSubmission = {
   visitorCount: number;
   visitors?: { firstName: string; lastName?: string }[];
   bringingVehicle: boolean;
-  plateNumber?: string;
-  carBrand?: string;
-  carType?: string;
+  vehicles?: z.output<typeof vehicleSchema>[];
   equipment?: string;
   notes?: string;
   consentAccepted: true;
@@ -76,6 +74,8 @@ export type VisitFormResult =
       errors: FieldErrors<VisitFormField>;
       /** One entry per schedule row, in form order; undefined when that row is valid. */
       scheduleErrors: (string | undefined)[];
+      /** One entry per vehicle row, in form order; empty when that row is valid. */
+      vehicleErrors: FieldErrors<VehicleField>[];
     };
 
 /** Schedule rows come in as parallel scheduleDate/scheduleStart/scheduleEnd lists, in form order. */
@@ -110,6 +110,32 @@ function readVisitors(formData: FormData) {
   return { visitors, error };
 }
 
+/** Vehicle rows come in as parallel plateNumber/carBrand/carType lists, in form order. */
+function readVehicles(formData: FormData) {
+  const brands = stringValues(formData, "carBrand");
+  const types = stringValues(formData, "carType");
+  const rows = stringValues(formData, "plateNumber").map((plateNumber, index) =>
+    vehicleSchema.safeParse({ plateNumber, carBrand: brands[index] ?? "", carType: types[index] ?? "" }),
+  );
+
+  // Matches the backend: spacing, hyphens and case don't change a plate.
+  const seenPlates = new Set<string>();
+  const rowErrors = rows.map((row): FieldErrors<VehicleField> => {
+    if (!row.success) return collectFieldErrors<VehicleField>(row.error);
+
+    const plate = row.data.plateNumber.replace(/[\s-]+/g, "").toUpperCase();
+    if (seenPlates.has(plate)) return { plateNumber: "This plate number is already listed." };
+    seenPlates.add(plate);
+    return {};
+  });
+
+  return {
+    vehicles: rows.flatMap((row) => (row.success ? [row.data] : [])),
+    rowErrors,
+    valid: rowErrors.every((errors) => Object.keys(errors).length === 0),
+  };
+}
+
 export function readVisitRequestForm(formData: FormData, today?: string): VisitFormResult {
   const fields = visitFieldsSchema.safeParse({
     name: stringValue(formData, "name"),
@@ -125,13 +151,7 @@ export function readVisitRequestForm(formData: FormData, today?: string): VisitF
   });
 
   const bringingVehicle = stringValue(formData, "bringingVehicle") === "true";
-  const vehicle = bringingVehicle
-    ? vehicleSchema.safeParse({
-        plateNumber: stringValue(formData, "plateNumber"),
-        carBrand: stringValue(formData, "carBrand"),
-        carType: stringValue(formData, "carType"),
-      })
-    : null;
+  const vehicleCheck = bringingVehicle ? readVehicles(formData) : { vehicles: [], rowErrors: [], valid: true };
 
   const schedules = readScheduleRows(formData);
   const scheduleCheck = validateSchedules(schedules, today);
@@ -139,7 +159,6 @@ export function readVisitRequestForm(formData: FormData, today?: string): VisitF
 
   const errors: FieldErrors<VisitFormField> = {};
   if (!fields.success) Object.assign(errors, collectFieldErrors<VisitFormField>(fields.error));
-  if (vehicle && !vehicle.success) Object.assign(errors, collectFieldErrors<VisitFormField>(vehicle.error));
   if (scheduleCheck.listError) errors.schedules = scheduleCheck.listError;
   if (visitorError) errors.visitors = visitorError;
   if (fields.success && visitors.length > fields.data.visitorCount) {
@@ -148,8 +167,13 @@ export function readVisitRequestForm(formData: FormData, today?: string): VisitF
     }. Raise the number of visitors or remove names.`;
   }
 
-  if (!fields.success || (vehicle && !vehicle.success) || !scheduleCheck.valid || errors.visitors) {
-    return { success: false, errors, scheduleErrors: scheduleCheck.rowErrors };
+  if (!fields.success || !vehicleCheck.valid || !scheduleCheck.valid || errors.visitors) {
+    return {
+      success: false,
+      errors,
+      scheduleErrors: scheduleCheck.rowErrors,
+      vehicleErrors: vehicleCheck.rowErrors,
+    };
   }
 
   const { consent, ...contact } = fields.data;
@@ -161,7 +185,7 @@ export function readVisitRequestForm(formData: FormData, today?: string): VisitF
       preferredSchedules: schedules,
       ...(visitors.length > 0 ? { visitors } : {}),
       bringingVehicle,
-      ...(vehicle?.success ? vehicle.data : {}),
+      ...(vehicleCheck.vehicles.length > 0 ? { vehicles: vehicleCheck.vehicles } : {}),
       consentAccepted: true,
     },
   };
