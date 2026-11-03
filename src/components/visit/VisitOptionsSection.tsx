@@ -16,6 +16,7 @@ const REQUEST_VISIT_POINTS = [
 const GENERAL_INQUIRY_POINTS = [
   "Ask about the museum",
   "Inquire about the tour",
+  "Follow up, change, or cancel a visit request",
   "Other concerns or feedback",
 ];
 
