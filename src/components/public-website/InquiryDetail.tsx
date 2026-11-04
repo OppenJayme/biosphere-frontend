@@ -86,6 +86,17 @@ export function InquiryDetail({
               {inquiry.organization ?? <span className="text-zinc-400">Not given</span>}
             </InfoRow>
             <InfoRow label="Topic">{inquiryTypeLabel(inquiry.inquiryType)}</InfoRow>
+            {inquiry.visitReferenceCode && (
+              <InfoRow label="Visit request ref.">
+                {/* Searches the visit requests by the reference number the visitor quoted. */}
+                <Link
+                  href={publicWebsiteHref({ tab: "visits", search: inquiry.visitReferenceCode })}
+                  className="font-mono font-semibold text-forest-800 underline-offset-2 hover:underline"
+                >
+                  {inquiry.visitReferenceCode}
+                </Link>
+              </InfoRow>
+            )}
             {inquiry.consentAcceptedAt && (
               <InfoRow label="Privacy consent">Accepted {formatTimestamp(inquiry.consentAcceptedAt)}</InfoRow>
             )}

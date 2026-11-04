@@ -35,11 +35,15 @@ export function isInquiryFinal(status: InquiryStatus) {
 export const INQUIRY_TYPES = [
   { value: "GENERAL", label: "General question" },
   { value: "TOUR", label: "Tours and visits" },
+  { value: "VISIT_FOLLOW_UP", label: "Follow up, change, or cancel a visit request" },
   { value: "RESEARCH", label: "Research or specimen access" },
   { value: "DONATION", label: "Specimen donation" },
   { value: "MEDIA", label: "Media or publication" },
   { value: "OTHER", label: "Other" },
 ] as const;
+
+/** The topic that asks for the visit request's reference number. */
+export const VISIT_FOLLOW_UP_TYPE = "VISIT_FOLLOW_UP";
 
 export function inquiryTypeLabel(value: string) {
   return INQUIRY_TYPES.find((type) => type.value === value)?.label ?? value;

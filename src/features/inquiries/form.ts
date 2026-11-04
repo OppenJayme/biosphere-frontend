@@ -11,7 +11,17 @@ import {
   stringValue,
   type FieldErrors,
 } from "../public-submissions/form-fields";
-import { INQUIRY_TYPES } from "./workflow";
+import { INQUIRY_TYPES, VISIT_FOLLOW_UP_TYPE } from "./workflow";
+
+// The 8-character reference number on a visit request receipt, e.g. 9A81836F.
+const visitReferenceField = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .refine((value) => value === "" || /^[0-9A-F]{8}$/.test(value), {
+    message: "Enter the 8-character reference number from your visit request email, e.g. 9A81836F.",
+  })
+  .transform((value) => value || undefined);
 
 const inquiryFormSchema = z
   .object({
@@ -20,16 +30,30 @@ const inquiryFormSchema = z
     phone: optionalPhone,
     organization: optionalText("the organization", 100),
     inquiryType: z.enum(INQUIRY_TYPES.map((type) => type.value), "Choose a topic from the list."),
+    visitReferenceCode: visitReferenceField,
     message: requiredText("your message", 2000),
     consent: consentField,
   })
-  .transform(({ consent, ...fields }) => {
+  .transform(({ consent, visitReferenceCode, ...fields }) => {
     void consent;
-    return { ...fields, consentAccepted: true as const };
+    // Only a visit follow-up carries a reference number.
+    return {
+      ...fields,
+      ...(fields.inquiryType === VISIT_FOLLOW_UP_TYPE && { visitReferenceCode }),
+      consentAccepted: true as const,
+    };
   });
 
 export type InquirySubmission = z.output<typeof inquiryFormSchema>;
-export type InquiryFormField = "name" | "email" | "phone" | "organization" | "inquiryType" | "message" | "consent";
+export type InquiryFormField =
+  | "name"
+  | "email"
+  | "phone"
+  | "organization"
+  | "inquiryType"
+  | "visitReferenceCode"
+  | "message"
+  | "consent";
 
 export type InquiryFormResult =
   | { success: true; data: InquirySubmission }
@@ -42,6 +66,7 @@ export function readInquiryForm(formData: FormData): InquiryFormResult {
     phone: stringValue(formData, "phone"),
     organization: stringValue(formData, "organization"),
     inquiryType: stringValue(formData, "inquiryType") || "GENERAL",
+    visitReferenceCode: stringValue(formData, "visitReferenceCode"),
     message: stringValue(formData, "message"),
     consent: formData.get("consent") ?? undefined,
   });

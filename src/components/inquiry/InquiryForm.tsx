@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { Field, FieldGroupLabel, fieldClasses, fieldErrorProps } from "@/components/ui/Field";
+import { Field, FieldGroupLabel, fieldClasses, fieldErrorId, fieldErrorProps } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon } from "@/components/icons";
 import { FormAlert, PrivacyConsent, SubmissionSuccess, focusFirstInvalid } from "@/components/public-forms/FormParts";
 import { readInquiryForm, type InquiryFormField } from "@/features/inquiries/form";
-import { INQUIRY_TYPES } from "@/features/inquiries/workflow";
+import { INQUIRY_TYPES, VISIT_FOLLOW_UP_TYPE } from "@/features/inquiries/workflow";
 import type { FieldErrors } from "@/features/public-submissions/form-fields";
 import {
   postPublicSubmission,
@@ -30,6 +30,8 @@ export function InquiryForm({
   const retryBlocked = failure?.outcome === "unknown" && !retryAllowed;
   // Remounts the form (clearing every field) after "Send another".
   const [formKey, setFormKey] = useState(0);
+  const [topic, setTopic] = useState("GENERAL");
+  const visitFollowUp = topic === VISIT_FOLLOW_UP_TYPE;
 
   if (receipt) {
     return (
@@ -39,6 +41,7 @@ export function InquiryForm({
         onDone={onSubmitted}
         onAnother={() => {
           setReceipt(null);
+          setTopic("GENERAL");
           setFormKey((key) => key + 1);
         }}
       >
@@ -137,7 +140,8 @@ export function InquiryForm({
           <select
             id="inquiry-type"
             name="inquiryType"
-            defaultValue="GENERAL"
+            value={topic}
+            onChange={(event) => setTopic(event.target.value)}
             className={fieldClasses}
             {...fieldErrorProps("inquiry-type", errors.inquiryType)}
           >
@@ -148,12 +152,44 @@ export function InquiryForm({
             ))}
           </select>
         </Field>
+        {visitFollowUp && (
+          <Field
+            label="Visit Request Reference Number"
+            htmlFor="inquiry-visit-reference"
+            optional
+            error={errors.visitReferenceCode}
+          >
+            <input
+              id="inquiry-visit-reference"
+              name="visitReferenceCode"
+              type="text"
+              autoComplete="off"
+              placeholder="e.g. 9A81836F"
+              maxLength={8}
+              className={`${fieldClasses} font-mono uppercase`}
+              {...fieldErrorProps("inquiry-visit-reference", errors.visitReferenceCode)}
+              aria-describedby={[
+                "inquiry-visit-reference-hint",
+                errors.visitReferenceCode && fieldErrorId("inquiry-visit-reference"),
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            />
+            <p id="inquiry-visit-reference-hint" className="mt-1.5 text-xs text-ink-muted">
+              Found in your visit request email and on the confirmation screen.
+            </p>
+          </Field>
+        )}
         <Field label="Message" htmlFor="inquiry-message" error={errors.message}>
           <textarea
             id="inquiry-message"
             name="message"
             rows={5}
-            placeholder="What would you like to ask the museum?"
+            placeholder={
+              visitFollowUp
+                ? "Tell us what you need, e.g. a different date, a new visitor count, or a cancellation."
+                : "What would you like to ask the museum?"
+            }
             required
             maxLength={2000}
             className={fieldClasses}

@@ -47,6 +47,30 @@ describe("readInquiryForm", () => {
     expect(Object.keys(result.errors).sort()).toEqual(["consent", "email", "message", "phone"]);
   });
 
+  it("sends a visit reference number only with a visit follow-up", () => {
+    const followUp = readInquiryForm(
+      formData({ ...valid, inquiryType: "VISIT_FOLLOW_UP", visitReferenceCode: " 9a81836f " }),
+    );
+    expect(followUp.success && followUp.data.visitReferenceCode).toBe("9A81836F");
+
+    const other = readInquiryForm(formData({ ...valid, visitReferenceCode: "9A81836F" }));
+    expect(other.success).toBe(true);
+    if (!other.success) return;
+    expect(other.data).not.toHaveProperty("visitReferenceCode");
+
+    const blank = readInquiryForm(formData({ ...valid, inquiryType: "VISIT_FOLLOW_UP", visitReferenceCode: "" }));
+    expect(blank.success && blank.data.visitReferenceCode).toBeUndefined();
+  });
+
+  it("rejects a malformed visit reference number", () => {
+    const result = readInquiryForm(
+      formData({ ...valid, inquiryType: "VISIT_FOLLOW_UP", visitReferenceCode: "ABC-123" }),
+    );
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.errors.visitReferenceCode).toMatch(/8-character/);
+  });
+
   it("rejects unknown topics and overlong messages", () => {
     const result = readInquiryForm(formData({ ...valid, inquiryType: "HACK", message: "x".repeat(2001) }));
     expect(result.success).toBe(false);

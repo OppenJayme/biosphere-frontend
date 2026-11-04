@@ -15,6 +15,8 @@ export const inquirySchema = z.object({
   organization: z.string().nullable(),
   inquiryType: z.string(),
   message: z.string(),
+  // Visit request reference number quoted by a follow-up; missing from backends without the column.
+  visitReferenceCode: z.string().nullable().default(null),
   status: z.enum(INQUIRY_STATUSES),
   consentAcceptedAt: z.string().nullable(),
   reviewedBy: z.string().nullable(),
