@@ -130,9 +130,13 @@ Reads happen directly in Server Components; writes go through `'use server'` Ser
 2. `lib/session.ts`'s `verifySession()` — the real check, re-run inside every Server Action/data
    call, because proxy matchers can drift out of sync with real routes.
 
-Env vars: only `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SUPABASE_URL` /
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` are client-safe. No service-role key or backend secret ever
-belongs in this repo.
+Env vars: only `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL` /
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SESSION_IDLE_MINUTES` are client-safe. No
+service-role key or backend secret ever belongs in this repo. `.env.example` lists them all.
+
+`NEXT_PUBLIC_SESSION_IDLE_MINUTES` is a required deployment value with no default in the code, and
+a build without it stops. It is fixed at build time. The 30 in `.env.example` is a proposed value
+pending museum approval (REQ-4.1-05), not an approved period.
 
 ## 3. Mirroring the backend's NestJS modules
 

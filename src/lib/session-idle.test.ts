@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   idleCookieString,
   isIdleExpired,
@@ -12,8 +12,14 @@ describe("sessionIdleLimitMs", () => {
     expect(sessionIdleLimitMs("15")).toBe(900_000);
   });
 
-  it.each([undefined, "", "0", "-5", "soon"])("falls back to 30 minutes for %s", (value) => {
-    expect(sessionIdleLimitMs(value)).toBe(1_800_000);
+  it.each(["", "0", "-5", "soon"])("refuses %s rather than assuming a period", (value) => {
+    expect(() => sessionIdleLimitMs(value)).toThrow("NEXT_PUBLIC_SESSION_IDLE_MINUTES");
+  });
+
+  it("refuses to run with the setting missing", () => {
+    vi.stubEnv("NEXT_PUBLIC_SESSION_IDLE_MINUTES", undefined);
+    expect(() => sessionIdleLimitMs()).toThrow("NEXT_PUBLIC_SESSION_IDLE_MINUTES");
+    vi.unstubAllEnvs();
   });
 });
 

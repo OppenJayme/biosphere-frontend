@@ -7,14 +7,15 @@
 
 export const IDLE_COOKIE_NAME = "biosphere_last_activity";
 
-// Placeholder until the museum approves a period; set NEXT_PUBLIC_SESSION_IDLE_MINUTES to change it.
-const DEFAULT_IDLE_MINUTES = 30;
-
 export const IDLE_WARNING_MS = 60_000;
 
+/** The period is a deployment setting with no code default; env.ts stops a build without it. */
 export function sessionIdleLimitMs(minutes = process.env.NEXT_PUBLIC_SESSION_IDLE_MINUTES) {
   const parsed = Number(minutes);
-  return (Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_IDLE_MINUTES) * 60_000;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error("NEXT_PUBLIC_SESSION_IDLE_MINUTES must be a positive number of minutes.");
+  }
+  return parsed * 60_000;
 }
 
 export function parseLastActivity(value: string | undefined | null): number | null {
