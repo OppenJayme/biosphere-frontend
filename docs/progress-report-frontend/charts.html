@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontend Progress Charts</title>
+<style>
+/* Self-contained charts for docs/progress-report-frontend. Data is embedded below (window.DATA);
+   regenerate it from progress-data.json rather than editing numbers by hand. */
+:root {
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --s1: #2a78d6; --s2: #eb6834; --good: #0ca30c; --critical: #d03b3b;
+  --track: #f0efec; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --s1: #3987e5; --s2: #d95926; --track: #383835; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --s1: #3987e5; --s2: #d95926; --track: #383835; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 32px 16px 56px; }
+main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
+h2 { font-size: 1.1rem; margin: 0; }
+p { margin: 0; color: var(--ink-2); max-width: 70ch; }
+.card { background: var(--surface); border: 1px solid var(--grid); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--grid); border-radius: 12px; padding: 16px; }
+.tile .n { font-size: 2.2rem; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile .l { color: var(--ink-2); font-size: .85rem; }
+.meter { position: relative; height: 14px; background: var(--track); border-radius: 999px; overflow: visible; margin: 22px 0 8px; }
+.meter i { position: absolute; inset: 0 auto 0 0; background: var(--s1); border-radius: 999px; }
+.meter b { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--s2); }
+.meter span { position: absolute; top: -24px; font-size: .75rem; color: var(--ink-2); transform: translateX(-50%); white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .85rem; color: var(--ink-2); }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; background: var(--c); }
+svg { width: 100%; height: auto; display: block; overflow: visible; }
+svg text { fill: var(--ink-2); font-size: 12px; }
+svg .val { fill: var(--ink); font-variant-numeric: tabular-nums; }
+svg .grid { stroke: var(--grid); stroke-width: 1; }
+svg .base { stroke: var(--axis); stroke-width: 1; }
+svg .hit { fill: transparent; }
+svg g.row:hover .hit, svg g.row:focus .hit { fill: var(--track); opacity: .5; }
+svg g.row:focus { outline: none; }
+svg g.row:focus-visible .hit { stroke: var(--s1); stroke-width: 2; }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: .85rem; box-shadow: 0 4px 14px rgb(0 0 0 / .15); display: none; max-width: 300px; z-index: 10; }
+details summary { cursor: pointer; color: var(--ink-2); font-size: .85rem; }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: 8px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.note { font-size: .8rem; color: var(--muted); }
+@media (forced-colors: active) { .meter i, .meter b { forced-color-adjust: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>BioSphere frontend progress</h1>
+    <p>Black-box run of <code>develop</code> @ 248bf53 against the local backend, 4–5 Nov 2026. Percentages are the priority-weighted share of frontend-applicable SRS requirements that are Done (High = 2, Medium = 1; Partial counts 0). Details are in <a href="progress-report-frontend.md">progress-report-frontend.md</a>.</p>
+  </header>
+
+  <section class="card" aria-labelledby="c1">
+    <h2 id="c1">Overall frontend progress</h2>
+    <div class="tiles" id="tiles"></div>
+    <div class="meter" id="meter" role="img"></div>
+    <p class="note" id="overallNote"></p>
+  </section>
+
+  <section class="card" aria-labelledby="c2">
+    <h2 id="c2">Progress per module (SRS §4.1–§4.15)</h2>
+    <div id="chartModules"></div>
+    <details><summary>Table view</summary><div id="tblModules"></div></details>
+  </section>
+
+  <section class="card" aria-labelledby="c3">
+    <h2 id="c3">Progress per owner</h2>
+    <p class="note">Shared requirements count toward every listed owner, so owner bars do not add up to the overall figure.</p>
+    <div id="chartOwners"></div>
+    <details><summary>Table view</summary><div id="tblOwners"></div></details>
+  </section>
+
+  <section class="card" aria-labelledby="c4">
+    <h2 id="c4">Test cases passed and failed per module</h2>
+    <div class="legend"><span style="--c: var(--good)">Passed</span><span style="--c: var(--critical)">Failed</span></div>
+    <div id="chartTests"></div>
+    <p class="note">Unique black-box test cases mapped to each module in this run. A case that covers two modules appears in both. Automated lint, unit and build checks are not included.</p>
+    <details><summary>Table view</summary><div id="tblTests"></div></details>
+  </section>
+
+  <section class="card" aria-labelledby="c5">
+    <h2 id="c5">Last report vs verified, per module</h2>
+    <div class="legend"><span style="--c: var(--s2)">Last report (3–4 Nov)</span><span style="--c: var(--s1)">Verified (this run)</span></div>
+    <div id="chartCompare"></div>
+    <p class="note">The last report used partial credit (Partial = 0.5, unweighted). The verified bars use the required Done-only weighted formula, so part of each gap is method, not error. The alignment column in the table is decided per requirement.</p>
+    <details><summary>Table view</summary><div id="tblCompare"></div></details>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+<script>
+window.DATA = {"overall": 92.8, "overallPartial": 95.3, "claimed": 95, "counts": {"Done": 157, "Partial": 10, "Not Started": 3}, "applicable": 170, "na": 22, "total": 192, "mods": [{"s": "4.1", "n": "Authentication and Curator Account Management", "owner": "Voltaire Ratilla", "p": 71.4, "l": 75, "a": "Aligned", "pass": 16, "fail": 2, "failed": ["USR-03", "USR-05"]}, {"s": "4.2", "n": "Restricted Developer Functions", "owner": "Voltaire Ratilla", "p": 87.5, "l": 100, "a": "Overstated", "pass": 6, "fail": 1, "failed": ["DEV-02"]}, {"s": "4.3", "n": "Curator Dashboard and Notifications", "owner": "Charles Boquecosa, John Gerozaga", "p": 70.6, "l": 89, "a": "Overstated", "pass": 5, "fail": 1, "failed": ["DSH-03"]}, {"s": "4.4", "n": "Specimen Inventory and Cataloging", "owner": "Kyer Jayme (Cataloging); John Gerozaga (inventory)", "p": 100.0, "l": 100, "a": "Aligned", "pass": 11, "fail": 0, "failed": []}, {"s": "4.5", "n": "Specimen Lot Grouping and Quantity Management", "owner": "John Gerozaga", "p": 100.0, "l": 100, "a": "Aligned", "pass": 3, "fail": 0, "failed": []}, {"s": "4.6", "n": "Hierarchical Storage-Location Management", "owner": "Kyer Jayme; John Gerozaga (lot placement/movement rows)", "p": 95.7, "l": 100, "a": "Overstated", "pass": 9, "fail": 0, "failed": []}, {"s": "4.7", "n": "Search, Filtering, Reports, and Export", "owner": "John Gerozaga; Kyer Jayme (catalog search)", "p": 100.0, "l": 100, "a": "Aligned", "pass": 8, "fail": 0, "failed": []}, {"s": "4.8", "n": "General Inquiry Management", "owner": "Charles Boquecosa, John Gerozaga", "p": 100.0, "l": 100, "a": "Aligned", "pass": 8, "fail": 0, "failed": []}, {"s": "4.9", "n": "Visit-Request Management", "owner": "Charles Boquecosa", "p": 93.1, "l": 100, "a": "Overstated", "pass": 9, "fail": 1, "failed": ["VRM-02"]}, {"s": "4.10", "n": "Static Public Museum Website", "owner": "Charles Boquecosa, John Gerozaga, Voltaire Ratilla", "p": 80.0, "l": 100, "a": "Overstated", "pass": 6, "fail": 1, "failed": ["PUB-04"]}, {"s": "4.11", "n": "Controlled Knowledge-Based FAQ Assistant", "owner": "Kyer Jayme", "p": 100.0, "l": 100, "a": "Aligned", "pass": 6, "fail": 1, "failed": ["FAQ-05"]}, {"s": "4.12", "n": "QR Exhibit Management and Public QR Pages", "owner": "Voltaire Ratilla", "p": 100.0, "l": 100, "a": "Aligned", "pass": 4, "fail": 1, "failed": ["EXH-02"]}, {"s": "4.13", "n": "Selected WebAR Experiences", "owner": "Voltaire Ratilla", "p": 100.0, "l": 100, "a": "Aligned", "pass": 4, "fail": 0, "failed": []}, {"s": "4.14", "n": "Selected Offline Inventory Operations and Synchronization", "owner": "Kyer Jayme", "p": 100.0, "l": 100, "a": "Aligned", "pass": 7, "fail": 0, "failed": []}, {"s": "4.15", "n": "Audit Logging, Backup, and Recovery", "owner": "Kyer Jayme", "p": 80.0, "l": 83, "a": "Aligned", "pass": 3, "fail": 0, "failed": []}], "owners": {"Voltaire Ratilla": {"percent": 86.1, "applicable": 52, "done": 45}, "Charles Boquecosa": {"percent": 87.5, "applicable": 45, "done": 39}, "John Gerozaga": {"percent": 90.8, "applicable": 56, "done": 50}, "Kyer Jayme": {"percent": 98.3, "applicable": 59, "done": 58}}};
+(function () {
+  const D = window.DATA, NS = "http://www.w3.org/2000/svg", tip = document.getElementById("tip");
+  const el = (n, a = {}, p) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+  const fmt = v => (Math.round(v * 10) / 10).toString().replace(/\.0$/, "") + "%";
+  const show = (ev, html) => { tip.innerHTML = html; tip.style.display = "block"; const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px"; };
+  const hide = () => { tip.style.display = "none"; };
+  const table = (id, head, rows) => { document.getElementById(id).innerHTML = "<table><thead><tr>" + head.map((h, i) => `<th class="${i ? "num" : ""}">${h}</th>`).join("") + "</tr></thead><tbody>" + rows.map(r => "<tr>" + r.map((c, i) => `<td class="${i ? "num" : ""}">${c}</td>`).join("") + "</tr>").join("") + "</tbody></table>"; };
+
+  // Rounded data end only (4px), square at the baseline.
+  const barPath = (x, y, w, h, r = 4) => { if (w <= 0) return ""; r = Math.min(r, w, h / 2); return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`; };
+
+  // Generic horizontal bar chart. series: [{key,color,label}]; rows: [{label, values:{key:v}, tip}]
+  function hbars(id, rows, series, opts = {}) {
+    const host = document.getElementById(id);
+    const labelW = opts.labelW || 230, W = 900, barH = opts.barH || 14, gap = 2, rowPad = 14;
+    const rowH = series.length * barH + (series.length - 1) * gap + rowPad;
+    const max = opts.max || 100, plotW = W - labelW - 60, top = 20, H = top + rows.length * rowH + 8;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.aria || "" }, host);
+    const ticks = opts.ticks || [0, 25, 50, 75, 100];
+    ticks.forEach(t => { const x = labelW + plotW * t / max; el("line", { x1: x, x2: x, y1: top - 6, y2: H - 6, class: t === 0 ? "base" : "grid" }, svg); const tx = el("text", { x, y: 12, "text-anchor": "middle" }, svg); tx.textContent = opts.tickFmt ? opts.tickFmt(t) : t + "%"; });
+    rows.forEach((r, i) => {
+      const y0 = top + i * rowH + rowPad / 2;
+      const g = el("g", { class: "row", tabindex: 0, "aria-label": r.aria || r.label }, svg);
+      el("rect", { class: "hit", x: 0, y: y0 - rowPad / 2, width: W, height: rowH, rx: 4 }, g);
+      const lt = el("text", { x: labelW - 10, y: y0 + (rowH - rowPad) / 2 + 4, "text-anchor": "end" }, g); lt.textContent = r.label;
+      series.forEach((s, j) => {
+        const v = r.values[s.key] || 0, y = y0 + j * (barH + gap), w = plotW * v / max;
+        el("path", { d: barPath(labelW, y, w, barH), fill: s.color }, g);
+        if (opts.label !== false) { const vt = el("text", { x: labelW + w + 6, y: y + barH - 3, class: "val" }, g); vt.textContent = opts.valFmt ? opts.valFmt(v, s) : fmt(v); }
+      });
+      const on = ev => show(ev, r.tip); g.addEventListener("mousemove", on); g.addEventListener("mouseleave", hide);
+      g.addEventListener("focus", () => { const b = g.getBoundingClientRect(); show({ clientX: b.left + labelW, clientY: b.top }, r.tip); }); g.addEventListener("blur", hide);
+    });
+  }
+
+  // Stacked pass/fail bars with a 2px surface gap between segments.
+  function stacked(id, rows, max) {
+    const host = document.getElementById(id), labelW = 230, W = 900, barH = 16, rowH = 28, plotW = W - labelW - 70, top = 20, H = top + rows.length * rowH + 8;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Passed and failed test cases per module" }, host);
+    const step = 5; for (let t = 0; t <= max; t += step) { const x = labelW + plotW * t / max; el("line", { x1: x, x2: x, y1: top - 6, y2: H - 6, class: t === 0 ? "base" : "grid" }, svg); const tx = el("text", { x, y: 12, "text-anchor": "middle" }, svg); tx.textContent = t; }
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + (rowH - barH) / 2, g = el("g", { class: "row", tabindex: 0, "aria-label": `${r.label}: ${r.pass} passed, ${r.fail} failed` }, svg);
+      el("rect", { class: "hit", x: 0, y: y - 6, width: W, height: rowH, rx: 4 }, g);
+      const lt = el("text", { x: labelW - 10, y: y + barH - 4, "text-anchor": "end" }, g); lt.textContent = r.label;
+      const wp = plotW * r.pass / max, wf = plotW * r.fail / max;
+      if (r.fail === 0) el("path", { d: barPath(labelW, y, wp, barH), fill: "var(--good)" }, g);
+      else { el("rect", { x: labelW, y, width: Math.max(wp - 2, 0), height: barH, fill: "var(--good)" }, g); el("path", { d: barPath(labelW + wp, y, wf, barH), fill: "var(--critical)" }, g); }
+      const vt = el("text", { x: labelW + wp + wf + 6, y: y + barH - 4, class: "val" }, g); vt.textContent = r.fail ? `${r.pass} passed · ${r.fail} failed` : `${r.pass} passed`;
+      const html = `<b>§${r.s} ${r.name}</b><br>${r.pass} passed, ${r.fail} failed${r.failed.length ? "<br>Failed: " + r.failed.join(", ") : ""}`;
+      g.addEventListener("mousemove", ev => show(ev, html)); g.addEventListener("mouseleave", hide);
+      g.addEventListener("focus", () => { const b = g.getBoundingClientRect(); show({ clientX: b.left + labelW, clientY: b.top }, html); }); g.addEventListener("blur", hide);
+    });
+  }
+
+  // 1. overall
+  const gap = Math.round((D.overall - D.claimed) * 10) / 10;
+  document.getElementById("tiles").innerHTML = [
+    [fmt(D.overall), "Verified, required formula"], [D.claimed + "%", "Claimed by the last report (3–4 Nov)"],
+    [(gap > 0 ? "+" : "") + gap + " pts", "Gap (verified − claimed)"], [fmt(D.overallPartial), "Verified on the last report's own method"],
+    [`${D.counts.Done} / ${D.counts.Partial} / ${D.counts["Not Started"]}`, `Done / Partial / Not Started (of ${D.applicable} scored)`]
+  ].map(t => `<div class="tile"><div class="n">${t[0]}</div><div class="l">${t[1]}</div></div>`).join("");
+  const m = document.getElementById("meter");
+  m.setAttribute("aria-label", `Verified ${fmt(D.overall)}; last report claimed ${D.claimed}%`);
+  m.innerHTML = `<i style="width:${D.overall}%"></i><b style="left:${D.claimed}%"></b><span style="left:${D.claimed}%">claimed ${D.claimed}%</span>`;
+  document.getElementById("overallNote").textContent = `Blue bar: verified ${fmt(D.overall)}. Orange tick: the last report's ${D.claimed}%. ${D.na} of ${D.total} SRS requirements have no frontend surface and are excluded.`;
+
+  // 2. modules
+  const mods = D.mods.map(x => ({ ...x, label: `§${x.s} ${x.n.length > 30 ? x.n.slice(0, 29) + "…" : x.n}` }));
+  hbars("chartModules", mods.map(x => ({ label: x.label, values: { v: x.p }, tip: `<b>§${x.s} ${x.n}</b><br>${fmt(x.p)} Done (weighted)<br>Owner: ${x.owner}`, aria: `${x.label}: ${fmt(x.p)}` })), [{ key: "v", color: "var(--s1)" }], { aria: "Verified progress per module" });
+  table("tblModules", ["Module", "Verified %", "Owner"], mods.map(x => [`§${x.s} ${x.n}`, fmt(x.p), x.owner]));
+
+  // 3. owners
+  const owners = Object.entries(D.owners).sort((a, b) => b[1].percent - a[1].percent);
+  hbars("chartOwners", owners.map(([n, o]) => ({ label: n, values: { v: o.percent }, tip: `<b>${n}</b><br>${fmt(o.percent)} Done (weighted)<br>${o.done} of ${o.applicable} scored requirements Done`, aria: `${n}: ${fmt(o.percent)}` })), [{ key: "v", color: "var(--s1)" }], { aria: "Verified progress per owner" });
+  table("tblOwners", ["Owner", "Verified %", "Done", "Scored"], owners.map(([n, o]) => [n, fmt(o.percent), o.done, o.applicable]));
+
+  // 4. tests
+  const tmax = Math.ceil(Math.max(...mods.map(x => x.pass + x.fail)) / 5) * 5;
+  stacked("chartTests", mods.map(x => ({ ...x, label: x.label })), tmax);
+  table("tblTests", ["Module", "Passed", "Failed", "Failed cases"], mods.map(x => [`§${x.s} ${x.n}`, x.pass, x.fail, x.failed.join(", ") || "—"]));
+
+  // 5. compare
+  hbars("chartCompare", mods.map(x => ({ label: x.label, values: { last: x.l, now: x.p }, tip: `<b>§${x.s} ${x.n}</b><br>Last report: ${x.l}%<br>Verified: ${fmt(x.p)}<br>Alignment: ${x.a}`, aria: `${x.label}: last report ${x.l}%, verified ${fmt(x.p)}, ${x.a}` })),
+    [{ key: "last", color: "var(--s2)" }, { key: "now", color: "var(--s1)" }], { barH: 11, aria: "Last report versus verified progress per module" });
+  table("tblCompare", ["Module", "Last report %", "Verified %", "Alignment"], mods.map(x => [`§${x.s} ${x.n}`, x.l + "%", fmt(x.p), x.a]));
+})();
+</script>
+</body>
+</html>

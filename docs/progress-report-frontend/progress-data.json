@@ -1,0 +1,1706 @@
+{
+  "side": "frontend",
+  "generated": "2026-11-05",
+  "commit": {
+    "frontend": "248bf53",
+    "backend": "06545c0"
+  },
+  "method": {
+    "percent": "sum(weight of Done applicable requirements) / sum(weight of applicable requirements) x 100; weight High=2, Medium=1; Partial and Not Started count 0; requirements with no frontend surface are excluded",
+    "overallPercent": 92.8,
+    "overallPercentLastReportMethod": 95.3
+  },
+  "lastReport": {
+    "path": "https://claude.ai/artifact/H59jkW2x9ReBWv76nvJ1af (Claude artifact 'BioSphere Frontend Progress')",
+    "date": "2026-11-03/04",
+    "claimedPercent": 95
+  },
+  "modules": [
+    {
+      "name": "§4.1 Authentication and Curator Account Management",
+      "owner": "Voltaire Ratilla",
+      "percent": 71.4,
+      "lastReportPercent": 75,
+      "lastReportStatus": "Incomplete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.1-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-05",
+          "status": "Partial",
+          "lastReportStatus": "Partial",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-08",
+          "status": "Not Started",
+          "lastReportStatus": "Not Started",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.1-09",
+          "status": "Not Started",
+          "lastReportStatus": "Not Started",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.1-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-11",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-12",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-13",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-14",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 3,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-15",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-16",
+          "status": "Not Started",
+          "lastReportStatus": "Not Started",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.1-17",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-18",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Not Started",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.1-19",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.2 Restricted Developer Functions",
+      "owner": "Voltaire Ratilla",
+      "percent": 87.5,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Overstated",
+      "requirements": [
+        {
+          "srsId": "REQ-4.2-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-03",
+          "status": "Partial",
+          "lastReportStatus": "Done",
+          "alignment": "Overstated",
+          "testsPassed": 1,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.2-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.2-09",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.3 Curator Dashboard and Notifications",
+      "owner": "Charles Boquecosa, John Gerozaga",
+      "percent": 70.6,
+      "lastReportPercent": 89,
+      "lastReportStatus": "Incomplete",
+      "alignment": "Overstated",
+      "requirements": [
+        {
+          "srsId": "REQ-4.3-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 3,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-05",
+          "status": "Partial",
+          "lastReportStatus": "Partial",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-07",
+          "status": "Partial",
+          "lastReportStatus": "Done",
+          "alignment": "Overstated",
+          "testsPassed": 0,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.3-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-09",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.3-10",
+          "status": "Partial",
+          "lastReportStatus": "Partial",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.4 Specimen Inventory and Cataloging",
+      "owner": "Kyer Jayme (Cataloging); John Gerozaga (inventory)",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.4-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-11",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-12",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-13",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-14",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-15",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-16",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-17",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-18",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-19",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-20",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-21",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-22",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.4-23",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.5 Specimen Lot Grouping and Quantity Management",
+      "owner": "John Gerozaga",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.5-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.5-11",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.6 Hierarchical Storage-Location Management",
+      "owner": "Kyer Jayme; John Gerozaga (lot placement/movement rows)",
+      "percent": 95.7,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Overstated",
+      "requirements": [
+        {
+          "srsId": "REQ-4.6-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-11",
+          "status": "Partial",
+          "lastReportStatus": "Done",
+          "alignment": "Overstated",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.6-12",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.7 Search, Filtering, Reports, and Export",
+      "owner": "John Gerozaga; Kyer Jayme (catalog search)",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.7-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-06",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-11",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-12",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-13",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-14",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-15",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.7-16",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.8 General Inquiry Management",
+      "owner": "Charles Boquecosa, John Gerozaga",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.8-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 3,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.8-11",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.9 Visit-Request Management",
+      "owner": "Charles Boquecosa",
+      "percent": 93.1,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Overstated",
+      "requirements": [
+        {
+          "srsId": "REQ-4.9-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-03",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-11",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-12",
+          "status": "Partial",
+          "lastReportStatus": "Done",
+          "alignment": "Overstated",
+          "testsPassed": 1,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.9-13",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-14",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-15",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.9-16",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.10 Static Public Museum Website",
+      "owner": "Charles Boquecosa, John Gerozaga, Voltaire Ratilla",
+      "percent": 80.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Overstated",
+      "requirements": [
+        {
+          "srsId": "REQ-4.10-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-04",
+          "status": "Partial",
+          "lastReportStatus": "Done",
+          "alignment": "Overstated",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-06",
+          "status": "Partial",
+          "lastReportStatus": "Done",
+          "alignment": "Overstated",
+          "testsPassed": 0,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.10-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.10-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.11 Controlled Knowledge-Based FAQ Assistant",
+      "owner": "Kyer Jayme",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.11-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.11-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-09",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.11-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.12 QR Exhibit Management and Public QR Pages",
+      "owner": "Voltaire Ratilla",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.12-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 1
+        },
+        {
+          "srsId": "REQ-4.12-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-11",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.12-12",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.13 Selected WebAR Experiences",
+      "owner": "Voltaire Ratilla",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.13-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.13-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.14 Selected Offline Inventory Operations and Synchronization",
+      "owner": "Kyer Jayme",
+      "percent": 100.0,
+      "lastReportPercent": 100,
+      "lastReportStatus": "Complete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.14-01",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-05",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-06",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-07",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-08",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-09",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 3,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-11",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.14-12",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        }
+      ]
+    },
+    {
+      "name": "§4.15 Audit Logging, Backup, and Recovery",
+      "owner": "Kyer Jayme",
+      "percent": 80.0,
+      "lastReportPercent": 83,
+      "lastReportStatus": "Incomplete",
+      "alignment": "Aligned",
+      "requirements": [
+        {
+          "srsId": "REQ-4.15-01",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Partial",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-02",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-03",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-04",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 2,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-05",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-06",
+          "status": "Partial",
+          "lastReportStatus": "Partial",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-07",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-08",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-09",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-10",
+          "status": "Done",
+          "lastReportStatus": "Done",
+          "alignment": "Aligned",
+          "testsPassed": 1,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-11",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        },
+        {
+          "srsId": "REQ-4.15-12",
+          "status": "N/A (no frontend surface)",
+          "lastReportStatus": "Done",
+          "alignment": "Excluded (no frontend surface)",
+          "testsPassed": 0,
+          "testsFailed": 0
+        }
+      ]
+    }
+  ]
+}
