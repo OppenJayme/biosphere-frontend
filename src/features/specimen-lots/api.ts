@@ -8,7 +8,7 @@ import type {
   UpdateLotNotesInput,
 } from "./operations";
 import {
-  activeSpecimenLotSchema,
+  createdSpecimenLotSchema,
   specimenLotHistoryPageSchema,
   specimenLotListSchema,
   specimenLotOperationResultSchema,
@@ -165,7 +165,7 @@ export async function createSpecimenLot(
     `/specimens/${encodeURIComponent(specimenId)}/lots`,
     { method: "POST", body: JSON.stringify(input) },
   );
-  const result = activeSpecimenLotSchema.safeParse(response);
+  const result = createdSpecimenLotSchema.safeParse(response);
 
   if (!result.success) {
     throw new Error("The backend returned an invalid created specimen-lot response.");
