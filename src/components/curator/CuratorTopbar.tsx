@@ -81,7 +81,7 @@ export function CuratorTopbar({
           </span>
         </span>
 
-        <NotificationBell />
+        <NotificationBell ownerId={ownerId} />
 
         <AccountMenu profile={profile} />
       </div>

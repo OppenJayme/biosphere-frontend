@@ -9,12 +9,15 @@ import {
   ChatIcon,
 } from "@/components/icons";
 import {
+  isFailureNotification,
   notificationBadge,
   notificationFeedSchema,
   notificationHref,
   type CuratorNotification,
   type NotificationFeed,
 } from "@/features/notifications/types";
+import { LOCAL_SYNC_ALERT_HREF, withoutServerReported } from "@/features/notifications/local-alerts";
+import { useLocalSyncAlerts } from "@/features/notifications/use-local-sync-alerts";
 import { formatTimestamp } from "@/features/public-submissions/format";
 
 const REFRESH_MS = 60_000;
@@ -25,7 +28,7 @@ type FeedState =
   | { status: "error"; message: string };
 
 function ItemIcon({ item }: { item: CuratorNotification }) {
-  if (item.type === "SUBMISSION_EMAIL_FAILED") {
+  if (isFailureNotification(item.type)) {
     return <AlertTriangleIcon className="h-4 w-4 text-amber-700" />;
   }
   return item.type === "NEW_INQUIRY" ? (
@@ -37,10 +40,14 @@ function ItemIcon({ item }: { item: CuratorNotification }) {
 
 /**
  * Topbar bell for new inquiries and visit requests, and undelivered submission emails
- * (REQ-4.3-05, REQ-4.8-08, REQ-4.9-07). The feed is derived from pending records, so an
- * The optional per-curator state keeps unread alerts separate from unresolved work.
+ * (REQ-4.3-05, REQ-4.8-08, REQ-4.9-07). The feed is derived from pending records; the
+ * optional per-curator state keeps unread alerts separate from unresolved work.
+ * Offline drafts that failed to sync on this device are added from IndexedDB
+ * (REQ-4.3-05/10): they stay visible while the backend feed is unreachable, and they
+ * clear when the draft is retried successfully or discarded in the offline workspace.
  */
-export function NotificationBell() {
+export function NotificationBell({ ownerId }: { ownerId: string }) {
+  const deviceAlerts = useLocalSyncAlerts(ownerId);
   const [state, setState] = useState<FeedState>({ status: "loading" });
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -193,15 +200,17 @@ export function NotificationBell() {
   }
 
   const feed = state.status === "ready" ? state.feed : null;
-  const count = feed
+  const localAlerts = withoutServerReported(deviceAlerts, feed?.items ?? []);
+  const feedCount = feed
     ? feed.stateManagementEnabled
       ? (feed.unreadTotal ?? 0)
       : feed.total
     : 0;
+  const count = feedCount + localAlerts.length;
   const badge = notificationBadge(count);
   const label =
     count > 0
-      ? `Notifications, ${count} ${feed?.stateManagementEnabled ? "unread" : "need attention"}`
+      ? `Notifications, ${count} ${feed?.stateManagementEnabled && localAlerts.length === 0 ? "unread" : "need attention"}`
       : "Notifications";
 
   return (
@@ -241,9 +250,44 @@ export function NotificationBell() {
               <p className="text-xs text-zinc-500">
                 {feed.pendingInquiries} inquiries · {feed.pendingVisitRequests}{" "}
                 visit requests pending
+                {feed.operationalAlerts > 0 &&
+                  ` · ${feed.operationalAlerts} unresolved ${feed.operationalAlerts === 1 ? "failure" : "failures"}`}
               </p>
             )}
           </div>
+
+          {localAlerts.length > 0 && (
+            <ul
+              aria-label="Alerts on this device"
+              className="divide-y divide-black/5 border-b border-black/10"
+            >
+              {localAlerts.map((alert) => (
+                <li key={alert.id}>
+                  <Link
+                    href={LOCAL_SYNC_ALERT_HREF}
+                    onClick={() => setOpen(false)}
+                    className="flex gap-3 bg-amber-50/60 px-4 py-3 text-sm hover:bg-sage-50 focus-visible:bg-sage-50 focus-visible:outline-none"
+                  >
+                    <span className="mt-0.5 shrink-0">
+                      <AlertTriangleIcon className="h-4 w-4 text-amber-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-medium text-zinc-900">
+                        {alert.title}
+                      </span>
+                      <span className="block truncate text-xs text-zinc-600">
+                        {alert.draftLabel}
+                        {alert.reason ? ` · ${alert.reason}` : ""}
+                      </span>
+                      <span className="block text-xs text-zinc-500">
+                        This device · {formatTimestamp(alert.updatedAt)}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {state.status === "loading" && (
             <p className="px-4 py-6 text-center text-sm text-zinc-500">
@@ -262,7 +306,7 @@ export function NotificationBell() {
               </button>
             </div>
           )}
-          {feed && feed.items.length === 0 && (
+          {feed && feed.items.length === 0 && localAlerts.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-zinc-500">
               {feed.stateManagementEnabled
                 ? "No notifications to show. Pending work remains available in Public Website."
@@ -277,7 +321,7 @@ export function NotificationBell() {
                     href={notificationHref(item)}
                     onClick={() => setOpen(false)}
                     className={`flex gap-3 px-4 py-3 text-sm hover:bg-sage-50 focus-visible:bg-sage-50 focus-visible:outline-none ${
-                      item.type === "SUBMISSION_EMAIL_FAILED"
+                      isFailureNotification(item.type)
                         ? "bg-amber-50/60"
                         : ""
                     }`}
