@@ -135,8 +135,8 @@ Env vars: only `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL` /
 service-role key or backend secret ever belongs in this repo. `.env.example` lists them all.
 
 `NEXT_PUBLIC_SESSION_IDLE_MINUTES` is a required deployment value with no default in the code, and
-a build without it stops. It is fixed at build time. The 30 in `.env.example` is a proposed value
-pending museum approval (REQ-4.1-05), not an approved period.
+a build without it stops. It is fixed at build time. The 30 in `.env.example` is the team's proposed
+value, pending final client acceptance (REQ-4.1-05).
 
 ## 3. Mirroring the backend's NestJS modules
 

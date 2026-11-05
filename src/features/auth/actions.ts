@@ -99,14 +99,14 @@ export async function signOut() {
   redirect("/login");
 }
 
-/** Called by InactivityGuard once the approved idle period has passed (REQ-4.1-05). */
+/** Called by InactivityGuard once the configured idle period has passed (REQ-4.1-05). */
 export async function signOutInactive() {
   await endSession();
   redirect("/login?error=session_timeout");
 }
 
 /**
- * Changes the signed-in user's own password (REQ-4.1-16). The backend ends every session,
+ * Changes the signed-in user's own password (REQ-4.1-16). The backend revokes the user's sessions,
  * so a successful change always leads back to the sign-in page.
  */
 export async function changePasswordAction(
@@ -208,7 +208,7 @@ export async function resetPassword(formData: FormData) {
   }
 
   // The backend sets the password so the reset is audited and confirmed by
-  // email (REQ-4.1-11, REQ-4.1-18). It also ends every session.
+  // email (REQ-4.1-11, REQ-4.1-18). It also revokes the user's sessions.
   const status = await resetPasswordWithSession(session.access_token, parsedPassword.data);
   if (status === 400) {
     redirect("/login/reset-password?error=weak_password");

@@ -29,6 +29,24 @@ export function isIdleExpired(lastActivity: number | null, now: number, limitMs:
   return lastActivity !== null && now - lastActivity >= limitMs;
 }
 
+export type IdleAction = "none" | "warn" | "lock" | "signOut";
+
+/**
+ * What an open tab should do now. Past the limit the workspace is always hidden: online it signs
+ * out, and offline, where sign-out cannot reach Supabase, it stays locked until connectivity returns.
+ */
+export function idleAction(
+  lastActivity: number | null,
+  now: number,
+  limitMs: number,
+  warningMs: number,
+  online: boolean,
+): IdleAction {
+  if (lastActivity === null) return "none";
+  if (isIdleExpired(lastActivity, now, limitMs)) return online ? "signOut" : "lock";
+  return now - lastActivity >= limitMs - warningMs ? "warn" : "none";
+}
+
 export function idleCookieOptions() {
   return {
     path: "/",

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  idleAction,
   idleCookieString,
   isIdleExpired,
   lastActivityFromCookies,
@@ -20,6 +21,33 @@ describe("sessionIdleLimitMs", () => {
     vi.stubEnv("NEXT_PUBLIC_SESSION_IDLE_MINUTES", undefined);
     expect(() => sessionIdleLimitMs()).toThrow("NEXT_PUBLIC_SESSION_IDLE_MINUTES");
     vi.unstubAllEnvs();
+  });
+});
+
+describe("idleAction", () => {
+  const limit = 1_000;
+  const warning = 100;
+  const action = (last: number | null, now: number, online = true) =>
+    idleAction(last, now, limit, warning, online);
+
+  it("does nothing before the warning period", () => {
+    expect(action(0, 899)).toBe("none");
+  });
+
+  it("does nothing with no recorded activity", () => {
+    expect(action(null, 5_000, false)).toBe("none");
+  });
+
+  it("warns near the limit", () => {
+    expect(action(0, 900)).toBe("warn");
+  });
+
+  it("signs out past the limit while online", () => {
+    expect(action(0, 1_000)).toBe("signOut");
+  });
+
+  it("locks past the limit while offline", () => {
+    expect(action(0, 1_000, false)).toBe("lock");
   });
 });
 
