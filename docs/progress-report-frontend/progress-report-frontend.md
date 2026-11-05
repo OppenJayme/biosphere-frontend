@@ -1,6 +1,6 @@
 # BioSphere frontend progress report
 
-> **Screenshots are not in Git.** The `screenshots/` evidence images (103 files) were captured from the shared database and show real account emails, so they are kept out of the repository per CLAUDE.md. The image links below resolve only in a local copy of this folder; ask the report author for the files.
+> **Screenshots are not in Git.** The `screenshots/` evidence images (98 files) were captured from the shared database and show real account emails, so they are kept out of the repository per CLAUDE.md. The image links below resolve only in a local copy of this folder; ask the report author for the files.
 
 Verified on **2026-11-04/05** by black-box testing of `biosphere-frontend` `develop` @ `248bf53`
 against the local backend `develop` @ `06545c0`. The frontend ran as a production build (`npm run build` +
