@@ -85,7 +85,7 @@ export default async function LoginPage({
             Remember Me
           </label>
           <Link href="/login/forgot-password" className="font-medium text-sky-600 hover:text-sky-700">
-            Forget Password ?
+            Forgot password?
           </Link>
         </div>
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   activeSpecimenLotSchema,
+  createdSpecimenLotSchema,
   buildAssignableStorageUnitOptions,
+  buildStorageUnitPathLabels,
   storageUnitSchema,
   type StorageUnit,
 } from "./types";
@@ -24,6 +26,19 @@ function unit(overrides: Partial<StorageUnit>): StorageUnit {
     ...overrides,
   };
 }
+
+describe("storage-unit path labels", () => {
+  it("joins root-to-unit labels with the shared › separator", () => {
+    const roomId = "10000000-0000-4000-8000-000000000002";
+    const drawerId = "10000000-0000-4000-8000-000000000003";
+    const labels = buildStorageUnitPathLabels([
+      unit({}),
+      unit({ id: roomId, label: "Room 1", unitType: "ROOM", parentId: unit({}).id }),
+      unit({ id: drawerId, label: "Drawer A", unitType: "DRAWER", parentId: roomId }),
+    ]);
+    expect(labels.get(drawerId)).toBe("Museum › Room 1 › Drawer A");
+  });
+});
 
 describe("assignable storage-unit options", () => {
   it("requires the complete storage response contract", () => {
@@ -63,7 +78,7 @@ describe("assignable storage-unit options", () => {
     ).toEqual([
       {
         id: cabinetId,
-        label: "Museum / Room 1 / Cabinet A (CABINET · DRY_STORAGE)",
+        label: "Museum › Room 1 › Cabinet A (CABINET · DRY_STORAGE)",
       },
     ]);
   });
@@ -101,5 +116,20 @@ describe("active specimen-lot response", () => {
     expect(
       activeSpecimenLotSchema.safeParse({ ...response, isActive: false }).success,
     ).toBe(false);
+  });
+
+  it("keeps the capacity warning returned with a created lot", () => {
+    const capacityWarning = {
+      storageUnitId: response.storageUnitId,
+      storageUnitLabel: "Drawer A",
+      capacity: 3,
+      occupiedQuantity: 5,
+      exceededBy: 2,
+    };
+    const parsed = createdSpecimenLotSchema.parse({ ...response, capacityWarning });
+    expect(parsed.capacityWarning).toEqual(capacityWarning);
+    expect(createdSpecimenLotSchema.parse({ ...response, capacityWarning: null }).capacityWarning)
+      .toBeNull();
+    expect(createdSpecimenLotSchema.parse(response).capacityWarning).toBeUndefined();
   });
 });

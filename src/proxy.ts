@@ -24,6 +24,8 @@ const PROTECTED_PREFIX_PATHS = [
   "/storage",
   "/cataloging",
   "/audit-logs",
+  "/backup-history",
+  "/faq-knowledge",
   "/public-website",
   "/reports",
   "/users",
