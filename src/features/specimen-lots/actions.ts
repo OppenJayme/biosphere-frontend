@@ -73,15 +73,23 @@ export async function createSpecimenLotAction(
     };
   }
 
+  let created;
   try {
-    await createSpecimenLot(safeId.data, parsed.result.data);
+    created = await createSpecimenLot(safeId.data, parsed.result.data);
   } catch (error) {
     return { values: parsed.values, message: createLotErrorMessage(error) };
   }
 
   revalidatePath("/specimens");
   revalidatePath(`/specimens/${safeId.data}`);
-  redirect(`/specimens/${safeId.data}?lot=created`);
+  // Land on the new lot, like the other lot workflows, so a capacity warning can be shown
+  // next to the storage location it concerns (REQ-4.6-11).
+  redirect(
+    lotNoticeHref(safeId.data, created.id, {
+      lot: "created",
+      capacity: created.capacityWarning?.exceededBy,
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------
