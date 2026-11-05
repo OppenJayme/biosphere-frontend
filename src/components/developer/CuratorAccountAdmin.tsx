@@ -95,8 +95,15 @@ function OnboardCuratorForm({ hasActiveCurator }: { hasActiveCurator: boolean })
   );
 }
 
-function StatusBadge({ status }: { status: CuratorAccount["status"] }) {
-  return status === "ACTIVE" ? (
+function StatusBadge({ curator }: { curator: CuratorAccount }) {
+  if (curator.status === "ACTIVE" && !curator.inviteAccepted) {
+    return (
+      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
+        Pending invite
+      </span>
+    );
+  }
+  return curator.status === "ACTIVE" ? (
     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
       Active
     </span>
@@ -159,7 +166,8 @@ function CuratorStatusControl({ curator }: { curator: CuratorAccount }) {
 }
 
 export function CuratorAccountAdmin({ curators }: { curators: CuratorAccount[] | null }) {
-  const hasActiveCurator = curators?.some((curator) => curator.status === "ACTIVE") ?? false;
+  const hasActiveCurator =
+    curators?.some((curator) => curator.status === "ACTIVE" && curator.inviteAccepted) ?? false;
 
   return (
     <section className="space-y-4" aria-labelledby="curator-admin-heading">
@@ -196,7 +204,7 @@ export function CuratorAccountAdmin({ curators }: { curators: CuratorAccount[] |
                 <tr key={`${curator.id}-${curator.status}`} className="align-top">
                   <td className="px-4 py-3 font-medium text-zinc-900">{curator.fullName}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={curator.status} />
+                    <StatusBadge curator={curator} />
                   </td>
                   <td className="px-4 py-3 text-zinc-600">{isoDate(curator.createdAt)}</td>
                   <td className="px-4 py-3">

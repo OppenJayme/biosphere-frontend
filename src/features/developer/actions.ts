@@ -51,17 +51,17 @@ function developerError(error: unknown, operation: DeveloperOperation) {
         : "This AR asset no longer exists. Reload the list.";
     }
     if (error.status === 409 && operation === "onboard") {
-      return "The invitation could not be sent. The email may already belong to an existing account.";
+      return "An account with this email address already exists. If the invitation is still pending, it appears in the list below.";
     }
     if (error.status === 400) {
       return operation === "onboard"
         ? "Check the curator's email address and full name."
-        : "The backend rejected this request. Check the values and try again.";
+        : (backendMessage(error) ?? "The backend rejected this request. Check the values and try again.");
     }
     if (error.status === 429) return "Too many requests. Wait a minute and try again.";
     if (error.status >= 500 && operation === "onboard") {
-      // The invite may already have been emailed; retrying blindly could double-provision.
-      return "The onboarding did not finish. Check the curator list and the audit log before retrying.";
+      // The backend removes a half-created invite, so its message says whether a retry is safe.
+      return backendMessage(error) ?? "The onboarding did not finish. Check the curator list before retrying.";
     }
   }
   return "The change could not be saved. Check your connection and try again.";

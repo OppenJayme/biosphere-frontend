@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Geist, Playfair_Display } from "next/font/google";
+import Link from "next/link";
+import { InactivityGuard } from "@/components/auth/InactivityGuard";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { signOut } from "@/features/auth/actions";
 import { getDeveloperAccess } from "@/features/developer/session";
@@ -39,6 +41,7 @@ export default async function DeveloperLayout({ children }: { children: ReactNod
       className={`${geistSans.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-sage-50/60 font-sans text-zinc-900">
+        <InactivityGuard />
         <header className="border-b border-black/10 bg-white">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-6">
             <div className="flex items-center gap-3">
@@ -55,6 +58,12 @@ export default async function DeveloperLayout({ children }: { children: ReactNod
                   <span className="text-zinc-500">Developer</span>
                 </p>
               )}
+              <Link
+                href="/developer/password"
+                className="rounded-lg border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
+              >
+                Change password
+              </Link>
               <form action={signOut}>
                 <button
                   type="submit"
