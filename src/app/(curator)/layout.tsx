@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Geist, Playfair_Display } from "next/font/google";
+import { InactivityGuard } from "@/components/auth/InactivityGuard";
 import { CuratorChrome } from "@/components/curator/CuratorChrome";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { PwaRegistration } from "@/components/pwa/PwaRegistration";
@@ -51,6 +52,7 @@ export default async function CuratorLayout({ children }: { children: ReactNode 
     >
       <body className="min-h-full bg-sage-50/60 font-sans text-zinc-900">
         <PwaRegistration />
+        <InactivityGuard />
         {/* Fail closed: without a verified CURATOR role, render no curator navigation or pages. */}
         {profile?.role === "CURATOR" ? (
           <CuratorChrome ownerId={user.id} profile={profile}>

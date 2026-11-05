@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { ChevronDownIcon, LogOutIcon } from "@/components/icons";
+import { ChevronDownIcon, LockIcon, LogOutIcon } from "@/components/icons";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { signOut } from "@/features/auth/actions";
 
@@ -96,6 +97,15 @@ export function AccountMenu({ profile }: { profile: { fullName: string; role: st
               Signed in as <span className="font-semibold text-zinc-800">{profile.fullName}</span>
             </p>
           )}
+          <Link
+            href="/account/password"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-zinc-700 hover:bg-sage-100 focus-visible:bg-sage-100 focus-visible:outline-none"
+          >
+            <LockIcon className="h-4 w-4" />
+            Change password
+          </Link>
           <form action={signOut}>
             <SignOutButton />
           </form>

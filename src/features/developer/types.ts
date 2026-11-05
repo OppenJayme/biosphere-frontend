@@ -16,6 +16,8 @@ export const curatorAccountSchema = z.object({
   fullName: z.string().min(1),
   role: z.literal("CURATOR"),
   status: z.enum(ACCOUNT_STATUSES),
+  /** False until the invited curator sets a password; status stays ACTIVE meanwhile. */
+  inviteAccepted: z.boolean(),
   avatarPath: z.string().nullable().optional(),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
