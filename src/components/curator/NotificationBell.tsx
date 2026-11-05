@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   AlertTriangleIcon,
+  ArchiveIcon,
   BellIcon,
   CalendarIcon,
   ChatIcon,
+  ClipboardIcon,
+  MoveIcon,
 } from "@/components/icons";
 import {
+  isChangeNotification,
   isFailureNotification,
   notificationBadge,
   notificationFeedSchema,
@@ -30,6 +34,15 @@ type FeedState =
 function ItemIcon({ item }: { item: CuratorNotification }) {
   if (isFailureNotification(item.type)) {
     return <AlertTriangleIcon className="h-4 w-4 text-amber-700" />;
+  }
+  if (item.type === "RECORD_INCOMPLETE") {
+    return <ClipboardIcon className="h-4 w-4 text-forest-700" />;
+  }
+  if (item.type === "SPECIMEN_ARCHIVED" || item.type === "SPECIMEN_RESTORED") {
+    return <ArchiveIcon className="h-4 w-4 text-zinc-600" />;
+  }
+  if (isChangeNotification(item.type)) {
+    return <MoveIcon className="h-4 w-4 text-zinc-600" />;
   }
   return item.type === "NEW_INQUIRY" ? (
     <ChatIcon className="h-4 w-4 text-forest-700" />
@@ -252,6 +265,10 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
                 visit requests pending
                 {feed.operationalAlerts > 0 &&
                   ` · ${feed.operationalAlerts} unresolved ${feed.operationalAlerts === 1 ? "failure" : "failures"}`}
+                {feed.incompleteRecords > 0 &&
+                  ` · ${feed.incompleteRecords} uncataloged over 7 days`}
+                {feed.changeEvents > 0 &&
+                  ` · ${feed.changeEvents} recent ${feed.changeEvents === 1 ? "change" : "changes"}`}
               </p>
             )}
           </div>
@@ -310,7 +327,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
             <p className="px-4 py-6 text-center text-sm text-zinc-500">
               {feed.stateManagementEnabled
                 ? "No notifications to show. Pending work remains available in Public Website."
-                : "You're all caught up. New inquiries and visit requests appear here."}
+                : "You're all caught up. New requests, failures and specimen changes appear here."}
             </p>
           )}
           {feed && feed.items.length > 0 && (
