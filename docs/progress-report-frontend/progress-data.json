@@ -7,8 +7,8 @@
   },
   "method": {
     "percent": "sum(weight of Done applicable requirements) / sum(weight of applicable requirements) x 100; weight High=2, Medium=1; Partial and Not Started count 0; requirements with no frontend surface are excluded",
-    "overallPercent": 92.8,
-    "overallPercentLastReportMethod": 95.3
+    "overallPercent": 92.2,
+    "overallPercentLastReportMethod": 95.0
   },
   "lastReport": {
     "path": "https://claude.ai/artifact/H59jkW2x9ReBWv76nvJ1af (Claude artifact 'BioSphere Frontend Progress')",
@@ -19,10 +19,10 @@
     {
       "name": "§4.1 Authentication and Curator Account Management",
       "owner": "Voltaire Ratilla",
-      "percent": 71.4,
+      "percent": 64.3,
       "lastReportPercent": 75,
       "lastReportStatus": "Incomplete",
-      "alignment": "Aligned",
+      "alignment": "Overstated",
       "requirements": [
         {
           "srsId": "REQ-4.1-01",
@@ -45,7 +45,7 @@
           "status": "Done",
           "lastReportStatus": "Done",
           "alignment": "Aligned",
-          "testsPassed": 1,
+          "testsPassed": 2,
           "testsFailed": 0
         },
         {
@@ -170,9 +170,9 @@
         },
         {
           "srsId": "REQ-4.1-19",
-          "status": "Done",
+          "status": "Partial",
           "lastReportStatus": "Done",
-          "alignment": "Aligned",
+          "alignment": "Overstated",
           "testsPassed": 1,
           "testsFailed": 0
         }

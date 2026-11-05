@@ -2,6 +2,8 @@
 
 > **Screenshots are not in Git.** The `screenshots/` evidence images (98 files) were captured from the shared database and show real account emails, so they are kept out of the repository per CLAUDE.md. The image links below resolve only in a local copy of this folder; ask the report author for the files.
 
+> **Revised 2026-11-05 after the PR #104 review.** REQ-4.1-03 was re-verified against the hosted Supabase settings (public sign-up is disabled) and stays Done. REQ-4.1-19 is now Partial: link expiry is not verified. All percentages and comparison counts below are recalculated.
+
 Verified on **2026-11-04/05** by black-box testing of `biosphere-frontend` `develop` @ `248bf53`
 against the local backend `develop` @ `06545c0`. The frontend ran as a production build (`npm run build` +
 `npm run start`) so that the offline service worker was active. Playwright CLI 0.1.23 drove Google Chrome with fresh
@@ -16,18 +18,18 @@ profiles; the Curator and Developer test accounts were signed in by hand.
 
 ## Overall frontend progress
 
-**92.8%** of frontend-applicable SRS requirements are Done (priority-weighted).
+**92.2%** of frontend-applicable SRS requirements are Done (priority-weighted).
 
 | Measure | Value |
 | --- | --- |
 | SRS v0.10 functional requirements | 192 (191 `REQ-4.x-yy` IDs plus `REQ-4.9.16`, a typo for REQ-4.9-16) |
 | With a frontend surface (scored) | 170 |
 | No frontend surface (excluded) | 22 — backend logging, email content, deployment backup/restore and process rules |
-| Done / Partial / Not Started | 157 / 10 / 3 |
-| **Frontend % (required formula)** | **92.8%** |
-| Same data on the last report's method (Done 1, Partial 0.5, unweighted) | 95.3% |
-| Unweighted share Done | 92.4% |
-| Test cases run | 94 (84 pass, 10 fail), plus lint, 501/501 unit tests and a 48-route build |
+| Done / Partial / Not Started | 156 / 11 / 3 |
+| **Frontend % (required formula)** | **92.2%** |
+| Same data on the last report's method (Done 1, Partial 0.5, unweighted) | 95.0% |
+| Unweighted share Done | 91.8% |
+| Test cases run | 95 (85 pass, 10 fail), plus lint, 501/501 unit tests and a 48-route build |
 
 **Formula.** For module *m* (and for the whole frontend, over all scored requirements):
 
@@ -78,7 +80,9 @@ No progress report or BBT file exists in this repository's `docs/`. The reports 
 | 14 | Visit dialog layout | 3 Nov PUB-08 Fail (minor) | Not mentioned | Option card still clipped at 1440 px (PUB-08) | Confirmed UI issue (no SRS failure). |
 | 15 | Unit-test count | Chapter 5: 426 in 71 files | 501 in 77 files | 501/501 in 77 files | The progress report is right; Chapter 5 is out of date. |
 | 16 | Requirement count | Chapter 5: 193 | Completion report: 190 scored | 192 parsed from the SRS | **192.** Neither document's base matches. |
-| 17 | Green Sea Turtle exhibit content | Not mentioned | High: offensive placeholder | Text still 'ninja tortol' / 'Ninja Tortol'. Not screenshotted, to keep the image out of the repo | The progress report is right; still open. |
+| 17 | Public self-registration (REQ-4.1-03) | BB-AUTH-04 Pass (no sign-up route) | §4.1, counted Done | PR #104 review: hosted Supabase had 'Allow new users to sign up' enabled. Re-checked 2026-11-05: GET /auth/v1/settings returns disable_signup=true (SUP-01) | **Done.** Frontend has no route and hosted sign-up is now disabled. Re-check after any Supabase project change. |
+| 18 | Invite/reset link expiry (REQ-4.1-19) | BB-AUTH-12 Pass (wrong code rejected) | §4.1, counted Done | Only a wrong code was tested (AUTH-04). Expiry of a valid link after the configured period was not tested | **Partial**, pending provider configuration evidence or an expiry test. Both documents overstate it (PR #104 review). |
+| 19 | Green Sea Turtle exhibit content | Not mentioned | High: offensive placeholder | Text still 'ninja tortol' / 'Ninja Tortol'. Not screenshotted, to keep the image out of the repo | The progress report is right; still open. |
 
 ## UI map against the SRS
 
@@ -134,16 +138,16 @@ Each module table lists every SRS requirement. *Last report* is the requirement 
 (see the comparison section); *Source* is `live` (tested in this run), `prior` (not re-run because it writes or sends; rated
 from the latest live BBT on unchanged code) or `n/a`.
 
-### §4.1 Authentication and Curator Account Management — 71.4%
+### §4.1 Authentication and Curator Account Management — 64.3%
 
-Owner: Voltaire Ratilla. Done 10, Partial 1, Not Started 3, no frontend surface 5.
-Tests: 18 pass, 3 fail. Last report: 75% (Aligned).
+Owner: Voltaire Ratilla. Done 9, Partial 2, Not Started 3, no frontend surface 5.
+Tests: 19 pass, 3 fail. Last report: 75% (Overstated).
 
 | Requirement | Pri. | Status | Test result | Owner | Screenshot | Last report | Alignment | Source / evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **REQ-4.1-01** The system shall authenticate registered and active curator accounts before granting access to curator functi… | H | Done | AUTH-02 Pass, AUTH-06 Pass | Voltaire Ratilla | [AUTH-02-wrong-credentials.png](screenshots/AUTH-02-wrong-credentials.png) | Done | Aligned | live: Valid sign-in works; wrong password refused generically. |
 | **REQ-4.1-02** The system shall provide each curator with separate credentials and shall not require credential sharing. | H | Done | USR-01 Pass | Voltaire Ratilla | [USR-01-users.png](screenshots/USR-01-users.png) | Done | Aligned | live: Each curator has a separate account; invitations are per person. |
-| **REQ-4.1-03** The system shall prevent public self-registration for curator accounts. | H | Done | AUTH-01 Pass | Voltaire Ratilla | [AUTH-01-login.png](screenshots/AUTH-01-login.png) | Done | Aligned | live: No registration link or route. |
+| **REQ-4.1-03** The system shall prevent public self-registration for curator accounts. | H | Done | AUTH-01 Pass, SUP-01 Pass | Voltaire Ratilla | [AUTH-01-login.png](screenshots/AUTH-01-login.png) | Done | Aligned | live: No registration link or route, and hosted Supabase public sign-up is disabled (disable_signup=true on 2026-11-05). PR #104 review reported it enabled; re-checked after the review. |
 | **REQ-4.1-04** The system shall create a protected authenticated session after successful login. | H | Done | AUTH-06 Pass, CUR-SWEEP Pass | Voltaire Ratilla | [CUR-01-dashboard.png](screenshots/CUR-01-dashboard.png) | Done | Aligned | live: Session persists across all curator pages. |
 | **REQ-4.1-05** The system shall provide secure logout and terminate the session after logout or approved inactivity timeout. | H | **Partial** | AUTH-05 Pass | Voltaire Ratilla | [AUTH-05-logout.png](screenshots/AUTH-05-logout.png) | Partial | Aligned | live: Logout ends the session. No inactivity timeout exists in the frontend. |
 | **REQ-4.1-06** The system shall prevent unauthenticated users from accessing protected curator or developer routes, restrict… | H | Done | AUTH-G1 Pass, AUTH-G2 Pass | Voltaire Ratilla | [AUTH-G1-signed-out-redirect.png](screenshots/AUTH-G1-signed-out-redirect.png) | Done | Aligned | live: All 16 protected routes and API handlers refuse anonymous access. Low issue: 3 routes drop the return path. |
@@ -159,7 +163,7 @@ Tests: 18 pass, 3 fail. Last report: 75% (Aligned).
 | **REQ-4.1-16** The system shall allow an authenticated curator or Developer to change their own password after completing th… | H | **Not Started** | USR-05 Fail | Voltaire Ratilla | [USR-05-profile-menu.png](screenshots/USR-05-profile-menu.png) | Not Started | Aligned | live: No change-password page or menu item. |
 | **REQ-4.1-17** The system shall not send a current or temporary password through email during onboarding, password change, o… | H | N/A | Not re-run | Voltaire Ratilla | — | Done | Excluded | n/a: Email content rule (backend/Supabase). |
 | **REQ-4.1-18** The system should send a confirmation email to the account holder after a successful password change, without… | M | N/A | Not re-run | Voltaire Ratilla | — | Not Started | Excluded | n/a: Confirmation email (backend); blocked anyway by REQ-4.1-16. |
-| **REQ-4.1-19** The system shall ensure that onboarding invitations and password-reset links expire after the approved period… | H | Done | AUTH-04 Pass | Voltaire Ratilla | [AUTH-04-wrong-recovery-code.png](screenshots/AUTH-04-wrong-recovery-code.png) | Done | Aligned | live: Wrong/expired code rejected without account detail. |
+| **REQ-4.1-19** The system shall ensure that onboarding invitations and password-reset links expire after the approved period… | H | **Partial** | AUTH-04 Pass | Voltaire Ratilla | [AUTH-04-wrong-recovery-code.png](screenshots/AUTH-04-wrong-recovery-code.png) | Done | **Overstated** | live: A wrong code is rejected without account detail (AUTH-04), but expiry of an otherwise valid invite or reset link after the configured period is not verified. Pending provider configuration evidence or an expiry-specific test (PR #104 review). |
 
 ### §4.2 Restricted Developer Functions — 87.5%
 
@@ -466,7 +470,7 @@ short of the SRS's 192, and the report does not say which two it dropped.
 
 | Module | Last report % | Verified % (required formula) | Verified % (report's own method) | Alignment |
 | --- | --- | --- | --- | --- |
-| §4.1 Authentication and Curator Account Management | 75% | 71.4% | 75.0% | Aligned |
+| §4.1 Authentication and Curator Account Management | 75% | 64.3% | 71.4% | **Overstated** |
 | §4.2 Restricted Developer Functions | 100% | 87.5% | 93.8% | **Overstated** |
 | §4.3 Curator Dashboard and Notifications | 89% | 70.6% | 83.3% | **Overstated** |
 | §4.4 Specimen Inventory and Cataloging | 100% | 100.0% | 100.0% | Aligned |
@@ -481,12 +485,13 @@ short of the SRS's 192, and the report does not say which two it dropped.
 | §4.13 Selected WebAR Experiences | 100% | 100.0% | 100.0% | Aligned |
 | §4.14 Selected Offline Inventory Operations and Synchronization | 100% | 100.0% | 100.0% | Aligned |
 | §4.15 Audit Logging, Backup, and Recovery | 83% | 80.0% | 90.0% | Aligned |
-| **Frontend overall** | **95%** | **92.8%** | 95.3% | — |
+| **Frontend overall** | **95%** | **92.2%** | 95.0% | — |
 
 Requirements where the report and the tests disagree:
 
 | Requirement | Last report | Verified | Why |
 | --- | --- | --- | --- |
+| REQ-4.1-19 | Done | Partial | A wrong code is rejected without account detail (AUTH-04), but expiry of an otherwise valid invite or reset link after the configured period is not verified. Pending provider configuration evidence or an expiry-specific test (PR #104 review). |
 | REQ-4.2-03 | Done | Partial | Authorization required, but every curator is shown Active (pending invitations included), so status is wrong on screen. Root cause: /developer/curators returns ACTIVE. |
 | REQ-4.3-07 | Done | Partial | Built (NotificationBell) but switched off unless the backend sets NOTIFICATION_STATE_ENABLED=true; not usable in this environment. |
 | REQ-4.6-11 | Done | Partial | UI can show a capacity warning, but the last live test (BBT 27 Oct BB-SPC-08) saw none for a lot of 5 in a drawer of capacity 3. Not re-run (needs a write). |
@@ -498,24 +503,24 @@ Category counts:
 
 | Category | Requirement rows | Module rows |
 | --- | --- | --- |
-| Aligned | 164 | 10 |
-| Overstated | 6 | 5 |
+| Aligned | 163 | 9 |
+| Overstated | 7 | 6 |
 | Understated | 0 | 0 |
 | Not in report | 0 | 0 |
 | Excluded (no frontend surface) | 22 | — |
 
 ### Verdict
 
-**Partly accurate.** The report claimed **95%**. The verified figure is **92.8%** under the required Done-only, priority-weighted
-formula, a gap of **-2.2 points**. On the report's own partial-credit method the same results give 95.3%. Its headline number
+**Partly accurate.** The report claimed **95%**. The verified figure is **92.2%** under the required Done-only, priority-weighted
+formula, a gap of **-2.8 points**. On the report's own partial-credit method the same results give 95.0%. Its headline number
 is therefore close only because two errors cancel:
 
-- It **overstates 6 requirements in 5 modules**: §4.2, §4.3, §4.6, §4.9 and §4.10. Notification read/dismiss is counted Done while switched off. The capacity warning
+- It **overstates 7 requirements in 6 modules**: §4.1, §4.2, §4.3, §4.6, §4.9, §4.10. Notification read/dismiss is counted Done while switched off. Invite/reset link expiry is counted Done on a wrong-code test only. The capacity warning
   and the Completed-visit summary are counted Done although its own issue list or the BBT shows them failing. The Developer status
   display is counted Done despite its own 'pending shown as Active' issue. Placeholder Gallery and About content was never flagged.
 - It **scores backend-only rows** such as REQ-4.1-18 and REQ-4.15-01 against the frontend, as Partial or missing. This run excludes rows with no UI, which removes those penalties and offsets the overstated rows.
 
-164 of 170 scored requirement rows are aligned, and none are understated. Where the
+163 of 170 scored requirement rows are aligned, and none are understated. Where the
 report names a gap (account management, change password, operational notifications, backup), the tests agree with it.
 
 ## UI issues found
@@ -542,7 +547,7 @@ Reported only; nothing was fixed during this run.
 
 ## Work remaining (frontend)
 
-1. **§4.1, Voltaire:** a change-password page (REQ-4.1-16) and an inactivity timeout (REQ-4.1-05). Decide whether curators may
+1. **§4.1, Voltaire:** a change-password page (REQ-4.1-16) and an inactivity timeout (REQ-4.1-05); verify that invite and reset links expire after the configured period (REQ-4.1-19). Decide whether curators may
    activate, deactivate and hand over accounts (REQ-4.1-08/09). The UI currently sends that to the Developer interface, which conflicts with the SRS.
 2. **§4.3, Charles and John:** enable `NOTIFICATION_STATE_ENABLED` and verify read/dismiss live. Add sync-failure and other operational
    notifications (REQ-4.3-05/10).
@@ -591,6 +596,7 @@ Reported only; nothing was fixed during this run.
 | AUTH-G1 | Pass | 16 protected routes redirect to /login signed out (3 lose ?from=) | [AUTH-G1-signed-out-redirect.png](screenshots/AUTH-G1-signed-out-redirect.png) |
 | AUTH-G2 | Pass | Signed out: /api/* 401/405, backend 401 | — |
 | AUTH-01 | Pass | No self-registration on login page | [AUTH-01-login.png](screenshots/AUTH-01-login.png) |
+| SUP-01 | Pass | Hosted Supabase GET /auth/v1/settings reports disable_signup=true (read-only config check, 2026-11-05; no sign-up attempted) | — |
 | AUTH-02 | Pass | Wrong credentials -> generic 'Incorrect email or password.' | [AUTH-02-wrong-credentials.png](screenshots/AUTH-02-wrong-credentials.png) |
 | AUTH-03 | Pass | Recovery for unknown email -> generic flow, no account leak | [AUTH-03-forgot-password-unknown.png](screenshots/AUTH-03-forgot-password-unknown.png) |
 | AUTH-04 | Pass | Wrong 8-digit recovery code rejected (error=invalid_otp) | [AUTH-04-wrong-recovery-code.png](screenshots/AUTH-04-wrong-recovery-code.png) |
