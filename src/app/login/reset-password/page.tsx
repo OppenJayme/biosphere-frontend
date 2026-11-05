@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
-  weak_password: "Password must be at least 8 characters.",
+  weak_password: "That password can't be used. Use 8 to 72 characters and avoid common passwords.",
   mismatch: "Passwords do not match.",
   failed: "Couldn't reset your password. Please try again.",
 };

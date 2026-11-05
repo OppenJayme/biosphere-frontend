@@ -2,20 +2,49 @@
 
 import { z } from "zod";
 import { publicWebsiteHref } from "../public-submissions/query";
+import { LOCAL_SYNC_ALERT_HREF } from "./local-alerts";
 
+// This enum is strict: an unknown type makes the whole feed fail to parse, so add a type here
+// before the backend can emit it. SYNC_FAILED, BACKUP_FAILED and REPORT_FAILED are the
+// operational alerts of REQ-4.3-05/10 (backend branch feat/operational-notifications-20261105).
+// SYNC_FAILED covers server rejections only; offline/network failures never reach the
+// server and stay device-local (see local-alerts.ts).
+// TODO(backend, REQ-4.3-10): incomplete-record and other curator-approved alert types are
+// not defined by the backend yet.
 export const NOTIFICATION_TYPES = [
   "NEW_INQUIRY",
   "NEW_VISIT_REQUEST",
   "SUBMISSION_EMAIL_FAILED",
+  "SYNC_FAILED",
+  "BACKUP_FAILED",
+  "REPORT_FAILED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+/** Alerts about something that went wrong, shown with a warning style. */
+export const FAILURE_NOTIFICATION_TYPES: readonly NotificationType[] = [
+  "SUBMISSION_EMAIL_FAILED",
+  "SYNC_FAILED",
+  "BACKUP_FAILED",
+  "REPORT_FAILED",
+];
+
+export const NOTIFICATION_RECORD_TYPES = [
+  "inquiry",
+  "visit_request",
+  // recordId is the clientDraftId of the offline draft the server rejected.
+  "offline_draft",
+  "backup_history",
+  // recordId is the report-history entry id from GET /reports/history.
+  "report",
+] as const;
 
 // Items carry no visitor details (REQ-4.3-08): the curator opens the record to see them.
 export const curatorNotificationSchema = z.object({
   id: z.string().min(1),
   type: z.enum(NOTIFICATION_TYPES),
   title: z.string().min(1),
-  recordType: z.enum(["inquiry", "visit_request"]),
+  recordType: z.enum(NOTIFICATION_RECORD_TYPES),
   recordId: z.uuid(),
   referenceCode: z.string().min(1),
   createdAt: z.string().min(1),
@@ -30,6 +59,9 @@ export const notificationFeedSchema = z
     pendingInquiries: z.number().int().nonnegative(),
     pendingVisitRequests: z.number().int().nonnegative(),
     emailFailures: z.number().int().nonnegative(),
+    // Unresolved operational failures; like emailFailures it does not drop on dismiss.
+    // Defaults to 0 for backends that predate operational alerts.
+    operationalAlerts: z.number().int().nonnegative().default(0),
     items: z.array(curatorNotificationSchema),
   })
   .superRefine((feed, context) => {
@@ -47,7 +79,7 @@ export const notificationStateRequestSchema = z
       .string()
       .max(180)
       .regex(
-        /^(NEW_INQUIRY|NEW_VISIT_REQUEST|SUBMISSION_EMAIL_FAILED):[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/,
+        /^(NEW_INQUIRY|NEW_VISIT_REQUEST|SUBMISSION_EMAIL_FAILED|SYNC_FAILED|BACKUP_FAILED|REPORT_FAILED):[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/,
       ),
     state: z.enum(["READ", "DISMISSED"]),
   })
@@ -59,14 +91,31 @@ export type NotificationStateRequest = z.infer<
 export type CuratorNotification = z.infer<typeof curatorNotificationSchema>;
 export type NotificationFeed = z.infer<typeof notificationFeedSchema>;
 
-/** Opens the related record on the Public Website page (REQ-4.3-06). */
+/**
+ * Opens the related record or module (REQ-4.3-06). Backup and report history have no
+ * single-entry view, so those open the module's existing "failed" filter.
+ */
 export function notificationHref(
   item: Pick<CuratorNotification, "recordType" | "recordId">,
 ) {
-  return publicWebsiteHref(
-    { tab: item.recordType === "inquiry" ? "inquiries" : "visits" },
-    { selected: item.recordId },
-  );
+  switch (item.recordType) {
+    case "inquiry":
+    case "visit_request":
+      return publicWebsiteHref(
+        { tab: item.recordType === "inquiry" ? "inquiries" : "visits" },
+        { selected: item.recordId },
+      );
+    case "offline_draft":
+      return LOCAL_SYNC_ALERT_HREF;
+    case "backup_history":
+      return "/backup-history?status=FAILED";
+    case "report":
+      return "/reports?historyResult=FAILED#report-history";
+  }
+}
+
+export function isFailureNotification(type: NotificationType) {
+  return FAILURE_NOTIFICATION_TYPES.includes(type);
 }
 
 /** Short count for the bell badge. */

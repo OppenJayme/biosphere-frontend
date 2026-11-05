@@ -18,10 +18,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "Incorrect email or password.",
   too_many_attempts: "Too many sign-in attempts. Wait a minute, then try again.",
   server_unavailable: "BioSphere can't be reached right now. Check your connection and try again in a moment.",
+  session_timeout: "You were signed out after a period of inactivity. Sign in again to continue.",
 };
 
 const SUCCESS_MESSAGES: Record<string, string> = {
   password_reset: "Your password has been reset. Sign in with your new password.",
+  password_changed: "Your password has been changed. Sign in with your new password.",
   invite_accepted: "Your account is active. Sign in with your new password.",
 };
 
@@ -83,7 +85,7 @@ export default async function LoginPage({
             Remember Me
           </label>
           <Link href="/login/forgot-password" className="font-medium text-sky-600 hover:text-sky-700">
-            Forget Password ?
+            Forgot password?
           </Link>
         </div>
 

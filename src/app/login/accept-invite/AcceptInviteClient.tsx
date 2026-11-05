@@ -72,23 +72,22 @@ export function AcceptInviteClient() {
 
     setStatus("submitting");
 
+    // The backend sets the password and clears the onboarding flag together, because
+    // the auth provider cannot show that an invited user has chosen a password.
     const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password });
+    const { data } = await supabase.auth.getSession();
+    const failure = data.session
+      ? await completeOnboardingAction(data.session.access_token, password)
+      : "This invite link has expired. Ask for a new invitation.";
 
-    if (error) {
-      setError(error.message);
+    if (failure) {
+      setError(failure);
       setStatus("ready");
       return;
     }
 
-    // The backend keeps the account out of protected APIs until it records that the
-    // password is set. If this call fails, the first sign-in with the new password
-    // completes onboarding instead, so the user is not blocked.
-    const { data } = await supabase.auth.getSession();
-    if (data.session) await completeOnboardingAction(data.session.access_token);
-
-    // Don't leave this session live — require a fresh, normal login next.
-    await supabase.auth.signOut();
+    // Saving the password ended this session; clear this browser's copy too.
+    await supabase.auth.signOut({ scope: "local" });
     router.push("/login?success=invite_accepted");
   }
 

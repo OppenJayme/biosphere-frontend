@@ -37,6 +37,11 @@ filter by that owner so accounts sharing one browser profile do not see each
 other's BioSphere cache. Tokens, passwords, service keys, and Supabase secrets are
 never stored in IndexedDB.
 
+An open workspace left idle past `NEXT_PUBLIC_SESSION_IDLE_MINUTES` locks even while offline. Saved
+drafts stay in IndexedDB, but the curator must reconnect and sign in again to continue. Text typed
+into a form and not yet saved as a draft is lost at sign-out. The lock hides the page and blocks
+input; it does not encrypt anything already on the device.
+
 IndexedDB is device-local storage, not an encrypted backup. Devices allowed to
 retain museum records must follow the team's device-access and browser-profile
 rules.

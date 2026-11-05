@@ -67,7 +67,7 @@ export function buildAssignableStorageUnitOptions(
       parentId = parent.parentId ?? null;
     }
 
-    return labels.join(" / ");
+    return labels.join(" › ");
   }
 
   return units
@@ -113,6 +113,11 @@ export const storageCapacityWarningSchema = z.object({
   capacity: z.number().int(),
   occupiedQuantity: z.number().int(),
   exceededBy: z.number().int().positive(),
+});
+
+/** POST /specimens/:id/lots returns the new active lot plus any capacity warning. */
+export const createdSpecimenLotSchema = activeSpecimenLotSchema.extend({
+  capacityWarning: storageCapacityWarningSchema.nullable().optional(),
 });
 
 export const specimenLotTransactionSchema = z.object({
@@ -175,6 +180,7 @@ export const specimenLotQuantityAdjustmentResultSchema = z.object({
 });
 
 export type StorageCapacityWarning = z.infer<typeof storageCapacityWarningSchema>;
+export type CreatedSpecimenLot = z.infer<typeof createdSpecimenLotSchema>;
 export type SpecimenLotTransaction = z.infer<typeof specimenLotTransactionSchema>;
 export type SpecimenLotTransactionPage = z.infer<typeof specimenLotTransactionPageSchema>;
 export type SpecimenLotHistoryEntry = z.infer<typeof specimenLotHistoryEntrySchema>;
@@ -201,7 +207,7 @@ export function buildStorageUnitPathLabels(units: StorageUnit[]): Map<string, st
       path.unshift(parent.label);
       parentId = parent.parentId;
     }
-    labels.set(unit.id, path.join(" / "));
+    labels.set(unit.id, path.join(" › "));
   }
 
   return labels;

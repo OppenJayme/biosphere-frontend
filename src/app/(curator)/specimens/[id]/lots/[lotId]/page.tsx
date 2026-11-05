@@ -76,6 +76,7 @@ function lotNotice(params: Record<string, string | string[] | undefined>): Notic
     }
     return { text: "The quantity adjustment was recorded." };
   }
+  if (kind === "created") return { text: "The specimen lot and its initial quantity history were created." };
   if (kind === "notes-updated") return { text: "The storage notes were updated." };
   return null;
 }

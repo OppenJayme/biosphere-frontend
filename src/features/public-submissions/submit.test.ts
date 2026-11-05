@@ -11,6 +11,7 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://auth.example.test");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "synthetic-public-key");
   vi.stubEnv("NEXT_PUBLIC_API_URL", "https://submissions.example.test");
+  vi.stubEnv("NEXT_PUBLIC_SESSION_IDLE_MINUTES", "30");
 });
 
 afterEach(() => {

@@ -33,6 +33,7 @@ await build({
     "process.env.NEXT_PUBLIC_API_URL": JSON.stringify(
       "http://public-dialog-fixture.test",
     ),
+    "process.env.NEXT_PUBLIC_SESSION_IDLE_MINUTES": JSON.stringify("30"),
   },
   build: {
     outDir: output,
