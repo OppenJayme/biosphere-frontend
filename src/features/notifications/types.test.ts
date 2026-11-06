@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isChangeNotification,
   isFailureNotification,
   notificationBadge,
   notificationFeedSchema,
@@ -77,5 +78,53 @@ describe("curator notifications", () => {
   it("marks failure types for the warning style", () => {
     expect(isFailureNotification("BACKUP_FAILED")).toBe(true);
     expect(isFailureNotification("NEW_INQUIRY")).toBe(false);
+  });
+
+  const ACTIVITY_TYPES = [
+    "SPECIMEN_ARCHIVED",
+    "SPECIMEN_RESTORED",
+    "LOT_MOVED",
+    "LOT_DEACCESSIONED",
+    "LOT_MISSING_LOSS",
+    "RECORD_INCOMPLETE",
+  ] as const;
+
+  it("accepts the specimen activity types and defaults their counts for older backends", () => {
+    const items = ACTIVITY_TYPES.map((type) => ({
+      id: `${type}:${id}`,
+      type,
+      title: "Specimen activity",
+      recordType: "specimen",
+      recordId: id,
+      referenceCode: "USC-BM-2026-0001",
+      createdAt: "2026-11-06T02:00:00.000Z",
+    }));
+    const base = { total: 6, pendingInquiries: 0, pendingVisitRequests: 0, emailFailures: 0, items };
+    const parsed = notificationFeedSchema.safeParse({ ...base, changeEvents: 5, incompleteRecords: 1 });
+    expect(parsed.success && [parsed.data.changeEvents, parsed.data.incompleteRecords]).toEqual([5, 1]);
+    const legacy = notificationFeedSchema.safeParse(base);
+    expect(legacy.success && [legacy.data.changeEvents, legacy.data.incompleteRecords]).toEqual([0, 0]);
+  });
+
+  it("opens the specimen, or its lots page for lot events", () => {
+    for (const type of ["SPECIMEN_ARCHIVED", "SPECIMEN_RESTORED", "RECORD_INCOMPLETE"] as const) {
+      expect(notificationHref({ type, recordType: "specimen", recordId: id })).toBe(`/specimens/${id}`);
+    }
+    for (const type of ["LOT_MOVED", "LOT_DEACCESSIONED", "LOT_MISSING_LOSS"] as const) {
+      expect(notificationHref({ type, recordType: "specimen", recordId: id })).toBe(`/specimens/${id}/lots`);
+    }
+  });
+
+  it("allows read/dismiss requests for every activity type", () => {
+    for (const type of ACTIVITY_TYPES) {
+      expect(notificationStateRequestSchema.safeParse({ notificationId: `${type}:${id}`, state: "READ" }).success).toBe(true);
+    }
+    expect(notificationStateRequestSchema.safeParse({ notificationId: `LOT_MOVED:not-a-uuid`, state: "READ" }).success).toBe(false);
+  });
+
+  it("separates change events from failures", () => {
+    expect(isChangeNotification("LOT_MOVED")).toBe(true);
+    expect(isChangeNotification("RECORD_INCOMPLETE")).toBe(false);
+    expect(isFailureNotification("SPECIMEN_ARCHIVED")).toBe(false);
   });
 });
