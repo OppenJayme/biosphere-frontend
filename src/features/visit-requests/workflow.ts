@@ -36,6 +36,18 @@ export function isVisitFinal(status: VisitRequestStatus) {
   return status === "DECLINED" || status === "CANCELLED" || status === "COMPLETED";
 }
 
+/**
+ * Whether the backend serves a campus-entry summary (REQ-4.9-12). It matches the backend's
+ * CAMPUS_ENTRY_STATUSES: a Completed, Declined or Cancelled visit keeps its approved schedule
+ * on record, but asking for its summary returns 400, so the page must not request or show one.
+ */
+export function hasCampusEntrySummary(request: Pick<VisitRequest, "status" | "approvedSchedule">) {
+  return (
+    (request.status === "APPROVED_BY_CURATOR" || request.status === "SUBMITTED_FOR_CAMPUS_ENTRY") &&
+    request.approvedSchedule !== null
+  );
+}
+
 /** Declining or cancelling ends the request for good, so the UI asks for confirmation first. */
 export function isDestructiveVisitStatus(status: CuratorSettableVisitStatus) {
   return status === "DECLINED" || status === "CANCELLED";
