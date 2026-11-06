@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UserAccount } from "./types";
-import { buildUserStats, filterUsers, initialsOf, toAccountUser, userStatus } from "./view";
+import { buildUserStats, filterUsers, initialsOf, toAccountUser, userStatus, curatorStatusAction } from "./view";
 
 function account(overrides: Partial<UserAccount> = {}): UserAccount {
   return {
@@ -98,5 +98,19 @@ describe("filterUsers", () => {
   it("combines search with the status filter", () => {
     expect(names(filterUsers(users, { search: "", status: "Pending Invite" }))).toEqual(["Jose Rizal"]);
     expect(filterUsers(users, { search: "maria", status: "Pending Invite" })).toEqual([]);
+  });
+});
+
+describe("curatorStatusAction", () => {
+  it("offers Deactivate for an active account", () => {
+    expect(curatorStatusAction("Active")).toMatchObject({ status: "INACTIVE", label: "Deactivate", tone: "danger" });
+  });
+
+  it("offers Deactivate for a pending invite, which is still an active account", () => {
+    expect(curatorStatusAction("Pending Invite")).toMatchObject({ status: "INACTIVE", label: "Deactivate" });
+  });
+
+  it("offers Activate for an inactive account", () => {
+    expect(curatorStatusAction("Inactive")).toMatchObject({ status: "ACTIVE", label: "Activate", tone: "primary" });
   });
 });

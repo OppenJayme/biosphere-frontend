@@ -45,6 +45,33 @@ export function userStatus(account: Pick<UserAccount, "status" | "inviteAccepted
   return account.inviteAccepted ? "Active" : "Pending Invite";
 }
 
+export type CuratorStatusChange = {
+  status: "ACTIVE" | "INACTIVE";
+  label: "Activate" | "Deactivate";
+  doneTitle: string;
+  description: string;
+  tone: "primary" | "danger";
+};
+
+/** What the status control offers. A pending invite is still an ACTIVE account, so it can be deactivated. */
+export function curatorStatusAction(status: UserStatus): CuratorStatusChange {
+  return status === "Inactive"
+    ? {
+        status: "ACTIVE",
+        label: "Activate",
+        doneTitle: "Account activated",
+        description: "They will be able to sign in and use BioSphere again.",
+        tone: "primary",
+      }
+    : {
+        status: "INACTIVE",
+        label: "Deactivate",
+        doneTitle: "Account deactivated",
+        description: "They lose access right away and cannot sign in. Their account and history are kept.",
+        tone: "danger",
+      };
+}
+
 export function toAccountUser(account: UserAccount, currentAccountId: string | null): AccountUser {
   return {
     id: account.id,
