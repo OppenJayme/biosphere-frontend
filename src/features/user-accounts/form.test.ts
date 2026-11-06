@@ -1,11 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { fieldErrors, readInviteCuratorForm } from "./form";
+import { fieldErrors, readCuratorStatusForm, readInviteCuratorForm } from "./form";
 
 function form(values: Record<string, string>) {
   const data = new FormData();
   for (const [key, value] of Object.entries(values)) data.set(key, value);
   return data;
 }
+
+describe("readCuratorStatusForm", () => {
+  const valid = {
+    accountId: "11111111-1111-4111-8111-111111111111",
+    status: "INACTIVE",
+    name: "Maria",
+    reason: "  Left  ",
+  };
+
+  it("trims the reason but keeps what was typed for a failed submit", () => {
+    const { reason, parsedReason } = readCuratorStatusForm(form(valid));
+    expect(reason).toBe("  Left  ");
+    expect(parsedReason.success && parsedReason.data).toBe("Left");
+  });
+
+  it("accepts exactly the backend's reason limit", () => {
+    expect(readCuratorStatusForm(form({ ...valid, reason: "x".repeat(500) })).parsedReason.success).toBe(true);
+    expect(readCuratorStatusForm(form({ ...valid, reason: "x".repeat(501) })).parsedReason.success).toBe(false);
+  });
+});
 
 describe("readInviteCuratorForm", () => {
   it("trims the name and normalizes the email", () => {

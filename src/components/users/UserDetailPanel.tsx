@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ClockIcon, CalendarIcon, ShieldIcon, CheckIcon, ArrowRightIcon, MailIcon, InfoIcon } from "@/components/icons";
 import { getUserRecentActivity } from "@/features/user-accounts/actions";
 import type { AccountUser, RecentActivityResult } from "@/features/user-accounts/types";
+import { CuratorStatusDialog } from "./CuratorStatusDialog";
 import { STATUS_STYLES } from "./UserTable";
 
 function InfoRow({ icon: Icon, label, children }: { icon: typeof ClockIcon; label: string; children: ReactNode }) {
@@ -120,10 +121,15 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
           </InfoRow>
         </div>
 
-        <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
-          <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
-          Activating or deactivating an account is done through the restricted developer interface, only with formal authorization.
-        </p>
+        {user.isCurrentUser ? (
+          <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
+            <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
+            You cannot change the status of your own account. Another curator has to do it.
+          </p>
+        ) : (
+          // Keyed so a dialog left open never carries over to another curator.
+          <CuratorStatusDialog key={user.id} user={user} />
+        )}
       </div>
 
       {/* Keyed so switching users starts a fresh load instead of showing the previous user's activity. */}
