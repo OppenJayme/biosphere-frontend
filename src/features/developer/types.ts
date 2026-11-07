@@ -25,6 +25,12 @@ export const curatorAccountSchema = z.object({
 
 export const curatorAccountListSchema = z.array(curatorAccountSchema);
 
+/** POST /developer/curators/handover: the outgoing account (now inactive, kept) and the successor. */
+export const curatorHandoverSchema = z.object({
+  outgoing: curatorAccountSchema,
+  successor: curatorAccountSchema,
+});
+
 export const arAssetSchema = z.object({
   id: z.uuid(),
   exhibitId: z.uuid(),

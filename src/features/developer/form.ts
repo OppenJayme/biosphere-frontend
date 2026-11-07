@@ -18,6 +18,7 @@ export const AUTHORIZATION_REASON_MAX_LENGTH = 500;
 export type OnboardFormValues = { email: string; fullName: string };
 export type OnboardFormState = { values: OnboardFormValues; message?: string; success?: string };
 export type CuratorStatusFormState = { message?: string };
+export type CuratorHandoverFormState = { message?: string; success?: string };
 
 function formString(formData: FormData, field: string) {
   const value = formData.get(field);
@@ -68,6 +69,36 @@ export type CuratorStatusInput = z.output<typeof curatorStatusSchema>;
 export function readCuratorStatusForm(formData: FormData) {
   return curatorStatusSchema.safeParse({
     status: formString(formData, "status"),
+    authorizationReason: formString(formData, "authorizationReason"),
+  });
+}
+
+// ---- Curator handover (REQ-4.1-09) ----
+
+const curatorHandoverSchema = z
+  .object({
+    outgoingCuratorId: z.uuid("Choose the curator who is leaving."),
+    successorCuratorId: z.uuid("Choose the successor curator."),
+    authorizationReason: z
+      .string()
+      .trim()
+      .min(1, "Record the formal authorization for this handover.")
+      .max(
+        AUTHORIZATION_REASON_MAX_LENGTH,
+        `The authorization note must be ${AUTHORIZATION_REASON_MAX_LENGTH} characters or fewer.`,
+      ),
+  })
+  .refine((value) => value.outgoingCuratorId !== value.successorCuratorId, {
+    message: "The successor must be a different curator.",
+    path: ["successorCuratorId"],
+  });
+
+export type CuratorHandoverInput = z.output<typeof curatorHandoverSchema>;
+
+export function readCuratorHandoverForm(formData: FormData) {
+  return curatorHandoverSchema.safeParse({
+    outgoingCuratorId: formString(formData, "outgoingCuratorId"),
+    successorCuratorId: formString(formData, "successorCuratorId"),
     authorizationReason: formString(formData, "authorizationReason"),
   });
 }

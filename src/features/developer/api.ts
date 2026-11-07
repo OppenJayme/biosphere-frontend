@@ -3,13 +3,14 @@
 import "server-only";
 import type { z } from "zod";
 import { apiFetch } from "@/lib/api-client";
-import type { CuratorStatusInput, OnboardCuratorInput } from "./form";
+import type { CuratorHandoverInput, CuratorStatusInput, OnboardCuratorInput } from "./form";
 import {
   arAssetRemovedSchema,
   arAssetSchema,
   arExhibitListSchema,
   curatorAccountListSchema,
   curatorAccountSchema,
+  curatorHandoverSchema,
 } from "./types";
 
 function parse<T extends z.ZodType>(schema: T, response: unknown, operation: string): z.output<T> {
@@ -44,6 +45,15 @@ export async function updateCuratorStatus(id: string, input: CuratorStatusInput)
     body: JSON.stringify(input),
   });
   return parse(curatorAccountSchema, response, "curator status");
+}
+
+/** Deactivates the outgoing curator once their successor has their own signed-in account (REQ-4.1-09). */
+export async function handOverCurator(input: CuratorHandoverInput) {
+  const response = await apiFetch<unknown>("/developer/curators/handover", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parse(curatorHandoverSchema, response, "curator handover");
 }
 
 export async function listArExhibits() {

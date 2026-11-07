@@ -5,7 +5,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ClockIcon, CalendarIcon, ShieldIcon, CheckIcon, ArrowRightIcon, MailIcon, InfoIcon } from "@/components/icons";
 import { getUserRecentActivity } from "@/features/user-accounts/actions";
 import type { AccountUser, RecentActivityResult } from "@/features/user-accounts/types";
-import { CuratorStatusDialog } from "./CuratorStatusDialog";
 import { STATUS_STYLES } from "./UserTable";
 
 function InfoRow({ icon: Icon, label, children }: { icon: typeof ClockIcon; label: string; children: ReactNode }) {
@@ -121,15 +120,13 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
           </InfoRow>
         </div>
 
-        {user.isCurrentUser ? (
-          <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
-            <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
-            You cannot change the status of your own account. Another curator has to do it.
-          </p>
-        ) : (
-          // Keyed so a dialog left open never carries over to another curator.
-          <CuratorStatusDialog key={user.id} user={user} />
-        )}
+        {/* The museum decided on 2026-11-07 that curators do not deactivate each other
+            (REQ-4.1-08); an account is turned off through a Developer handover (REQ-4.1-09). */}
+        <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
+          <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
+          Curators cannot turn off curator accounts. When a curator leaves, the system developer hands the
+          account over to their successor.
+        </p>
       </div>
 
       {/* Keyed so switching users starts a fresh load instead of showing the previous user's activity. */}

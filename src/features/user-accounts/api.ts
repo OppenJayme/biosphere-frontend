@@ -1,8 +1,8 @@
-/** Server-only client for the protected curator account list, invitations and status changes. */
+/** Server-only client for the protected curator account list and invitations. */
 
 import "server-only";
 import { apiFetch } from "@/lib/api-client";
-import type { CuratorStatusInput, InviteCuratorInput } from "./form";
+import type { InviteCuratorInput } from "./form";
 import { userAccountListSchema, userAccountSchema, type UserAccount } from "./types";
 
 export async function listUserAccounts(): Promise<UserAccount[]> {
@@ -11,21 +11,6 @@ export async function listUserAccounts(): Promise<UserAccount[]> {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid user account list.");
-  }
-
-  return result.data;
-}
-
-/** PATCH /user-accounts/:id/status: a curator activates or deactivates another curator (REQ-4.1-08). */
-export async function updateCuratorStatus(id: string, input: CuratorStatusInput): Promise<UserAccount> {
-  const response = await apiFetch<unknown>(`/user-accounts/${encodeURIComponent(id)}/status`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
-  const result = userAccountSchema.safeParse(response);
-
-  if (!result.success) {
-    throw new Error("The backend returned an invalid curator status response.");
   }
 
   return result.data;

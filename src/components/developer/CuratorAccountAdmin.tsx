@@ -1,13 +1,17 @@
-/** Developer controls for curator provisioning (REQ-4.2-02) and authorized access changes (REQ-4.2-03). */
+/**
+ * Developer controls for curator provisioning (REQ-4.2-02), authorized access changes
+ * (REQ-4.2-03) and curator handover (REQ-4.1-09).
+ */
 
 "use client";
 
 import { useActionState, useId } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
-import { onboardCuratorAction, updateCuratorStatusAction } from "@/features/developer/actions";
+import { handOverCuratorAction, onboardCuratorAction, updateCuratorStatusAction } from "@/features/developer/actions";
 import {
   AUTHORIZATION_REASON_MAX_LENGTH,
+  type CuratorHandoverFormState,
   type CuratorStatusFormState,
   type OnboardFormState,
 } from "@/features/developer/form";
@@ -165,6 +169,103 @@ function CuratorStatusControl({ curator }: { curator: CuratorAccount }) {
   );
 }
 
+/**
+ * Curator handover (REQ-4.1-09). The museum decided on 2026-11-07 that curators do not
+ * deactivate each other, so the Developer records it. The lists only narrow the choice;
+ * the backend checks that the successor has accepted their invitation and signed in.
+ */
+function CuratorHandoverForm({ curators }: { curators: CuratorAccount[] }) {
+  const [state, action, pending] = useActionState<CuratorHandoverFormState, FormData>(handOverCuratorAction, {});
+  const reasonId = useId();
+  const outgoing = curators.filter((curator) => curator.status === "ACTIVE");
+  const successors = curators.filter((curator) => curator.status === "ACTIVE" && curator.inviteAccepted);
+  const ready = outgoing.length > 0 && successors.length > 1;
+
+  return (
+    <section className="rounded-xl border border-black/10 bg-white p-5" aria-labelledby="handover-heading">
+      <h3 id="handover-heading" className="text-sm font-semibold text-zinc-900">
+        Curator handover
+      </h3>
+      <p className="mt-1 text-xs text-zinc-600">
+        Use this when a curator leaves. Invite the successor first, and wait until they have set their
+        password and signed in. The leaving curator&apos;s account is then turned off and kept, so its
+        history stays on record. No password is passed between people.
+      </p>
+
+      {!ready ? (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          A handover needs two active curators who have both accepted their invitations. Invite the
+          successor above first.
+        </p>
+      ) : (
+        // key resets the form after a successful handover.
+        <form key={state.success ?? "handover"} action={action} className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="text-xs font-medium text-zinc-700">
+            Curator who is leaving
+            <select name="outgoingCuratorId" defaultValue="" aria-required="true" className={inputClasses}>
+              <option value="" disabled>
+                Choose a curator
+              </option>
+              {outgoing.map((curator) => (
+                <option key={curator.id} value={curator.id}>
+                  {curator.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-zinc-700">
+            Successor
+            <select name="successorCuratorId" defaultValue="" aria-required="true" className={inputClasses}>
+              <option value="" disabled>
+                Choose the successor
+              </option>
+              {successors.map((curator) => (
+                <option key={curator.id} value={curator.id}>
+                  {curator.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="sm:col-span-2">
+            <label htmlFor={reasonId} className="block text-xs font-medium text-zinc-700">
+              Formal authorization (required)
+            </label>
+            <textarea
+              id={reasonId}
+              name="authorizationReason"
+              // Not `required`: the confirm dialog makes the page inert, which would hide the
+              // browser's validation bubble. The Server Action returns the message instead.
+              aria-required="true"
+              rows={3}
+              maxLength={AUTHORIZATION_REASON_MAX_LENGTH}
+              placeholder="e.g. Retirement memo ref. no., authorizing official, and date"
+              className={`${inputClasses} resize-y`}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <ConfirmButton
+              label="Record handover"
+              question="Record this curator handover?"
+              detail="The leaving curator will no longer be able to sign in. Their account is kept, and the authorization note is recorded in the audit log."
+              confirmLabel="Yes, hand over"
+              tone="danger"
+              pending={pending}
+              pendingLabel="Recording handover…"
+              className={primaryButtonClasses}
+            />
+            <FormMessage message={state.message} />
+          </div>
+        </form>
+      )}
+      {state.success && (
+        <p role="status" className="mt-3 text-xs font-medium text-emerald-700">
+          {state.success}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function CuratorAccountAdmin({ curators }: { curators: CuratorAccount[] | null }) {
   const hasActiveCurator =
     curators?.some((curator) => curator.status === "ACTIVE" && curator.inviteAccepted) ?? false;
@@ -216,6 +317,8 @@ export function CuratorAccountAdmin({ curators }: { curators: CuratorAccount[] |
           </table>
         )}
       </div>
+
+      {curators && curators.length > 0 && <CuratorHandoverForm curators={curators} />}
     </section>
   );
 }

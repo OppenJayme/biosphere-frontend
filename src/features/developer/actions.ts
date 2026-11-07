@@ -9,6 +9,7 @@ import { ApiError } from "@/lib/api-client";
 import {
   activateArAsset,
   deactivateArAsset,
+  handOverCurator,
   onboardCurator,
   removeArAsset,
   updateCuratorStatus,
@@ -16,15 +17,17 @@ import {
 import {
   firstValidationMessage,
   readArAssetActivateForm,
+  readCuratorHandoverForm,
   readCuratorStatusForm,
   readOnboardCuratorForm,
   type ArAssetCommandState,
+  type CuratorHandoverFormState,
   type CuratorStatusFormState,
   type OnboardFormState,
 } from "./form";
 import { getDeveloperAccess } from "./session";
 
-type DeveloperOperation = "onboard" | "status" | "activate" | "deactivate" | "remove";
+type DeveloperOperation = "onboard" | "status" | "handover" | "activate" | "deactivate" | "remove";
 
 function backendMessage(error: ApiError) {
   const body = error.body;
@@ -35,6 +38,13 @@ function backendMessage(error: ApiError) {
 
 function developerError(error: unknown, operation: DeveloperOperation) {
   if (error instanceof ApiError) {
+    // Handover rules (successor not set up yet, account already inactive) are explained by the backend.
+    if (operation === "handover" && [400, 404, 409].includes(error.status)) {
+      return backendMessage(error) ?? "The handover could not be completed. Reload the list and try again.";
+    }
+    if (operation === "handover" && error.status >= 500) {
+      return "The handover could not be completed. No account was changed. Try again.";
+    }
     // AR rule violations (e.g. the exhibit is no longer deployable) are explained by the backend.
     if (error.status === 400 && operation === "activate") {
       return backendMessage(error) ?? "This AR asset cannot be activated right now.";
@@ -121,6 +131,30 @@ export async function updateCuratorStatusAction(
 
   revalidatePath("/developer");
   return {};
+}
+
+/** Hands a curator's role to a successor who already has their own account (REQ-4.1-09). */
+export async function handOverCuratorAction(
+  _previousState: CuratorHandoverFormState,
+  formData: FormData,
+): Promise<CuratorHandoverFormState> {
+  void _previousState;
+  if (!(await requireDeveloper())) return { message: NOT_DEVELOPER };
+
+  const parsed = readCuratorHandoverForm(formData);
+  if (!parsed.success) return { message: firstValidationMessage(parsed.error) };
+
+  let result: Awaited<ReturnType<typeof handOverCurator>>;
+  try {
+    result = await handOverCurator(parsed.data);
+  } catch (error) {
+    return { message: developerError(error, "handover") };
+  }
+
+  revalidatePath("/developer");
+  return {
+    success: `Handover recorded. ${result.outgoing.fullName} can no longer sign in, and ${result.successor.fullName} continues as curator.`,
+  };
 }
 
 const INVALID_ASSET = "The AR asset identifier is invalid. Reload and try again.";
