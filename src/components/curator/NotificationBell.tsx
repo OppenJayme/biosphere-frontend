@@ -55,9 +55,10 @@ function ItemIcon({ item }: { item: CuratorNotification }) {
  * Topbar bell for new inquiries and visit requests, and undelivered submission emails
  * (REQ-4.3-05, REQ-4.8-08, REQ-4.9-07). The feed is derived from pending records; the
  * optional per-curator state keeps unread alerts separate from unresolved work.
- * Offline drafts that failed to sync on this device are added from IndexedDB
- * (REQ-4.3-05/10): they stay visible while the backend feed is unreachable, and they
- * clear when the draft is retried successfully or discarded in the offline workspace.
+ * Offline drafts that failed to sync on this device, or have waited more than a day to
+ * sync, are added from IndexedDB (REQ-4.3-05/10): they stay visible while the backend feed
+ * is unreachable, and they clear when the draft syncs or is discarded in the offline
+ * workspace.
  */
 export function NotificationBell({ ownerId }: { ownerId: string }) {
   const deviceAlerts = useLocalSyncAlerts(ownerId);
