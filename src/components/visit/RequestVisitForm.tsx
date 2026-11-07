@@ -207,8 +207,8 @@ export function RequestVisitForm({
           </div>
         </div>
 
-        <div className="space-y-8 lg:row-span-2">
-          <fieldset className="space-y-4" aria-describedby="visit-schedule-hint">
+        <div className="min-w-0 space-y-8 lg:row-span-2">
+          <fieldset className="min-w-0 space-y-4" aria-describedby="visit-schedule-hint">
             <legend className="contents">
               <FieldGroupLabel>Preferred Schedules</FieldGroupLabel>
             </legend>
@@ -239,7 +239,7 @@ export function RequestVisitForm({
                         </button>
                       )}
                     </div>
-                    <div className="mt-2 grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
+                    <div className="mt-2 grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
                       <Field label="Date" htmlFor={`schedule-date-${rowId}`}>
                         <input
                           id={`schedule-date-${rowId}`}
@@ -310,7 +310,7 @@ export function RequestVisitForm({
               </Field>
             </div>
 
-            <fieldset className="space-y-3">
+            <fieldset className="min-w-0 space-y-3">
               <legend className="text-xs font-medium text-ink-muted">
                 Visitor names <span className="font-normal text-ink-muted/80">(optional, used for campus entry)</span>
               </legend>
@@ -363,7 +363,7 @@ export function RequestVisitForm({
             )}
           </div>
 
-          <fieldset className="space-y-4">
+          <fieldset className="min-w-0 space-y-4">
             <legend className="contents">
               <FieldGroupLabel>Vehicle</FieldGroupLabel>
             </legend>
