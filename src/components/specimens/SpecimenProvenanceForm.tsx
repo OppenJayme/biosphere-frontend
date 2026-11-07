@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createProvenanceAction,
   updateProvenanceAction,
@@ -14,6 +14,11 @@ import {
 } from "@/features/specimens/provenance-form";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { museumToday } from "@/lib/museum-date";
+import {
+  PRESERVATION_TYPE_OPTIONS,
+  preservationMethodSuggestions,
+} from "@/features/specimens/field-options";
+import { OptionField } from "./OptionField";
 
 type SpecimenProvenanceFormProps = {
   specimenId: string;
@@ -74,6 +79,8 @@ export function SpecimenProvenanceForm({
   const [state, formAction, pending] = useActionState(action, {
     values: initialValues,
   });
+  // Narrows the method suggestions to the chosen preservation type.
+  const [preservationType, setPreservationType] = useState(state.values.preservationType);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -133,6 +140,29 @@ export function SpecimenProvenanceForm({
 
           {textFields.slice(2).map((field) => {
             const errors = state.errors?.[field.name];
+            if (field.name === "preservationType") {
+              return (
+                <div key={field.name}>
+                  <label htmlFor={field.name} className="block text-xs font-medium text-zinc-700">
+                    {field.label}
+                  </label>
+                  <OptionField
+                    id={field.name}
+                    name={field.name}
+                    list={PRESERVATION_TYPE_OPTIONS}
+                    label="preservation type"
+                    maxLength={255}
+                    defaultValue={state.values[field.name]}
+                    invalid={Boolean(errors?.length)}
+                    describedBy={errors?.length ? `${field.name}-error` : undefined}
+                    className={inputClasses}
+                    onValueChange={setPreservationType}
+                  />
+                  <FieldError field={field.name} errors={errors} />
+                </div>
+              );
+            }
+            const methodField = field.name === "preservationMethod";
             return (
               <div key={field.name}>
                 <label htmlFor={field.name} className="block text-xs font-medium text-zinc-700">
@@ -144,11 +174,19 @@ export function SpecimenProvenanceForm({
                   type="text"
                   maxLength={255}
                   defaultValue={state.values[field.name]}
-                  placeholder={field.placeholder}
+                  placeholder={methodField ? "Pick a suggestion or type the method" : field.placeholder}
+                  list={methodField ? "preservation-method-suggestions" : undefined}
                   aria-invalid={Boolean(errors?.length)}
                   aria-describedby={errors?.length ? `${field.name}-error` : undefined}
                   className={inputClasses}
                 />
+                {methodField && (
+                  <datalist id="preservation-method-suggestions">
+                    {preservationMethodSuggestions(preservationType).map((method) => (
+                      <option key={method} value={method} />
+                    ))}
+                  </datalist>
+                )}
                 <FieldError field={field.name} errors={errors} />
               </div>
             );

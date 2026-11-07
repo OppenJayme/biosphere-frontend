@@ -10,7 +10,12 @@ import {
 } from "@/features/specimens/form";
 import { SPECIMEN_GENDERS, type MuseumCollection } from "@/features/specimens/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import {
+  CLASSIFICATION_STATUS_OPTIONS,
+  SPECIMEN_CATEGORY_OPTIONS,
+} from "@/features/specimens/field-options";
 import { AccessionNumberCheck } from "./AccessionNumberCheck";
+import { OptionField } from "./OptionField";
 import { SpecimenDuplicateCheck } from "./SpecimenDuplicateCheck";
 
 type SpecimenCoreFormProps = {
@@ -130,16 +135,16 @@ export function SpecimenCoreForm({
             <label htmlFor="specimenCategory" className="block text-xs font-medium text-zinc-700">
               Specimen category
             </label>
-            <input
+            <OptionField
               id="specimenCategory"
               name="specimenCategory"
-              type="text"
+              list={SPECIMEN_CATEGORY_OPTIONS}
+              label="specimen category"
               maxLength={100}
               defaultValue={state.values.specimenCategory}
-              aria-describedby={describedBy("specimenCategory")}
-              aria-invalid={Boolean(state.errors?.specimenCategory?.length)}
+              describedBy={describedBy("specimenCategory")}
+              invalid={Boolean(state.errors?.specimenCategory?.length)}
               className={inputClasses}
-              placeholder="e.g. Bird"
             />
             <FieldError
               id={fieldErrorId("specimenCategory")}
@@ -215,15 +220,16 @@ export function SpecimenCoreForm({
             >
               Classification status
             </label>
-            <input
+            <OptionField
               id="classificationStatus"
               name="classificationStatus"
-              type="text"
+              list={CLASSIFICATION_STATUS_OPTIONS}
+              label="classification status"
+              maxLength={100}
               defaultValue={state.values.classificationStatus}
-              aria-describedby={describedBy("classificationStatus")}
-              aria-invalid={Boolean(state.errors?.classificationStatus?.length)}
+              describedBy={describedBy("classificationStatus")}
+              invalid={Boolean(state.errors?.classificationStatus?.length)}
               className={inputClasses}
-              placeholder="Enter the curator-approved classification status"
             />
             <FieldError
               id={fieldErrorId("classificationStatus")}

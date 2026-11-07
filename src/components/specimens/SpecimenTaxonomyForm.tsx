@@ -13,6 +13,13 @@ import {
   type TaxonomyFormValues,
 } from "@/features/specimens/taxonomy-form";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import {
+  CONSERVATION_STATUS_OPTIONS,
+  ECOLOGICAL_ROLE_OPTIONS,
+  KINGDOM_OPTIONS,
+  type FieldOptionList,
+} from "@/features/specimens/field-options";
+import { OptionField } from "./OptionField";
 
 type SpecimenTaxonomyFormProps = {
   specimenId: string;
@@ -26,8 +33,16 @@ const fields: Array<{
   maxLength: number;
   placeholder: string;
   wide?: boolean;
+  /** Picked from a list instead of typed (field-options.ts). */
+  options?: FieldOptionList;
 }> = [
-  { name: "kingdom", label: "Kingdom", maxLength: 100, placeholder: "e.g. Animalia" },
+  {
+    name: "kingdom",
+    label: "Kingdom",
+    maxLength: 100,
+    placeholder: "e.g. Animalia",
+    options: KINGDOM_OPTIONS,
+  },
   { name: "phylum", label: "Phylum", maxLength: 100, placeholder: "e.g. Chordata" },
   { name: "class", label: "Class", maxLength: 100, placeholder: "e.g. Aves" },
   { name: "orderName", label: "Order", maxLength: 100, placeholder: "e.g. Accipitriformes" },
@@ -39,12 +54,14 @@ const fields: Array<{
     label: "Ecological role",
     maxLength: 100,
     placeholder: "e.g. Apex predator",
+    options: ECOLOGICAL_ROLE_OPTIONS,
   },
   {
     name: "conservationStatus",
     label: "Conservation status",
     maxLength: 100,
     placeholder: "Enter curator-confirmed status",
+    options: CONSERVATION_STATUS_OPTIONS,
   },
   {
     name: "habitat",
@@ -95,17 +112,31 @@ export function SpecimenTaxonomyForm({
                 <label htmlFor={field.name} className="block text-xs font-medium text-zinc-700">
                   {field.label}
                 </label>
-                <input
-                  id={field.name}
-                  name={field.name}
-                  type="text"
-                  maxLength={field.maxLength}
-                  defaultValue={state.values[field.name]}
-                  placeholder={field.placeholder}
-                  aria-invalid={Boolean(errors?.length)}
-                  aria-describedby={errors?.length ? errorId : undefined}
-                  className={inputClasses}
-                />
+                {field.options ? (
+                  <OptionField
+                    id={field.name}
+                    name={field.name}
+                    list={field.options}
+                    label={field.label.toLowerCase()}
+                    maxLength={field.maxLength}
+                    defaultValue={state.values[field.name]}
+                    invalid={Boolean(errors?.length)}
+                    describedBy={errors?.length ? errorId : undefined}
+                    className={inputClasses}
+                  />
+                ) : (
+                  <input
+                    id={field.name}
+                    name={field.name}
+                    type="text"
+                    maxLength={field.maxLength}
+                    defaultValue={state.values[field.name]}
+                    placeholder={field.placeholder}
+                    aria-invalid={Boolean(errors?.length)}
+                    aria-describedby={errors?.length ? errorId : undefined}
+                    className={inputClasses}
+                  />
+                )}
                 {errors?.length ? (
                   <p id={errorId} className="mt-1 text-xs font-medium text-red-700">
                     {errors[0]}
