@@ -27,6 +27,14 @@ type StorageOperation = "create" | "update" | "move" | "archive";
 function storageLocationError(error: unknown, operation: StorageOperation) {
   if (error instanceof ApiError) {
     if (error.status === 400) {
+      // Arrangement-rule rejections name both units; show them as sent.
+      const message =
+        typeof error.body === "object" && error.body !== null && "message" in error.body
+          ? (error.body as { message: unknown }).message
+          : null;
+      if (typeof message === "string" && message.includes("cannot be placed inside")) {
+        return message;
+      }
       if (operation === "archive") {
         return "This location still has active children or specimen lots. Resolve them before archiving.";
       }
