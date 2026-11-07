@@ -54,7 +54,8 @@ export function PublicFooter() {
         <address className="not-italic md:col-span-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Find us</p>
           <p className="mt-4 text-sm leading-relaxed text-ink">
-            3rd Floor, Josef Baumgartner Learning Resource Center, Talamban, Cebu
+            Josef Baumgartner Building,{" "}
+            <strong className="font-semibold">USC Talamban Campus</strong>, Cebu City
           </p>
           <p className="mt-3 text-sm">
             <a href="tel:+63322531000" className="text-ink hover:text-brand">

@@ -48,7 +48,7 @@ export default function HomePage() {
       <section className="mx-auto grid max-w-[1240px] gap-10 px-5 pt-10 pb-20 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-12 lg:pt-16 lg:pb-28">
         <div className="lg:col-span-7">
           <p className="rise font-mono text-xs tracking-wide text-brand">
-            University of San Carlos, Cebu
+            USC Talamban Campus, Cebu City
           </p>
           <h1
             className="rise mt-5 font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink lg:text-[3.6rem]"
