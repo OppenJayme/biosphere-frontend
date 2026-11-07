@@ -64,8 +64,8 @@ export function PublicFooter() {
             </a>
           </p>
           <p className="mt-1 text-sm">
-            <a href="mailto:biologicalmuseum@usc.edu.ph" className="break-all text-ink hover:text-brand">
-              biologicalmuseum@usc.edu.ph
+            <a href="mailto:febendanillo@usc.edu.ph" className="break-all text-ink hover:text-brand">
+              febendanillo@usc.edu.ph
             </a>
           </p>
         </address>
