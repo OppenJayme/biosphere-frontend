@@ -263,6 +263,15 @@ export const specimenDetailSchema = z.object({
   lotOverview: z.object({
     activeLotCount: z.number().int().nonnegative(),
     totalQuantity: z.number().int().nonnegative(),
+    // Why the record has no active quantity; older backends omit it.
+    zeroQuantityReason: z
+      .object({
+        adjustmentType: z.string().nullable(),
+        reason: z.string().nullable(),
+        recordedAt: z.string(),
+      })
+      .nullable()
+      .optional(),
   }),
   media: z.array(specimenMediaSchema),
   tags: z.array(specimenTagSchema),

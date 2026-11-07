@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { SpecimenDetail } from "@/features/specimens/types";
+import { adjustmentTypeLabel } from "@/features/specimen-lots/operations";
+import { RECORDED_QUANTITY_ADJUSTMENT_TYPES, type RecordedQuantityAdjustmentType } from "@/features/specimen-lots/types";
 
 function text(value: string | null | undefined) {
   return value ?? "Not recorded";
@@ -62,8 +64,23 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
   const { specimen, collection, taxonomy, provenance, activeLots, lotOverview, media, tags } =
     detail;
 
+  const zeroReason = lotOverview.zeroQuantityReason;
+
   return (
     <div className="space-y-4">
+      {lotOverview.totalQuantity === 0 && zeroReason && (
+        <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">No specimens are currently in active inventory.</p>
+          <p className="mt-1">
+            {zeroReasonLabel(zeroReason.adjustmentType)}
+            {zeroReason.reason ? `: ${zeroReason.reason}` : ""} (recorded{" "}
+            {new Date(zeroReason.recordedAt).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}).
+          </p>
+          <p className="mt-1 text-xs text-amber-800">
+            The record keeps its {specimen.status === "CATALOGED" ? "Cataloged status and " : ""}accession number. If the same specimen returns, add it back to this record instead of creating a new one.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Collection", value: collection?.collectionName ?? "Not assigned" },
@@ -292,4 +309,12 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
       </div>
     </div>
   );
+}
+
+/** Readable reduction type, falling back for values this build doesn't know. */
+function zeroReasonLabel(type: string | null) {
+  if (!type) return "Quantity reduced";
+  return (RECORDED_QUANTITY_ADJUSTMENT_TYPES as readonly string[]).includes(type)
+    ? adjustmentTypeLabel(type as RecordedQuantityAdjustmentType)
+    : type.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase());
 }
