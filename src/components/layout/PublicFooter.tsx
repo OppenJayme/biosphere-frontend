@@ -85,7 +85,7 @@ export function PublicFooter() {
             ))}
           </dl>
           <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-            Open during regular holidays for special events.
+            Closed on regular holidays.
           </p>
         </div>
       </div>
