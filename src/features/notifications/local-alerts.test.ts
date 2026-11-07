@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OfflineSpecimenDraft } from "../offline/types";
-import { localSyncAlerts, withoutServerReported } from "./local-alerts";
+import { localDraftReminders, localSyncAlerts, withoutServerReported } from "./local-alerts";
 
 function draft(overrides: Partial<OfflineSpecimenDraft> & { clientDraftId: string }): OfflineSpecimenDraft {
   return {
@@ -68,5 +68,48 @@ describe("device-local sync alerts", () => {
     ]);
     expect(alert.reason).toBe("Accession number is already assigned.");
     expect(alert.updatedAt).toBe("2026-11-04T00:00:00.000Z");
+  });
+});
+
+describe("offline draft reminders", () => {
+  const now = new Date("2026-11-08T12:00:00.000Z");
+
+  it("reminds about drafts still waiting a day or more, oldest first", () => {
+    const reminders = localDraftReminders(
+      [
+        draft({ clientDraftId: "fresh", syncState: "PENDING_SYNC", createdAt: "2026-11-08T00:00:00.000Z" }),
+        draft({ clientDraftId: "day", syncState: "PENDING_SYNC", createdAt: "2026-11-07T11:00:00.000Z" }),
+        draft({ clientDraftId: "week", syncState: "PENDING_SYNC", createdAt: "2026-11-01T12:00:00.000Z" }),
+        draft({ clientDraftId: "failed", syncState: "SYNC_FAILED", createdAt: "2026-11-01T00:00:00.000Z" }),
+        draft({ clientDraftId: "synced", syncState: "SYNCHRONIZED", createdAt: "2026-11-01T00:00:00.000Z" }),
+      ],
+      now,
+    );
+    expect(reminders.map((reminder) => reminder.id)).toEqual([
+      "LOCAL_DRAFT_WAITING:week",
+      "LOCAL_DRAFT_WAITING:day",
+    ]);
+    expect(reminders[0].reason).toContain("7 days");
+    expect(reminders[1].reason).toContain("more than a day");
+  });
+
+  it("starts exactly at 24 hours and ignores unreadable dates", () => {
+    const reminders = localDraftReminders(
+      [
+        draft({ clientDraftId: "edge", syncState: "PENDING_SYNC", createdAt: "2026-11-07T12:00:00.000Z" }),
+        draft({ clientDraftId: "short", syncState: "PENDING_SYNC", createdAt: "2026-11-07T12:00:01.000Z" }),
+        draft({ clientDraftId: "bad", syncState: "PENDING_SYNC", createdAt: "not a date" }),
+      ],
+      now,
+    );
+    expect(reminders.map((reminder) => reminder.clientDraftId)).toEqual(["edge"]);
+  });
+
+  it("is never hidden by a server SYNC_FAILED alert for another draft", () => {
+    const reminders = localDraftReminders(
+      [draft({ clientDraftId: "w", syncState: "PENDING_SYNC", createdAt: "2026-11-01T00:00:00.000Z" })],
+      now,
+    );
+    expect(withoutServerReported(reminders, [{ type: "SYNC_FAILED", recordId: "other" }])).toHaveLength(1);
   });
 });
