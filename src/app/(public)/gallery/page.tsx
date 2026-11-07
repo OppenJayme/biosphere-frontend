@@ -154,7 +154,7 @@ function ExhibitArea({ collection, priority }: { collection: Collection; priorit
       <div className="reveal relative aspect-16/10 overflow-hidden rounded-2xl">
         <Image
           src={collection.imageWide}
-          alt={collection.name}
+          alt={collection.imageWideAlt}
           fill
           priority={priority}
           sizes="(min-width: 1024px) 66vw, 100vw"

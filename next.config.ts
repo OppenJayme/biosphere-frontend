@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
   // Local only: also allow the localhost.run tunnel.
   allowedDevOrigins: [...new Set(privateLanHosts), "*.lhr.life"],
   experimental: {
+    // The app has several root layouts (public, curator, developer, login), so a site-wide 404
+    // lives in src/app/global-not-found.tsx, which this flag enables.
+    globalNotFound: true,
     // Curator pages render per request, and Next keeps none of them in the client
     // cache by default, so switching Dashboard -> Specimen -> Dashboard refetched
     // every page and showed loading.tsx each time. Reuse a visited page for 30s.

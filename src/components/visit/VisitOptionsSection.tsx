@@ -83,6 +83,7 @@ export function VisitOptionsSection() {
         <Modal
           title="Request a Visit"
           description="Tell us about your planned visit to the museum."
+          size="wide"
           onClose={() => setOpenModal(null)}
         >
           <RequestVisitForm onCancel={() => setOpenModal(null)} onSubmitted={() => setOpenModal(null)} />
@@ -90,7 +91,7 @@ export function VisitOptionsSection() {
       )}
 
       {openModal === "inquiry" && (
-        <Modal title="Inquiry" description="Tell us your concerns." onClose={() => setOpenModal(null)}>
+        <Modal title="Inquiry" description="Tell us your concerns." size="wide" onClose={() => setOpenModal(null)}>
           <InquiryForm onCancel={() => setOpenModal(null)} onSubmitted={() => setOpenModal(null)} />
         </Modal>
       )}
