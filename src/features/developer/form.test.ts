@@ -4,6 +4,7 @@ import {
   readArAssetActivateForm,
   readArAssetCreateForm,
   readArAssetReplaceForm,
+  readCuratorHandoverForm,
   readCuratorStatusForm,
   readOnboardCuratorForm,
   toCreateArAssetFormData,
@@ -83,6 +84,48 @@ describe("curator status form", () => {
     form.set("authorizationReason", "x".repeat(501));
 
     expect(readCuratorStatusForm(form).success).toBe(false);
+  });
+});
+
+describe("curator handover form", () => {
+  const OUTGOING = "11111111-1111-4111-8111-111111111111";
+  const SUCCESSOR = "22222222-2222-4222-8222-222222222222";
+
+  function handoverForm(values: Record<string, string>) {
+    const form = new FormData();
+    for (const [key, value] of Object.entries({
+      outgoingCuratorId: OUTGOING,
+      successorCuratorId: SUCCESSOR,
+      authorizationReason: "  Retirement memo 2027-01  ",
+      ...values,
+    })) {
+      form.set(key, value);
+    }
+    return form;
+  }
+
+  it("accepts two different curators with a trimmed authorization", () => {
+    const parsed = readCuratorHandoverForm(handoverForm({}));
+    expect(parsed.success && parsed.data).toEqual({
+      outgoingCuratorId: OUTGOING,
+      successorCuratorId: SUCCESSOR,
+      authorizationReason: "Retirement memo 2027-01",
+    });
+  });
+
+  it("refuses handing an account over to itself", () => {
+    const parsed = readCuratorHandoverForm(handoverForm({ successorCuratorId: OUTGOING }));
+    expect(parsed.success).toBe(false);
+    expect(!parsed.success && parsed.error.issues[0]?.message).toMatch(/different curator/);
+  });
+
+  it.each([
+    ["no leaving curator chosen", { outgoingCuratorId: "" }],
+    ["no successor chosen", { successorCuratorId: "" }],
+    ["a blank authorization", { authorizationReason: "   " }],
+    ["an authorization over 500 characters", { authorizationReason: "x".repeat(501) }],
+  ])("rejects %s", (_case, values) => {
+    expect(readCuratorHandoverForm(handoverForm(values)).success).toBe(false);
   });
 });
 

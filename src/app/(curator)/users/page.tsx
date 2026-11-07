@@ -36,7 +36,7 @@ export default async function UsersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Users"
-        description="View, invite, activate and deactivate curator accounts, and check invitation status and recent activity."
+        description="View and invite curator accounts, and check invitation status and recent activity."
         actions={<InviteCuratorDialog />}
       />
 

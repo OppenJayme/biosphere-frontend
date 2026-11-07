@@ -1,5 +1,5 @@
 /**
- * Form parsing for curator invitations (REQ-4.1-07) and status changes (REQ-4.1-08).
+ * Form parsing for curator invitations (REQ-4.1-07).
  * The backend stays authoritative for the role, duplicate emails, and audit logging;
  * these checks only reject input the backend would refuse anyway, before it is sent.
  */
@@ -7,7 +7,6 @@
 import { z } from "zod";
 
 export const FULL_NAME_MAX_LENGTH = 255;
-export const REASON_MAX_LENGTH = 500;
 
 export type InviteCuratorValues = { email: string; fullName: string };
 export type InviteCuratorField = keyof InviteCuratorValues;
@@ -35,29 +34,6 @@ const inviteCuratorSchema = z.object({
 
 export type InviteCuratorInput = z.output<typeof inviteCuratorSchema>;
 
-export type CuratorStatusState = {
-  reason: string;
-  /** The reason field's own error. */
-  error?: string;
-  message?: string;
-  success?: string;
-};
-
-export const EMPTY_CURATOR_STATUS_STATE: CuratorStatusState = { reason: "" };
-
-const curatorStatusTargetSchema = z.object({
-  accountId: z.uuid(),
-  status: z.enum(["ACTIVE", "INACTIVE"]),
-});
-
-const reasonSchema = z
-  .string()
-  .trim()
-  .min(1, "Enter a reason.")
-  .max(REASON_MAX_LENGTH, `Reason must be ${REASON_MAX_LENGTH} characters or fewer.`);
-
-export type CuratorStatusInput = { status: "ACTIVE" | "INACTIVE"; reason: string };
-
 function formString(formData: FormData, field: string) {
   const value = formData.get(field);
   return typeof value === "string" ? value : "";
@@ -69,19 +45,6 @@ export function readInviteCuratorForm(formData: FormData) {
     fullName: formString(formData, "fullName"),
   };
   return { values, result: inviteCuratorSchema.safeParse(values) };
-}
-
-/** The target comes from hidden fields, so a bad one is a stale or altered page, not a typing error. */
-export function readCuratorStatusForm(formData: FormData) {
-  return {
-    reason: formString(formData, "reason"),
-    name: formString(formData, "name"),
-    target: curatorStatusTargetSchema.safeParse({
-      accountId: formString(formData, "accountId"),
-      status: formString(formData, "status"),
-    }),
-    parsedReason: reasonSchema.safeParse(formString(formData, "reason")),
-  };
 }
 
 /** The first message for each field, so every invalid input can show its own error. */

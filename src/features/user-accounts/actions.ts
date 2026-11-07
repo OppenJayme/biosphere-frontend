@@ -8,13 +8,11 @@ import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { listAuditLogs } from "../audit/api";
 import { describeAuditEntry } from "../audit/describe";
-import { inviteCurator, updateCuratorStatus } from "./api";
+import { inviteCurator } from "./api";
 import {
   EMPTY_INVITE_VALUES,
   fieldErrors,
-  readCuratorStatusForm,
   readInviteCuratorForm,
-  type CuratorStatusState,
   type InviteCuratorState,
 } from "./form";
 import type { RecentActivityResult } from "./types";
@@ -71,48 +69,6 @@ function inviteError(error: unknown) {
     if (error.status >= 500) return backendMessage(error) ?? "The invitation could not be completed. Try again.";
   }
   return "The invitation could not be sent. Check your connection and try again.";
-}
-
-function curatorStatusError(error: unknown) {
-  if (error instanceof ApiError) {
-    if (error.status === 401) return "Your session has expired. Sign in again.";
-    // Either the curator's own account or an actor who was just deactivated; the backend says which.
-    if (error.status === 403) return backendMessage(error) ?? "You cannot make this change.";
-    if (error.status === 404) return "This curator account no longer exists. Reload the page.";
-    if (error.status === 409) return "This account changed while saving. Reload the page and try again.";
-    if (error.status === 400) return "Check the reason and try again.";
-    if (error.status === 429) return "Too many requests. Wait a minute and try again.";
-    if (error.status >= 500) return "The account status could not be changed. Try again.";
-  }
-  return "The account status could not be changed. Check your connection and try again.";
-}
-
-/** A curator activates or deactivates another curator (REQ-4.1-08). */
-export async function updateCuratorStatusAction(
-  _previousState: CuratorStatusState,
-  formData: FormData,
-): Promise<CuratorStatusState> {
-  void _previousState;
-  const { reason, name, target, parsedReason } = readCuratorStatusForm(formData);
-  if (!(await verifySession())) {
-    return { reason, message: "Your session has expired. Sign in again." };
-  }
-  if (!target.success) {
-    return { reason, message: "This account could not be changed. Reload the page and try again." };
-  }
-  if (!parsedReason.success) return { reason, error: parsedReason.error.issues[0].message };
-
-  try {
-    await updateCuratorStatus(target.data.accountId, { status: target.data.status, reason: parsedReason.data });
-  } catch (error) {
-    return { reason, message: curatorStatusError(error) };
-  }
-
-  revalidatePath("/users");
-  return {
-    reason: "",
-    success: `${name} ${target.data.status === "INACTIVE" ? "can no longer sign in" : "can sign in again"}.`,
-  };
 }
 
 /** A curator invites another curator (REQ-4.1-07); the backend emails the password-setup link. */
