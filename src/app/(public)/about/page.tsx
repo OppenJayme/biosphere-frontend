@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { stagger } from "@/lib/stagger";
-import { ArrowRightIcon, MailIcon } from "@/components/icons";
+import { ArrowRightIcon, PhoneIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "About",
@@ -50,22 +50,19 @@ const PURPOSE = [
   },
 ];
 
+// Contact details supplied by the museum (2026-11-07). The landline is the USC trunk line
+// plus local 122; the comma in its tel: link makes phones pause before dialing the local.
 const CURATORIAL_TEAM = [
   {
-    name: "Ivan Jayme",
-    role: "Museum Director",
-    description: "Oversees collections, research programs, and partnerships.",
-    phone: "+63 XXX XXX XXXX",
-    email: "ivan.jayme@usc.edu.ph",
+    name: "Fidel E. Bendanillo, MSc",
+    initials: "FB",
+    role: "Curator, Entomological Collection",
+    phones: [
+      { label: "032-230-0100-122", href: "tel:+63322300100,122" },
+      { label: "+63 956 689 2497", href: "tel:+639566892497" },
+    ],
   },
 ];
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("");
-}
 
 export default function AboutPage() {
   return (
@@ -184,22 +181,27 @@ export default function AboutPage() {
             {CURATORIAL_TEAM.map((member) => (
               <li key={member.name} className="reveal rounded-2xl bg-surface p-7">
                 <div className="flex items-center gap-4">
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-solid font-display text-lg font-semibold text-white">
-                    {initials(member.name)}
+                  <span aria-hidden className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-solid font-display text-lg font-semibold text-white">
+                    {member.initials}
                   </span>
                   <div>
                     <p className="font-display text-xl font-semibold text-ink">{member.name}</p>
                     <p className="font-mono text-xs text-ink-muted">{member.role}</p>
                   </div>
                 </div>
-                <p className="mt-5 text-ink-muted">{member.description}</p>
-                <a
-                  href={`mailto:${member.email}`}
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
-                >
-                  <MailIcon className="h-4 w-4" />
-                  {member.email}
-                </a>
+                <ul className="mt-5 space-y-2">
+                  {member.phones.map((phone) => (
+                    <li key={phone.href}>
+                      <a
+                        href={phone.href}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
+                      >
+                        <PhoneIcon className="h-4 w-4" />
+                        {phone.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </li>
             ))}
           </ul>

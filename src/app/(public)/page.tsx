@@ -203,7 +203,7 @@ function CollectionTile({
     >
       <Image
         src={collection.image}
-        alt=""
+        alt={collection.imageAlt}
         fill
         sizes={featured ? "(min-width: 1024px) 58vw, 100vw" : "(min-width: 1024px) 42vw, 100vw"}
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
