@@ -10,8 +10,8 @@ vi.mock("@/lib/session", () => ({
 
 import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/session";
-import { updateCuratorStatusAction } from "./actions";
-import { EMPTY_CURATOR_STATUS_STATE } from "./form";
+import { handOverAction, updateCuratorStatusAction } from "./actions";
+import { EMPTY_CURATOR_STATUS_STATE, EMPTY_HANDOVER_STATE } from "./form";
 
 const accountId = "11111111-1111-4111-8111-111111111111";
 
@@ -122,6 +122,52 @@ describe("updateCuratorStatusAction", () => {
 
     expect(result.message).toBe(message);
     expect(result.reason).toBe("  Left the museum ");
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("handOverAction", () => {
+  const successorId = "22222222-2222-4222-8222-222222222222";
+  function handoverForm(overrides: Record<string, string> = {}) {
+    const data = new FormData();
+    const values = { successorAccountId: successorId, reason: "  Retiring ", ...overrides };
+    for (const [key, value] of Object.entries(values)) data.set(key, value);
+    return data;
+  }
+  const handOver = (data: FormData) => handOverAction(EMPTY_HANDOVER_STATE, data);
+
+  it("posts the successor and trimmed reason, then refreshes the page", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(account));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await handOver(handoverForm());
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/user-accounts/handover");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({ successorAccountId: successorId, reason: "Retiring" });
+    expect(result.success).toMatch(/now inactive/);
+    expect(revalidatePath).toHaveBeenCalledWith("/users");
+  });
+
+  it("requires a successor and a reason before calling the backend", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await handOver(handoverForm({ successorAccountId: "", reason: " " }));
+
+    expect(result.errors).toEqual({ successorAccountId: "Choose your successor.", reason: "Enter a reason." });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the backend's reason when the successor is not ready", async () => {
+    const body = { message: "The successor has not finished setting up their account." };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(body, { status: 409 })));
+
+    const result = await handOver(handoverForm());
+
+    expect(result.message).toBe(body.message);
+    expect(result.reason).toBe("  Retiring ");
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

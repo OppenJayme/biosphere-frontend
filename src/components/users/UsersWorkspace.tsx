@@ -27,6 +27,10 @@ export function UsersWorkspace({ users }: { users: AccountUser[] }) {
   const visible = filtered.slice(start, start + pageSize);
 
   const selected = users.find((u) => u.id === selectedId) ?? null;
+  const successors = useMemo(
+    () => users.filter((u) => u.status === "Active" && !u.isCurrentUser),
+    [users],
+  );
 
   return (
     <div className="space-y-4">
@@ -67,7 +71,7 @@ export function UsersWorkspace({ users }: { users: AccountUser[] }) {
           />
         </div>
 
-        <UserDetailPanel user={selected} />
+        <UserDetailPanel user={selected} successors={successors} />
       </div>
     </div>
   );

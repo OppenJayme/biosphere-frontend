@@ -6,6 +6,7 @@ import { ClockIcon, CalendarIcon, ShieldIcon, CheckIcon, ArrowRightIcon, MailIco
 import { getUserRecentActivity } from "@/features/user-accounts/actions";
 import type { AccountUser, RecentActivityResult } from "@/features/user-accounts/types";
 import { CuratorStatusDialog } from "./CuratorStatusDialog";
+import { HandoverDialog } from "./HandoverDialog";
 import { STATUS_STYLES } from "./UserTable";
 
 function InfoRow({ icon: Icon, label, children }: { icon: typeof ClockIcon; label: string; children: ReactNode }) {
@@ -75,7 +76,14 @@ function RecentActivity({ accountId }: { accountId: string }) {
   );
 }
 
-export function UserDetailPanel({ user }: { user: AccountUser | null }) {
+export function UserDetailPanel({
+  user,
+  successors,
+}: {
+  user: AccountUser | null;
+  /** Active curators other than the signed-in one, who can receive a handover. */
+  successors: AccountUser[];
+}) {
   if (!user) {
     return (
       <div className="rounded-xl border border-black/10 bg-white p-5">
@@ -122,13 +130,16 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
         </div>
 
         {user.isCurrentUser ? (
-          <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
-            <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
-            You cannot change the status of your own account. Another curator has to do it.
-          </p>
-        ) : (
+          <HandoverDialog successors={successors} />
+        ) : user.status === "Inactive" ? (
           // Keyed so a dialog left open never carries over to another curator.
           <CuratorStatusDialog key={user.id} user={user} />
+        ) : (
+          <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
+            <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
+            Curators do not deactivate each other. A curator who is leaving hands over their own account
+            from their profile here.
+          </p>
         )}
       </div>
 

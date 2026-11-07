@@ -84,6 +84,30 @@ export function readCuratorStatusForm(formData: FormData) {
   };
 }
 
+export type HandoverInput = { successorAccountId: string; reason: string };
+
+export type HandoverState = {
+  successorAccountId: string;
+  reason: string;
+  errors?: { successorAccountId?: string; reason?: string };
+  message?: string;
+  success?: string;
+};
+
+export const EMPTY_HANDOVER_STATE: HandoverState = { successorAccountId: "", reason: "" };
+
+/** The successor is picked from a list, so a missing one means none was chosen. */
+export function readHandoverForm(formData: FormData) {
+  const successorAccountId = formString(formData, "successorAccountId");
+  const reason = formString(formData, "reason");
+  return {
+    successorAccountId,
+    reason,
+    parsedSuccessor: z.uuid().safeParse(successorAccountId),
+    parsedReason: reasonSchema.safeParse(reason),
+  };
+}
+
 /** The first message for each field, so every invalid input can show its own error. */
 export function fieldErrors(error: z.ZodError): Partial<Record<InviteCuratorField, string>> {
   const errors: Partial<Record<InviteCuratorField, string>> = {};

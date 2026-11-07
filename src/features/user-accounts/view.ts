@@ -53,7 +53,11 @@ export type CuratorStatusChange = {
   tone: "primary" | "danger";
 };
 
-/** What the status control offers. A pending invite is still an ACTIVE account, so it can be deactivated. */
+/**
+ * What the status control offers. Curators only reactivate: the Curator answered on 2026-11-07 that
+ * one curator should not turn off another's account, so deactivation happens through the outgoing
+ * curator's own handover, or the Developer route.
+ */
 export function curatorStatusAction(status: UserStatus): CuratorStatusChange {
   return status === "Inactive"
     ? {

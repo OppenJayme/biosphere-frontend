@@ -8,13 +8,15 @@ import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { listAuditLogs } from "../audit/api";
 import { describeAuditEntry } from "../audit/describe";
-import { inviteCurator, updateCuratorStatus } from "./api";
+import { handOver, inviteCurator, updateCuratorStatus } from "./api";
 import {
   EMPTY_INVITE_VALUES,
   fieldErrors,
   readCuratorStatusForm,
+  readHandoverForm,
   readInviteCuratorForm,
   type CuratorStatusState,
+  type HandoverState,
   type InviteCuratorState,
 } from "./form";
 import type { RecentActivityResult } from "./types";
@@ -112,6 +114,57 @@ export async function updateCuratorStatusAction(
   return {
     reason: "",
     success: `${name} ${target.data.status === "INACTIVE" ? "can no longer sign in" : "can sign in again"}.`,
+  };
+}
+
+function handoverError(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return "Your session has expired. Sign in again.";
+    if (error.status === 403) return backendMessage(error) ?? "Your account can no longer hand over.";
+    if (error.status === 404) return "That curator account no longer exists. Reload the page.";
+    // Successor not active or not set up yet; the backend says which.
+    if (error.status === 409) return backendMessage(error) ?? "Choose an active curator as your successor.";
+    if (error.status === 400) return backendMessage(error) ?? "Check the successor and reason, then try again.";
+    if (error.status === 429) return "Too many requests. Wait a minute and try again.";
+  }
+  return "The handover could not be completed. Check your connection and try again.";
+}
+
+/**
+ * The signed-in curator hands over to a successor (REQ-4.1-09). On success their own account is
+ * inactive, so the backend refuses every later request and the dialog only offers signing out.
+ */
+export async function handOverAction(
+  _previousState: HandoverState,
+  formData: FormData,
+): Promise<HandoverState> {
+  void _previousState;
+  const { successorAccountId, reason, parsedSuccessor, parsedReason } = readHandoverForm(formData);
+  if (!(await verifySession())) {
+    return { successorAccountId, reason, message: "Your session has expired. Sign in again." };
+  }
+  if (!parsedSuccessor.success || !parsedReason.success) {
+    return {
+      successorAccountId,
+      reason,
+      errors: {
+        successorAccountId: parsedSuccessor.success ? undefined : "Choose your successor.",
+        reason: parsedReason.success ? undefined : parsedReason.error.issues[0].message,
+      },
+    };
+  }
+
+  try {
+    await handOver({ successorAccountId: parsedSuccessor.data, reason: parsedReason.data });
+  } catch (error) {
+    return { successorAccountId, reason, message: handoverError(error) };
+  }
+
+  revalidatePath("/users");
+  return {
+    successorAccountId: "",
+    reason: "",
+    success: "Handover recorded. Your account is now inactive and kept for the records.",
   };
 }
 
