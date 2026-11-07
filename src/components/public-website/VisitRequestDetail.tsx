@@ -19,6 +19,7 @@ import {
   VISIT_REQUEST_STATUS_LABELS,
   canApproveSchedule,
   emailsVisitorOnStatus,
+  hasCampusEntrySummary,
   isDestructiveVisitStatus,
   nextVisitStatuses,
   type CuratorSettableVisitStatus,
@@ -344,7 +345,7 @@ export function VisitRequestDetail({
           />
         )}
 
-        {request.approvedSchedule && <CampusEntryCard summary={campusEntry} />}
+        {hasCampusEntrySummary(request) && <CampusEntryCard summary={campusEntry} />}
 
         {statusOptions.length > 0 && (
           <StatusChangeForm
