@@ -12,6 +12,7 @@ import {
 } from "@/features/storage-locations/actions";
 import {
   STORAGE_ARRANGEMENT_HINT,
+  STORAGE_TYPE_SUGGESTIONS,
   STORAGE_UNIT_TYPE_SUGGESTIONS,
 } from "@/features/storage-locations/arrangement";
 import { storageDescendantIds } from "@/features/storage-locations/hierarchy";
@@ -69,6 +70,7 @@ function StorageFields({
 }) {
   // Create and edit forms can be on the page together, so each needs its own list id.
   const unitTypeListId = useId();
+  const storageTypeListId = useId();
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Location label" name="label" defaultValue={values.label} placeholder="e.g. Cabinet A" required />
@@ -91,7 +93,13 @@ function StorageFields({
         defaultValue={values.storageType}
         placeholder="e.g. Dry storage"
         required
+        list={storageTypeListId}
       />
+      <datalist id={storageTypeListId}>
+        {STORAGE_TYPE_SUGGESTIONS.map((type) => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
       <Field label="Size (optional)" name="size" defaultValue={values.size} placeholder="e.g. Large" />
       <Field
         label="Capacity (optional)"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createTaxonomyAction,
   updateTaxonomyAction,
@@ -17,6 +17,8 @@ import {
   CONSERVATION_STATUS_OPTIONS,
   ECOLOGICAL_ROLE_OPTIONS,
   KINGDOM_OPTIONS,
+  classSuggestions,
+  phylumSuggestions,
   type FieldOptionList,
 } from "@/features/specimens/field-options";
 import { OptionField } from "./OptionField";
@@ -88,6 +90,14 @@ export function SpecimenTaxonomyForm({
       ? createTaxonomyAction.bind(null, specimenId)
       : updateTaxonomyAction.bind(null, specimenId);
   const [state, formAction, pending] = useActionState(action, { values: initialValues });
+  // Phylum suggestions follow the kingdom, and class suggestions follow the phylum. Both stay
+  // typed fields, so any value can still be entered.
+  const [kingdom, setKingdom] = useState(initialValues.kingdom);
+  const [phylum, setPhylum] = useState(initialValues.phylum);
+  const suggestions: Partial<Record<TaxonomyFormField, readonly string[]>> = {
+    phylum: phylumSuggestions(kingdom),
+    class: classSuggestions(phylum),
+  };
 
   return (
     <form action={formAction} className="space-y-6">
@@ -123,19 +133,33 @@ export function SpecimenTaxonomyForm({
                     invalid={Boolean(errors?.length)}
                     describedBy={errors?.length ? errorId : undefined}
                     className={inputClasses}
+                    onValueChange={field.name === "kingdom" ? setKingdom : undefined}
                   />
                 ) : (
-                  <input
-                    id={field.name}
-                    name={field.name}
-                    type="text"
-                    maxLength={field.maxLength}
-                    defaultValue={state.values[field.name]}
-                    placeholder={field.placeholder}
-                    aria-invalid={Boolean(errors?.length)}
-                    aria-describedby={errors?.length ? errorId : undefined}
-                    className={inputClasses}
-                  />
+                  <>
+                    <input
+                      id={field.name}
+                      name={field.name}
+                      type="text"
+                      maxLength={field.maxLength}
+                      defaultValue={state.values[field.name]}
+                      placeholder={field.placeholder}
+                      aria-invalid={Boolean(errors?.length)}
+                      aria-describedby={errors?.length ? errorId : undefined}
+                      className={inputClasses}
+                      list={suggestions[field.name] ? `${field.name}-suggestions` : undefined}
+                      onChange={
+                        field.name === "phylum" ? (event) => setPhylum(event.target.value) : undefined
+                      }
+                    />
+                    {suggestions[field.name] ? (
+                      <datalist id={`${field.name}-suggestions`}>
+                        {suggestions[field.name]!.map((value) => (
+                          <option key={value} value={value} />
+                        ))}
+                      </datalist>
+                    ) : null}
+                  </>
                 )}
                 {errors?.length ? (
                   <p id={errorId} className="mt-1 text-xs font-medium text-red-700">

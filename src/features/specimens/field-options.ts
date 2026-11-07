@@ -127,6 +127,96 @@ export function preservationMethodSuggestions(type: string): readonly string[] {
   return listed ?? Object.values(PRESERVATION_METHOD_SUGGESTIONS).flat();
 }
 
+/**
+ * Common phyla per kingdom, offered as typed suggestions (never a closed list): the curator can
+ * still enter any phylum. Bacteria and Archaea have no suggestions.
+ */
+export const PHYLUM_SUGGESTIONS: Record<string, readonly string[]> = {
+  Animalia: [
+    "Chordata",
+    "Arthropoda",
+    "Mollusca",
+    "Annelida",
+    "Cnidaria",
+    "Echinodermata",
+    "Porifera",
+    "Platyhelminthes",
+    "Nematoda",
+    "Bryozoa",
+    "Brachiopoda",
+    "Ctenophora",
+  ],
+  Plantae: ["Tracheophyta", "Bryophyta", "Marchantiophyta", "Anthocerotophyta", "Chlorophyta", "Rhodophyta"],
+  Fungi: ["Ascomycota", "Basidiomycota", "Mucoromycota", "Chytridiomycota", "Glomeromycota"],
+  Protista: ["Amoebozoa", "Ciliophora", "Euglenozoa", "Foraminifera", "Ochrophyta"],
+};
+
+/** Common classes per phylum, offered as typed suggestions like the phyla above. */
+export const CLASS_SUGGESTIONS: Record<string, readonly string[]> = {
+  Chordata: [
+    "Mammalia",
+    "Aves",
+    "Reptilia",
+    "Amphibia",
+    "Actinopterygii",
+    "Chondrichthyes",
+    "Sarcopterygii",
+    "Ascidiacea",
+  ],
+  Arthropoda: [
+    "Insecta",
+    "Arachnida",
+    "Malacostraca",
+    "Chilopoda",
+    "Diplopoda",
+    "Branchiopoda",
+    "Collembola",
+    "Merostomata",
+  ],
+  Mollusca: ["Gastropoda", "Bivalvia", "Cephalopoda", "Polyplacophora", "Scaphopoda"],
+  Annelida: ["Polychaeta", "Clitellata"],
+  Cnidaria: ["Anthozoa", "Hydrozoa", "Scyphozoa", "Cubozoa"],
+  Echinodermata: ["Asteroidea", "Echinoidea", "Holothuroidea", "Ophiuroidea", "Crinoidea"],
+  Porifera: ["Demospongiae", "Calcarea", "Hexactinellida"],
+  Platyhelminthes: ["Trematoda", "Cestoda", "Monogenea"],
+  Nematoda: ["Chromadorea", "Enoplea"],
+  Tracheophyta: [
+    "Magnoliopsida",
+    "Liliopsida",
+    "Pinopsida",
+    "Polypodiopsida",
+    "Lycopodiopsida",
+    "Cycadopsida",
+    "Gnetopsida",
+  ],
+  Bryophyta: ["Bryopsida", "Sphagnopsida"],
+  Ascomycota: [
+    "Sordariomycetes",
+    "Dothideomycetes",
+    "Lecanoromycetes",
+    "Pezizomycetes",
+    "Saccharomycetes",
+    "Eurotiomycetes",
+  ],
+  Basidiomycota: ["Agaricomycetes", "Tremellomycetes", "Pucciniomycetes", "Ustilaginomycetes"],
+};
+
+function lookupIgnoringCase(table: Record<string, readonly string[]>, key: string) {
+  const wanted = key.trim().toLowerCase();
+  const match = Object.keys(table).find((name) => name.toLowerCase() === wanted);
+  return match ? table[match] : undefined;
+}
+
+/** Phyla for the chosen kingdom, or every suggested phylum when the kingdom is blank or unlisted. */
+export function phylumSuggestions(kingdom: string): readonly string[] {
+  return lookupIgnoringCase(PHYLUM_SUGGESTIONS, kingdom) ?? Object.values(PHYLUM_SUGGESTIONS).flat();
+}
+
+/** Classes for the entered phylum, or every suggested class when the phylum is blank or unlisted. */
+export function classSuggestions(phylum: string): readonly string[] {
+  return lookupIgnoringCase(CLASS_SUGGESTIONS, phylum) ?? Object.values(CLASS_SUGGESTIONS).flat();
+}
+
 /** Select-only marker for "Other…"; never a value that may be saved. */
 export const OTHER_OPTION_VALUE = "__other__";
 

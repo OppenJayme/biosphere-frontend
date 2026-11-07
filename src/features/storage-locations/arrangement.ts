@@ -15,6 +15,18 @@ export const STORAGE_ARRANGEMENT_TIERS = [
  * Readable suggestions ("Shelving unit", not "SHELVING_UNIT"). The backend compares unit types
  * ignoring case, spaces and hyphens, so either spelling gets the same tier.
  */
+/**
+ * Suggested storage types (how a place keeps specimens). A typed field with suggestions, so a
+ * type the list lacks can still be entered.
+ */
+export const STORAGE_TYPE_SUGGESTIONS = [
+  "Dry storage",
+  "Wet storage",
+  "Cold storage",
+  "Display",
+  "General",
+] as const;
+
 export const STORAGE_UNIT_TYPE_SUGGESTIONS = STORAGE_ARRANGEMENT_TIERS.flatMap((tier) =>
   tier.types.map((type) => type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ")),
 );

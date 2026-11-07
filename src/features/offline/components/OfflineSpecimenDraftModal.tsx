@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CloseIcon } from "@/components/icons";
 import { Field, fieldClasses } from "@/components/ui/Field";
 import { TextField } from "@/components/ui/TextField";
@@ -28,6 +28,27 @@ export function OfflineSpecimenDraftModal({
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const titleId = useId();
+  const descriptionId = useId();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // A modal dialog: focus starts on the first field, Escape closes it, and focus returns to
+  // whatever opened it.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    formRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCloseRef.current();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      opener?.focus();
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,13 +70,19 @@ export function OfflineSpecimenDraftModal({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8 sm:items-center">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        className="w-full max-w-2xl rounded-xl bg-white shadow-xl"
+      >
         <div className="flex items-start gap-4 border-b border-black/10 px-6 py-4">
           <div>
-            <h2 className="font-semibold text-zinc-900">
+            <h2 id={titleId} className="font-semibold text-zinc-900">
               {draft ? "Edit offline specimen draft" : "New offline specimen draft"}
             </h2>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">
+            <p id={descriptionId} className="mt-1 text-xs leading-5 text-zinc-500">
               This saves text-only core details on this device. Collection assignment,
               taxonomy, provenance, lots, storage, media, QR, and publishing remain
               online-only.
