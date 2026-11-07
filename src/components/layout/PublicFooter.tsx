@@ -59,8 +59,8 @@ export function PublicFooter() {
             <strong className="font-semibold">USC Talamban Campus</strong>, Cebu City
           </p>
           <p className="mt-3 text-sm">
-            <a href="tel:+63322531000" className="text-ink hover:text-brand">
-              (032) 253 1000 local 245
+            <a href="tel:+63322300100,122" className="text-ink hover:text-brand">
+              032-230-0100-122
             </a>
           </p>
           <p className="mt-1 text-sm">

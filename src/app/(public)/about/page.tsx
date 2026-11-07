@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { stagger } from "@/lib/stagger";
-import { ArrowRightIcon, PhoneIcon } from "@/components/icons";
+import { ArrowRightIcon, MailIcon, PhoneIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "About",
@@ -57,6 +57,7 @@ const CURATORIAL_TEAM = [
     name: "Fidel E. Bendanillo, MSc",
     initials: "FB",
     role: "Curator, Entomological Collection",
+    email: "febendanillo@usc.edu.ph",
     phones: [
       { label: "032-230-0100-122", href: "tel:+63322300100,122" },
       { label: "+63 956 689 2497", href: "tel:+639566892497" },
@@ -201,6 +202,15 @@ export default function AboutPage() {
                       </a>
                     </li>
                   ))}
+                  <li>
+                    <a
+                      href={`mailto:${member.email}`}
+                      className="inline-flex items-center gap-2 text-sm font-medium break-all text-brand hover:underline"
+                    >
+                      <MailIcon className="h-4 w-4 shrink-0" />
+                      {member.email}
+                    </a>
+                  </li>
                 </ul>
               </li>
             ))}

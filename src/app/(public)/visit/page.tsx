@@ -47,8 +47,8 @@ const CONTACT_ROWS = [
       "3rd Level, Learning Resource Center, Josef Baumgartner Building, USC, Nasipit, Talamban Campus, Cebu City, Philippines, 6000",
   },
   { label: "Email", value: "febendanillo@usc.edu.ph", href: "mailto:febendanillo@usc.edu.ph" },
-  { label: "Mobile", value: "0945 866 8586", href: "tel:+639458668586" },
-  { label: "Telephone", value: "2300100-122 local 122" },
+  { label: "Mobile", value: "+63 956 689 2497", href: "tel:+639566892497" },
+  { label: "Telephone", value: "032-230-0100-122", href: "tel:+63322300100,122" },
 ];
 
 export default function VisitPage() {
