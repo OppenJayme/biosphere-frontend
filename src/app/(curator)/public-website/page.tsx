@@ -23,7 +23,7 @@ import {
   listVisitRequests,
 } from "@/features/visit-requests/api";
 import type { VisitRequest } from "@/features/visit-requests/types";
-import { isUpcomingVisit } from "@/features/visit-requests/workflow";
+import { hasCampusEntrySummary, isUpcomingVisit } from "@/features/visit-requests/workflow";
 import { ApiError } from "@/lib/api-client";
 import { getAccountInfo, verifySession } from "@/lib/session";
 import { PageHeader } from "@/components/curator/PageHeader";
@@ -107,8 +107,8 @@ async function loadSelection(
       known ? Promise.resolve(known as VisitRequest) : getVisitRequest(id),
       optional(getVisitRequestHistory(id)),
     ]);
-    // The summary exists only once a schedule is approved.
-    const campusEntry = record.approvedSchedule ? await optional(getCampusEntrySummary(id)) : null;
+    // The backend has a summary only for Approved and Submitted visits (not Completed ones).
+    const campusEntry = hasCampusEntrySummary(record) ? await optional(getCampusEntrySummary(id)) : null;
     return { selection: { kind, record, history, campusEntry } };
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) redirect(`/login?from=${PUBLIC_WEBSITE_PATH}`);

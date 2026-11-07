@@ -46,11 +46,19 @@ export function emailsVisitorOnStatus(status: CuratorSettableVisitStatus) {
   return status === "DECLINED" || status === "CANCELLED";
 }
 
-/** Approved visits whose date is today or later at the museum. */
-export function isUpcomingVisit(request: VisitRequest, today = museumToday()) {
+/**
+ * Whether the backend has a campus-entry summary for this visit (REQ-4.9-12).
+ * Mirrors the backend's CAMPUS_ENTRY_STATUSES: only Approved and Submitted visits.
+ * Completed visits keep their approved schedule but have no summary.
+ */
+export function hasCampusEntrySummary(request: Pick<VisitRequest, "status" | "approvedSchedule">) {
   return (
     (request.status === "APPROVED_BY_CURATOR" || request.status === "SUBMITTED_FOR_CAMPUS_ENTRY") &&
-    request.approvedSchedule !== null &&
-    request.approvedSchedule.date >= today
+    request.approvedSchedule !== null
   );
+}
+
+/** Approved visits whose date is today or later at the museum. */
+export function isUpcomingVisit(request: VisitRequest, today = museumToday()) {
+  return hasCampusEntrySummary(request) && request.approvedSchedule !== null && request.approvedSchedule.date >= today;
 }
