@@ -2,7 +2,6 @@
 
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { FieldError, fieldErrorId } from "@/components/ui/Field";
@@ -10,8 +9,8 @@ import { AlertTriangleIcon, CheckIcon } from "@/components/icons";
 import type { SubmissionReceipt } from "@/features/public-submissions/submit";
 
 /**
- * Consent to the privacy notice at /privacy (RA 10173). The backend rejects a submission
- * without it. The museum left the notice's wording to the team (7 Nov 2026).
+ * Consent to the privacy notice (RA 10173). The backend rejects a submission without it.
+ * TODO(curators): replace the wording with the museum's approved privacy notice once issued.
  */
 export function PrivacyConsent({ id, purpose, error }: { id: string; purpose: string; error?: string }) {
   return (
@@ -28,15 +27,7 @@ export function PrivacyConsent({ id, purpose, error }: { id: string; purpose: st
         />
         <label htmlFor={id} className="text-sm leading-relaxed text-ink">
           I agree that the USC Biological Museum may keep and use the details above only to respond
-          to {purpose}, in line with the Data Privacy Act of 2012 (RA 10173) and the museum&apos;s{" "}
-          <Link
-            href="/privacy"
-            target="_blank"
-            className="font-medium text-brand underline underline-offset-4"
-          >
-            privacy notice
-          </Link>
-          .
+          to {purpose}, in line with the Data Privacy Act of 2012 (RA 10173).
         </label>
       </div>
       {error && <FieldError id={fieldErrorId(id)}>{error}</FieldError>}
