@@ -41,7 +41,11 @@ const BEFORE_YOU_VISIT = [
 ];
 
 const CONTACT_ROWS = [
-  { label: "Address", value: "USC Biological Museum, University of San Carlos, Cebu City" },
+  {
+    label: "Address",
+    value:
+      "3rd Level, Learning Resource Center, Josef Baumgartner Building, USC, Nasipit, Talamban Campus, Cebu City, Philippines, 6000",
+  },
   { label: "Email", value: "febendanillo@usc.edu.ph", href: "mailto:febendanillo@usc.edu.ph" },
   { label: "Mobile", value: "0945 866 8586", href: "tel:+639458668586" },
   { label: "Telephone", value: "2300100-122 local 122" },
