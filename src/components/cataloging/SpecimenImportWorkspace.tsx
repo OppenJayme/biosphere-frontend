@@ -171,7 +171,7 @@ export function SpecimenImportWorkspace() {
         <h2 className="text-sm font-semibold text-zinc-900">1. Upload and validate</h2>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-zinc-500">
-            CSV or XLSX, up to 5 MB and 500 data rows. Previewing does not save records.
+            CSV or XLSX, up to 5 MB and 500 data rows. Previewing does not save records. Rows without an accession number get the next USC-BM number when imported, and imported records stay Uncataloged until a curator reviews and completes each one.
           </p>
           <a
             href="/templates/specimen-import-template.csv"
@@ -267,6 +267,13 @@ export function SpecimenImportWorkspace() {
                     <td className="px-3 py-3 align-top">
                       <p className="font-medium text-zinc-900">{rowIdentity(row)}</p>
                       <p className="mt-0.5 text-xs text-zinc-500">{row.data.scientificName ?? "Scientific name not provided"}</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        {row.data.accessionNumber
+                          ? `Accession ${row.data.accessionNumber}`
+                          : row.accessionNumberWillBeGenerated
+                            ? "Accession number assigned on import"
+                            : "No accession number"}
+                      </p>
                     </td>
                     <td className="px-3 py-3 align-top text-zinc-600">{row.data.specimenCategory ?? "Not provided"}</td>
                     <td className="px-3 py-3 align-top text-zinc-600">{row.data.classificationStatus ?? "Not provided"}</td>
