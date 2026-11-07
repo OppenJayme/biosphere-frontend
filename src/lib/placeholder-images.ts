@@ -1,31 +1,43 @@
-// Semantic stock placeholders (Unsplash License) standing in for real museum photography.
-// Every entry is used in exactly one spot across Home/Gallery/Visit/About — keep them unique.
-// Replace each entry with a curator-supplied image when available.
+// Images for the public pages (Home/Gallery/Visit/About) and the curator login showcase.
+// Museum photos are local files under src/assets; the remaining entries are still
+// semantic stock placeholders (Unsplash License) until a museum photo is supplied.
+// Every entry is used in exactly one spot — keep them unique.
+import aboutHero from "@/assets/about/about_topbanner_enrique-schoenig.jpg";
+import aboutHistory from "@/assets/about/about_preservation.jpg";
+import galleryHero from "@/assets/gallery/gallery_explore_banner.jpg";
+import galleryEntomology from "@/assets/gallery/gallery_entomology_exhibit.jpg";
+import galleryHerpetology from "@/assets/gallery/gallery_herpetology_exhibit.jpg";
+import galleryMarine from "@/assets/gallery/gallery_marine_exhibit.jpg";
+import homeEntomology from "@/assets/home/home_entomology_card.jpg";
+import homeHerpetology from "@/assets/home/home_herpetology_card.jpg";
+import homeMarine from "@/assets/home/home_marine_card.jpg";
+import visitHero from "@/assets/visit/visit_topbanner.jpg";
+
 const unsplash = (id: string) => `https://images.unsplash.com/photo-${id}`;
 
 export const PLACEHOLDER_IMAGES = {
   // Page hero backgrounds
-  heroHome: unsplash("1500354960738-4c480ed785bc"), // misty tropical rainforest canopy
-  heroGallery: unsplash("1508026155071-961dae008723"), // museum hall with whale skeleton
-  heroVisit: unsplash("1534739302117-e9ff126dec91"), // visitor viewing a fossil exhibit
-  heroAbout: unsplash("1630959305790-4c956ce6c0b6"), // researcher at a microscope
+  heroHome: unsplash("1500354960738-4c480ed785bc"), // stock: misty tropical rainforest canopy
+  heroGallery: galleryHero, // museum: exhibit hall with display cases
+  heroVisit: visitHero, // museum: grasshopper close-up from the exhibit
+  heroAbout: aboutHero, // museum: portrait of Enrique Schoenig
 
   // Home — collection cards
-  entomologyCard: unsplash("1590557425376-a180474fb8a1"), // plain tiger butterfly
-  herpetologyCard: unsplash("1698435354321-0bccb1549b4d"), // red-eyed tree frog on a leaf
-  marineCard: unsplash("1581242163722-caf37479b25c"), // clownfish in an anemone
+  entomologyCard: homeEntomology,
+  herpetologyCard: homeHerpetology,
+  marineCard: homeMarine,
 
   // Home — "Science in Service of Society"
-  homeScience: unsplash("1720714411649-74f22df976f5"), // pressed herbarium specimen
+  homeScience: unsplash("1720714411649-74f22df976f5"), // stock: pressed herbarium specimen
 
   // Gallery — exhibit areas
-  entomologyWide: unsplash("1779732933715-c0739352198d"), // pinned butterflies and insects
-  herpetologyWide: unsplash("1565239866281-b4c953e61eca"), // gecko silhouette on a banana leaf
-  marineWide: unsplash("1568785629399-0cd9324febdf"), // green sea turtle over a reef
+  entomologyWide: galleryEntomology,
+  herpetologyWide: galleryHerpetology,
+  marineWide: galleryMarine,
 
   // About — "Through the Years"
-  aboutHistory: unsplash("1763909130873-bbde2fe7f464"), // preserved beetle collection
+  aboutHistory, // museum: display cabinets of preserved specimens
 
   // Curator login showcase (not a public page)
-  authShowcase: unsplash("1583212292454-1fe6229603b7"), // coral reef
+  authShowcase: unsplash("1583212292454-1fe6229603b7"), // stock: coral reef
 } as const;
