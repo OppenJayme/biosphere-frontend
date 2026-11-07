@@ -11,9 +11,10 @@ const EXPLORE_LINKS = [
   { href: "/inquiry", label: "Contact" },
 ];
 
+// Museum hours as given by the museum (2026-11-07); it closes over lunch on weekdays.
 const HOURS = [
-  { days: "Tue - Fri", time: "9:00 AM - 5:00 PM" },
-  { days: "Sat - Sun", time: "9:00 AM - 5:00 PM" },
+  { days: "Mon - Fri", times: ["8:00 - 11:00 AM", "1:00 - 4:00 PM"] },
+  { days: "Saturday", times: ["8:00 - 11:00 AM only"] },
 ];
 
 export function PublicFooter() {
@@ -24,8 +25,8 @@ export function PublicFooter() {
 
   return (
     <footer className="mt-24 border-t border-line bg-surface">
-      <div className="mx-auto grid max-w-[1240px] gap-12 px-5 py-16 sm:px-8 md:grid-cols-12">
-        <div className="md:col-span-5">
+      <div className="mx-auto grid max-w-[1240px] gap-12 px-5 py-16 sm:px-8 md:grid-cols-3 lg:grid-cols-12">
+        <div className="md:col-span-3 lg:col-span-4">
           <Link href="/" className="inline-flex items-center gap-3">
             <LogoMark className="h-11 w-11" />
             <span className="font-display text-xl font-semibold tracking-tight text-ink">
@@ -38,7 +39,7 @@ export function PublicFooter() {
           </p>
         </div>
 
-        <div className="md:col-span-2">
+        <div className="lg:col-span-2">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Explore</p>
           <ul className="mt-4 space-y-2.5 text-sm">
             {EXPLORE_LINKS.map((link) => (
@@ -51,7 +52,7 @@ export function PublicFooter() {
           </ul>
         </div>
 
-        <address className="not-italic md:col-span-3">
+        <address className="not-italic lg:col-span-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Find us</p>
           <p className="mt-4 text-sm leading-relaxed text-ink">
             Josef Baumgartner Building,{" "}
@@ -69,13 +70,17 @@ export function PublicFooter() {
           </p>
         </address>
 
-        <div className="md:col-span-2">
+        <div className="lg:col-span-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Hours</p>
           <dl className="mt-4 space-y-2 font-mono text-[13px]">
             {HOURS.map((row) => (
               <div key={row.days}>
                 <dt className="text-ink-muted">{row.days}</dt>
-                <dd className="text-ink">{row.time}</dd>
+                {row.times.map((time) => (
+                  <dd key={time} className="text-ink">
+                    {time}
+                  </dd>
+                ))}
               </div>
             ))}
           </dl>
