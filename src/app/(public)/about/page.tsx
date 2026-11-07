@@ -56,7 +56,7 @@ const CURATORIAL_TEAM = [
   {
     name: "Fidel E. Bendanillo, MSc",
     initials: "FB",
-    role: "Curator, Entomological Collection",
+    role: "Curator",
     email: "febendanillo@usc.edu.ph",
     phones: [
       { label: "032-230-0100-122", href: "tel:+63322300100,122" },
