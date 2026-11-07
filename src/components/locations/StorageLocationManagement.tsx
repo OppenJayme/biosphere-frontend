@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import {
   archiveStorageLocationAction,
@@ -67,6 +67,8 @@ function StorageFields({
   parents: StorageUnit[];
   includeParent: boolean;
 }) {
+  // Create and edit forms can be on the page together, so each needs its own list id.
+  const unitTypeListId = useId();
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Location label" name="label" defaultValue={values.label} placeholder="e.g. Cabinet A" required />
@@ -76,9 +78,9 @@ function StorageFields({
         defaultValue={values.unitType}
         placeholder="e.g. Cabinet"
         required
-        list="storage-unit-type-suggestions"
+        list={unitTypeListId}
       />
-      <datalist id="storage-unit-type-suggestions">
+      <datalist id={unitTypeListId}>
         {STORAGE_UNIT_TYPE_SUGGESTIONS.map((type) => (
           <option key={type} value={type} />
         ))}

@@ -11,8 +11,12 @@ export const STORAGE_ARRANGEMENT_TIERS = [
   { name: "Primary container", types: ["VIAL", "TUBE", "SLIDE", "ENVELOPE"] },
 ] as const;
 
-export const STORAGE_UNIT_TYPE_SUGGESTIONS = STORAGE_ARRANGEMENT_TIERS.flatMap(
-  (tier) => tier.types,
+/**
+ * Readable suggestions ("Shelving unit", not "SHELVING_UNIT"). The backend compares unit types
+ * ignoring case, spaces and hyphens, so either spelling gets the same tier.
+ */
+export const STORAGE_UNIT_TYPE_SUGGESTIONS = STORAGE_ARRANGEMENT_TIERS.flatMap((tier) =>
+  tier.types.map((type) => type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ")),
 );
 
 export const STORAGE_ARRANGEMENT_HINT =
