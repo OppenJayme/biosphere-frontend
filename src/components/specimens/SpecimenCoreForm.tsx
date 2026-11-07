@@ -112,8 +112,13 @@ export function SpecimenCoreForm({
               aria-describedby={describedBy("accessionNumber")}
               aria-invalid={Boolean(state.errors?.accessionNumber?.length)}
               className={inputClasses}
-              placeholder="e.g. USCBM-2026-001"
+              placeholder={mode === "create" ? "Leave blank to assign automatically" : "e.g. USC-BM-2026-0001"}
             />
+            <p className="mt-1 text-xs text-zinc-500">
+              {mode === "create"
+                ? `Leave blank and BioSphere assigns the next number (USC-BM-${new Date().getFullYear()}-NNNN) when you save. Enter an existing museum number to keep it.`
+                : "The accession number stays with this record through cataloging, moves, archiving, and restoration. It can be corrected but not cleared."}
+            </p>
             <FieldError
               id={fieldErrorId("accessionNumber")}
               errors={state.errors?.accessionNumber}

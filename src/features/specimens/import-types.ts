@@ -26,6 +26,8 @@ export const specimenImportPreviewRowSchema = z.object({
   errors: z.array(z.string()),
   duplicateWarnings: z.array(z.string()),
   valid: z.boolean(),
+  // Older backends omit it; a blank accession number is generated at import.
+  accessionNumberWillBeGenerated: z.boolean().optional(),
 });
 
 export const specimenImportPreviewSchema = z.object({

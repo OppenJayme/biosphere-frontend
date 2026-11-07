@@ -9,6 +9,17 @@ import { catalogedEditGuardMessage } from "./lifecycle";
 
 export type MutationMode = "create" | "update";
 
+/** An assigned accession number stays with the record; the backend refuses to clear it. */
+function accessionClearedMessage(body: unknown): string | null {
+  const raw =
+    typeof body === "object" && body !== null && "message" in body
+      ? (body as { message: unknown }).message
+      : null;
+  return typeof raw === "string" && raw.includes("accession number cannot be cleared")
+    ? "This record's accession number cannot be cleared. Correct it instead, or keep the current number."
+    : null;
+}
+
 /** Minimal shape of a backend ApiError that these mappings read. */
 export type MutationFailure = { status: number; body: unknown } | null;
 
@@ -26,6 +37,8 @@ export function specimenCoreErrorMessage(failure: MutationFailure, mode: Mutatio
       // Cataloged records reject clearing a required field; say which one and how to proceed.
       const guard = catalogedEditGuardMessage(failure.body);
       if (guard) return guard;
+      const cleared = accessionClearedMessage(failure.body);
+      if (cleared) return cleared;
       return mode === "update"
         ? "No changes were saved. Change at least one core field and check the entered values."
         : "The draft could not be saved. Check the entered values and try again.";

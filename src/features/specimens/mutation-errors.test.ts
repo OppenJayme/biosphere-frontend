@@ -16,6 +16,14 @@ const conflict = { status: 409, body: { message: "Specimen changed during the op
 const reloadAndSave = "The specimen changed at the same time. Reload before saving again.";
 
 describe("specimen mutation error messages", () => {
+  it("explains that an assigned accession number cannot be cleared", () => {
+    const failure = {
+      status: 400,
+      body: { message: "An assigned accession number cannot be cleared. Correct it instead." },
+    };
+    expect(specimenCoreErrorMessage(failure, "update")).toMatch(/cannot be cleared/);
+  });
+
   it("builds the shared reload-and-retry message", () => {
     expect(concurrentChangeMessage("saving")).toBe(reloadAndSave);
     expect(concurrentChangeMessage("cataloging")).toBe(
