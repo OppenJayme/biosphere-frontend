@@ -185,6 +185,7 @@ export function SpecimenImportWorkspace() {
           For Excel, use one worksheet named <strong>Specimens</strong> with the template headers in its first row.
           Format accession numbers as Text to preserve leading zeros. Use literal values rather than formulas;
           enter collection dates as YYYY-MM-DD or date-only Excel cells. Other worksheets are not imported.
+          The template has the minimum columns needed to finish a record; leave a cell blank if you do not have the value yet. Choose the collection in the app after importing.
         </p>
         <form onSubmit={handlePreview} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1">
