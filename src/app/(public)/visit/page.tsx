@@ -66,11 +66,11 @@ export default function VisitPage() {
         >
           <Image
             src={PLACEHOLDER_IMAGES.heroVisit}
-            alt="A visitor looking up at a dinosaur fossil in a museum hall"
+            alt="Close-up of a grasshopper from the museum exhibit"
             fill
             priority
             sizes="(min-width: 1024px) 58vw, 100vw"
-            className="object-cover"
+            className="object-cover object-[50%_10%]"
           />
         </div>
       </section>

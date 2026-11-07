@@ -63,7 +63,7 @@ export default function GalleryPage() {
         >
           <Image
             src={PLACEHOLDER_IMAGES.heroGallery}
-            alt="A natural history museum hall with a whale skeleton suspended overhead"
+            alt="The USC Biological Museum exhibit hall with display cases of mounted animals and insects"
             fill
             priority
             sizes="(min-width: 1240px) 1176px, 100vw"

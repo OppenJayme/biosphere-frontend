@@ -74,7 +74,7 @@ export default function AboutPage() {
         <div className="rise relative aspect-4/3 overflow-hidden rounded-2xl lg:col-span-5 lg:aspect-4/5">
           <Image
             src={PLACEHOLDER_IMAGES.heroAbout}
-            alt="A researcher studying a sample through a microscope"
+            alt="Portrait of Enrique Schoenig"
             fill
             priority
             sizes="(min-width: 1024px) 40vw, 100vw"
@@ -130,7 +130,7 @@ export default function AboutPage() {
           <div className="relative aspect-4/3 overflow-hidden rounded-2xl">
             <Image
               src={PLACEHOLDER_IMAGES.aboutHistory}
-              alt="A preserved beetle collection"
+              alt="Wooden display cabinets of preserved specimens at the USC Biological Museum"
               fill
               sizes="(min-width: 1024px) 40vw, 100vw"
               className="object-cover"
