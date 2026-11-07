@@ -10,6 +10,10 @@ import {
   moveStorageLocationAction,
   updateStorageLocationAction,
 } from "@/features/storage-locations/actions";
+import {
+  STORAGE_ARRANGEMENT_HINT,
+  STORAGE_UNIT_TYPE_SUGGESTIONS,
+} from "@/features/storage-locations/arrangement";
 import { storageDescendantIds } from "@/features/storage-locations/hierarchy";
 import type {
   StorageLocationCommandState,
@@ -66,7 +70,19 @@ function StorageFields({
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Location label" name="label" defaultValue={values.label} placeholder="e.g. Cabinet A" required />
-      <Field label="Unit type" name="unitType" defaultValue={values.unitType} placeholder="e.g. Cabinet" required />
+      <Field
+        label="Unit type"
+        name="unitType"
+        defaultValue={values.unitType}
+        placeholder="e.g. Cabinet"
+        required
+        list="storage-unit-type-suggestions"
+      />
+      <datalist id="storage-unit-type-suggestions">
+        {STORAGE_UNIT_TYPE_SUGGESTIONS.map((type) => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
       <Field
         label="Storage type"
         name="storageType"
@@ -117,6 +133,7 @@ function Field({
   required = false,
   type = "text",
   min,
+  list,
 }: {
   label: string;
   name: string;
@@ -125,6 +142,7 @@ function Field({
   required?: boolean;
   type?: "text" | "number";
   min?: string;
+  list?: string;
 }) {
   return (
     <label className="text-xs font-medium text-zinc-700">
@@ -133,6 +151,7 @@ function Field({
         name={name}
         type={type}
         min={min}
+        list={list}
         step={type === "number" ? "1" : undefined}
         defaultValue={defaultValue}
         placeholder={placeholder}
@@ -170,7 +189,7 @@ function CreateStorageLocationForm({
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Add storage location</summary>
       <form action={action} className="mt-4">
         <p className="mb-3 text-xs text-zinc-500">
-          Unit and storage types remain curator-managed text; no fixed type hierarchy is imposed here.
+          {STORAGE_ARRANGEMENT_HINT} Capacity is optional; actual quantities are tracked from specimen lots either way.
         </p>
         <StorageFields values={state.values} parents={activeParents} includeParent />
         <button
