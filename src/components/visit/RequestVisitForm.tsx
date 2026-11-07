@@ -113,381 +113,391 @@ export function RequestVisitForm({
 
   return (
     <form key={formKey} ref={formRef} noValidate className="space-y-8" onSubmit={handleSubmit}>
-      <div className="space-y-4">
-        <FieldGroupLabel>Contact Details</FieldGroupLabel>
+      {/* Desktop: contact and notes (left) beside schedule, visitors and vehicle (right), so the
+          form fits about one screen in the wide modal. The right column spans both rows and the
+          spare height goes to row 2, so the notes sit right under the contact details. Below lg
+          everything stacks in the original order. */}
+      <div className="grid gap-8 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <FieldGroupLabel>Contact Details</FieldGroupLabel>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Contact Person Name" htmlFor="visit-name" error={errors.name}>
-            <input
-              id="visit-name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              placeholder="Juan Dela Cruz"
-              required
-              maxLength={100}
-              className={fieldClasses}
-              {...fieldErrorProps("visit-name", errors.name)}
-            />
-          </Field>
-          <Field label="Email Address" htmlFor="visit-email" error={errors.email}>
-            <input
-              id="visit-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="name@school.edu.ph"
-              required
-              maxLength={100}
-              className={fieldClasses}
-              {...fieldErrorProps("visit-email", errors.email)}
-            />
-          </Field>
-          <Field label="Contact Number" htmlFor="visit-phone" error={errors.phone}>
-            <input
-              id="visit-phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="0917 123 4567"
-              required
-              maxLength={20}
-              className={fieldClasses}
-              {...fieldErrorProps("visit-phone", errors.phone)}
-            />
-          </Field>
-          <Field label="Organization / School" htmlFor="visit-org" error={errors.organization}>
-            <input
-              id="visit-org"
-              name="organization"
-              type="text"
-              autoComplete="organization"
-              placeholder="University of San Carlos"
-              required
-              maxLength={255}
-              className={fieldClasses}
-              {...fieldErrorProps("visit-org", errors.organization)}
-            />
-          </Field>
-        </div>
-
-        <Field label="Address" htmlFor="visit-address" optional error={errors.address}>
-          <input
-            id="visit-address"
-            name="address"
-            type="text"
-            autoComplete="street-address"
-            placeholder="Street, City, Province"
-            maxLength={255}
-            className={fieldClasses}
-            {...fieldErrorProps("visit-address", errors.address)}
-          />
-        </Field>
-
-        <Field label="Purpose of Visit" htmlFor="visit-purpose" error={errors.purpose}>
-          <textarea
-            id="visit-purpose"
-            name="purpose"
-            rows={3}
-            placeholder="Field trip, research, class requirement, etc."
-            required
-            maxLength={1000}
-            className={fieldClasses}
-            {...fieldErrorProps("visit-purpose", errors.purpose)}
-          />
-        </Field>
-      </div>
-
-      <fieldset className="space-y-4" aria-describedby="visit-schedule-hint">
-        <legend className="contents">
-          <FieldGroupLabel>Preferred Schedules</FieldGroupLabel>
-        </legend>
-        <p id="visit-schedule-hint" className="text-sm text-ink-muted">
-          List up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
-        </p>
-
-        <ol className="space-y-3">
-          {scheduleRows.map((rowId, index) => {
-            const rowError = scheduleErrors[index];
-            const errorId = `schedule-${rowId}-error`;
-            const invalid = rowError ? { "aria-invalid": true as const, "aria-describedby": errorId } : {};
-            return (
-              <li key={rowId} className="rounded-xl border border-line p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold text-ink">Option {index + 1}</p>
-                  {scheduleRows.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setScheduleRows((rows) => rows.filter((id) => id !== rowId));
-                        setScheduleErrors([]);
-                      }}
-                      aria-label={`Remove option ${index + 1}`}
-                      className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
-                    >
-                      <CloseIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="mt-2 grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
-                  <Field label="Date" htmlFor={`schedule-date-${rowId}`}>
-                    <input
-                      id={`schedule-date-${rowId}`}
-                      name="scheduleDate"
-                      type="date"
-                      min={today}
-                      required
-                      className={fieldClasses}
-                      {...invalid}
-                    />
-                  </Field>
-                  <Field label="Start Time" htmlFor={`schedule-start-${rowId}`}>
-                    <input
-                      id={`schedule-start-${rowId}`}
-                      name="scheduleStart"
-                      type="time"
-                      required
-                      className={fieldClasses}
-                      {...invalid}
-                    />
-                  </Field>
-                  <Field label="End Time" htmlFor={`schedule-end-${rowId}`}>
-                    <input
-                      id={`schedule-end-${rowId}`}
-                      name="scheduleEnd"
-                      type="time"
-                      required
-                      className={fieldClasses}
-                      {...invalid}
-                    />
-                  </Field>
-                </div>
-                {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
-              </li>
-            );
-          })}
-        </ol>
-        {errors.schedules && <FieldError id="visit-schedules-error">{errors.schedules}</FieldError>}
-
-        {scheduleRows.length < MAX_PREFERRED_SCHEDULES && (
-          <button
-            type="button"
-            onClick={() => setScheduleRows((rows) => [...rows, nextRowId()])}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add another option
-          </button>
-        )}
-      </fieldset>
-
-      <div className="space-y-4">
-        <FieldGroupLabel>Visitors</FieldGroupLabel>
-        <div className="sm:max-w-[16rem]">
-          <Field label="Number of Visitors" htmlFor="visit-count" error={errors.visitorCount}>
-            <input
-              id="visit-count"
-              name="visitorCount"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={MAX_VISITOR_COUNT}
-              defaultValue={1}
-              required
-              className={fieldClasses}
-              {...fieldErrorProps("visit-count", errors.visitorCount)}
-            />
-          </Field>
-        </div>
-
-        <fieldset className="space-y-3">
-          <legend className="text-xs font-medium text-ink-muted">
-            Visitor names <span className="font-normal text-ink-muted/80">(optional, used for campus entry)</span>
-          </legend>
-          {visitorRows.map((rowId, index) => (
-            <div key={rowId} className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
-              <Field label="First Name" htmlFor={`visitor-first-${rowId}`}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Contact Person Name" htmlFor="visit-name" error={errors.name}>
                 <input
-                  id={`visitor-first-${rowId}`}
-                  name="visitorFirstName"
+                  id="visit-name"
+                  name="name"
                   type="text"
-                  placeholder="Juan"
-                  maxLength={50}
+                  autoComplete="name"
+                  placeholder="Juan Dela Cruz"
+                  required
+                  maxLength={100}
                   className={fieldClasses}
-                  {...fieldErrorProps("visit-visitors", errors.visitors)}
+                  {...fieldErrorProps("visit-name", errors.name)}
                 />
               </Field>
-              <Field label="Last Name" htmlFor={`visitor-last-${rowId}`}>
+              <Field label="Email Address" htmlFor="visit-email" error={errors.email}>
                 <input
-                  id={`visitor-last-${rowId}`}
-                  name="visitorLastName"
-                  type="text"
-                  placeholder="Dela Cruz"
-                  maxLength={49}
+                  id="visit-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@school.edu.ph"
+                  required
+                  maxLength={100}
                   className={fieldClasses}
+                  {...fieldErrorProps("visit-email", errors.email)}
                 />
               </Field>
-              <button
-                type="button"
-                disabled={visitorRows.length === 1}
-                onClick={() => setVisitorRows((rows) => rows.filter((id) => id !== rowId))}
-                aria-label={`Remove visitor ${index + 1}`}
-                className="rounded-lg p-2.5 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
+              <Field label="Contact Number" htmlFor="visit-phone" error={errors.phone}>
+                <input
+                  id="visit-phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="0917 123 4567"
+                  required
+                  maxLength={20}
+                  className={fieldClasses}
+                  {...fieldErrorProps("visit-phone", errors.phone)}
+                />
+              </Field>
+              <Field label="Organization / School" htmlFor="visit-org" error={errors.organization}>
+                <input
+                  id="visit-org"
+                  name="organization"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="University of San Carlos"
+                  required
+                  maxLength={255}
+                  className={fieldClasses}
+                  {...fieldErrorProps("visit-org", errors.organization)}
+                />
+              </Field>
             </div>
-          ))}
-          {errors.visitors && <FieldError id={fieldErrorId("visit-visitors")}>{errors.visitors}</FieldError>}
-        </fieldset>
 
-        {visitorRows.length < MAX_VISITOR_COUNT && (
-          <button
-            type="button"
-            onClick={() => setVisitorRows((rows) => [...rows, nextRowId()])}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add a visitor name
-          </button>
-        )}
-      </div>
+            <Field label="Address" htmlFor="visit-address" optional error={errors.address}>
+              <input
+                id="visit-address"
+                name="address"
+                type="text"
+                autoComplete="street-address"
+                placeholder="Street, City, Province"
+                maxLength={255}
+                className={fieldClasses}
+                {...fieldErrorProps("visit-address", errors.address)}
+              />
+            </Field>
 
-      <fieldset className="space-y-4">
-        <legend className="contents">
-          <FieldGroupLabel>Vehicle</FieldGroupLabel>
-        </legend>
-        <div className="inline-flex rounded-full border border-line p-1 text-sm font-medium">
-          <label className={segmentClasses}>
-            <input
-              type="radio"
-              name="bringingVehicle"
-              value="true"
-              checked={bringingVehicle}
-              onChange={() => setBringingVehicle(true)}
-              className="sr-only"
-            />
-            Yes, bringing a vehicle
-          </label>
-          <label className={segmentClasses}>
-            <input
-              type="radio"
-              name="bringingVehicle"
-              value="false"
-              checked={!bringingVehicle}
-              onChange={() => setBringingVehicle(false)}
-              className="sr-only"
-            />
-            No vehicle
-          </label>
+            <Field label="Purpose of Visit" htmlFor="visit-purpose" error={errors.purpose}>
+              <textarea
+                id="visit-purpose"
+                name="purpose"
+                rows={3}
+                placeholder="Field trip, research, class requirement, etc."
+                required
+                maxLength={1000}
+                className={fieldClasses}
+                {...fieldErrorProps("visit-purpose", errors.purpose)}
+              />
+            </Field>
+          </div>
         </div>
 
-        {bringingVehicle && (
-          <>
-            <p className="text-sm text-ink-muted">List each vehicle coming to campus, up to {MAX_VEHICLES}.</p>
+        <div className="space-y-8 lg:row-span-2">
+          <fieldset className="space-y-4" aria-describedby="visit-schedule-hint">
+            <legend className="contents">
+              <FieldGroupLabel>Preferred Schedules</FieldGroupLabel>
+            </legend>
+            <p id="visit-schedule-hint" className="text-sm text-ink-muted">
+              List up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
+            </p>
+
             <ol className="space-y-3">
-              {vehicleRows.map((rowId, index) => {
-                const rowErrors = vehicleErrors[index];
+              {scheduleRows.map((rowId, index) => {
+                const rowError = scheduleErrors[index];
+                const errorId = `schedule-${rowId}-error`;
+                const invalid = rowError ? { "aria-invalid": true as const, "aria-describedby": errorId } : {};
                 return (
                   <li key={rowId} className="rounded-xl border border-line p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold text-ink">Vehicle {index + 1}</p>
-                      {vehicleRows.length > 1 && (
+                      <p className="text-xs font-semibold text-ink">Option {index + 1}</p>
+                      {scheduleRows.length > 1 && (
                         <button
                           type="button"
                           onClick={() => {
-                            setVehicleRows((rows) => rows.filter((id) => id !== rowId));
-                            setVehicleErrors([]);
+                            setScheduleRows((rows) => rows.filter((id) => id !== rowId));
+                            setScheduleErrors([]);
                           }}
-                          aria-label={`Remove vehicle ${index + 1}`}
+                          aria-label={`Remove option ${index + 1}`}
                           className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
                         >
                           <CloseIcon className="h-4 w-4" />
                         </button>
                       )}
                     </div>
-                    <div className="mt-2 grid gap-4 sm:grid-cols-3">
-                      <Field label="Plate Number" htmlFor={`visit-plate-${rowId}`} error={rowErrors?.plateNumber}>
+                    <div className="mt-2 grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
+                      <Field label="Date" htmlFor={`schedule-date-${rowId}`}>
                         <input
-                          id={`visit-plate-${rowId}`}
-                          name="plateNumber"
-                          type="text"
-                          placeholder="ABC 1234"
+                          id={`schedule-date-${rowId}`}
+                          name="scheduleDate"
+                          type="date"
+                          min={today}
                           required
-                          maxLength={20}
                           className={fieldClasses}
-                          {...fieldErrorProps(`visit-plate-${rowId}`, rowErrors?.plateNumber)}
+                          {...invalid}
                         />
                       </Field>
-                      <Field label="Car Brand" htmlFor={`visit-car-brand-${rowId}`} optional error={rowErrors?.carBrand}>
+                      <Field label="Start Time" htmlFor={`schedule-start-${rowId}`}>
                         <input
-                          id={`visit-car-brand-${rowId}`}
-                          name="carBrand"
-                          type="text"
-                          placeholder="Toyota"
-                          maxLength={100}
+                          id={`schedule-start-${rowId}`}
+                          name="scheduleStart"
+                          type="time"
+                          required
                           className={fieldClasses}
-                          {...fieldErrorProps(`visit-car-brand-${rowId}`, rowErrors?.carBrand)}
+                          {...invalid}
                         />
                       </Field>
-                      <Field label="Car Type" htmlFor={`visit-car-type-${rowId}`} optional error={rowErrors?.carType}>
+                      <Field label="End Time" htmlFor={`schedule-end-${rowId}`}>
                         <input
-                          id={`visit-car-type-${rowId}`}
-                          name="carType"
-                          type="text"
-                          placeholder="Van, Sedan, School Bus"
-                          maxLength={100}
+                          id={`schedule-end-${rowId}`}
+                          name="scheduleEnd"
+                          type="time"
+                          required
                           className={fieldClasses}
-                          {...fieldErrorProps(`visit-car-type-${rowId}`, rowErrors?.carType)}
+                          {...invalid}
                         />
                       </Field>
                     </div>
+                    {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
                   </li>
                 );
               })}
             </ol>
+            {errors.schedules && <FieldError id="visit-schedules-error">{errors.schedules}</FieldError>}
 
-            {vehicleRows.length < MAX_VEHICLES && (
+            {scheduleRows.length < MAX_PREFERRED_SCHEDULES && (
               <button
                 type="button"
-                onClick={() => setVehicleRows((rows) => [...rows, nextRowId()])}
+                onClick={() => setScheduleRows((rows) => [...rows, nextRowId()])}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
               >
                 <PlusIcon className="h-4 w-4" />
-                Add another vehicle
+                Add another option
               </button>
             )}
-          </>
-        )}
-      </fieldset>
+          </fieldset>
 
-      <div className="space-y-4">
-        <FieldGroupLabel>Additional Info</FieldGroupLabel>
-        <Field label="Equipment to Bring" htmlFor="visit-equipment" optional error={errors.equipment}>
-          <input
-            id="visit-equipment"
-            name="equipment"
-            type="text"
-            placeholder="Cameras, notebooks, recording gear"
-            maxLength={500}
-            className={fieldClasses}
-            {...fieldErrorProps("visit-equipment", errors.equipment)}
-          />
-        </Field>
-        <Field label="Additional Notes" htmlFor="visit-notes" optional error={errors.notes}>
-          <textarea
-            id="visit-notes"
-            name="notes"
-            rows={3}
-            placeholder="Anything else we should know"
-            maxLength={1000}
-            className={fieldClasses}
-            {...fieldErrorProps("visit-notes", errors.notes)}
-          />
-        </Field>
+          <div className="space-y-4">
+            <FieldGroupLabel>Visitors</FieldGroupLabel>
+            <div className="sm:max-w-[16rem]">
+              <Field label="Number of Visitors" htmlFor="visit-count" error={errors.visitorCount}>
+                <input
+                  id="visit-count"
+                  name="visitorCount"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_VISITOR_COUNT}
+                  defaultValue={1}
+                  required
+                  className={fieldClasses}
+                  {...fieldErrorProps("visit-count", errors.visitorCount)}
+                />
+              </Field>
+            </div>
+
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-medium text-ink-muted">
+                Visitor names <span className="font-normal text-ink-muted/80">(optional, used for campus entry)</span>
+              </legend>
+              {visitorRows.map((rowId, index) => (
+                <div key={rowId} className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+                  <Field label="First Name" htmlFor={`visitor-first-${rowId}`}>
+                    <input
+                      id={`visitor-first-${rowId}`}
+                      name="visitorFirstName"
+                      type="text"
+                      placeholder="Juan"
+                      maxLength={50}
+                      className={fieldClasses}
+                      {...fieldErrorProps("visit-visitors", errors.visitors)}
+                    />
+                  </Field>
+                  <Field label="Last Name" htmlFor={`visitor-last-${rowId}`}>
+                    <input
+                      id={`visitor-last-${rowId}`}
+                      name="visitorLastName"
+                      type="text"
+                      placeholder="Dela Cruz"
+                      maxLength={49}
+                      className={fieldClasses}
+                    />
+                  </Field>
+                  <button
+                    type="button"
+                    disabled={visitorRows.length === 1}
+                    onClick={() => setVisitorRows((rows) => rows.filter((id) => id !== rowId))}
+                    aria-label={`Remove visitor ${index + 1}`}
+                    className="rounded-lg p-2.5 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible"
+                  >
+                    <CloseIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {errors.visitors && <FieldError id={fieldErrorId("visit-visitors")}>{errors.visitors}</FieldError>}
+            </fieldset>
+
+            {visitorRows.length < MAX_VISITOR_COUNT && (
+              <button
+                type="button"
+                onClick={() => setVisitorRows((rows) => [...rows, nextRowId()])}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add a visitor name
+              </button>
+            )}
+          </div>
+
+          <fieldset className="space-y-4">
+            <legend className="contents">
+              <FieldGroupLabel>Vehicle</FieldGroupLabel>
+            </legend>
+            <div className="inline-flex rounded-full border border-line p-1 text-sm font-medium">
+              <label className={segmentClasses}>
+                <input
+                  type="radio"
+                  name="bringingVehicle"
+                  value="true"
+                  checked={bringingVehicle}
+                  onChange={() => setBringingVehicle(true)}
+                  className="sr-only"
+                />
+                Yes, bringing a vehicle
+              </label>
+              <label className={segmentClasses}>
+                <input
+                  type="radio"
+                  name="bringingVehicle"
+                  value="false"
+                  checked={!bringingVehicle}
+                  onChange={() => setBringingVehicle(false)}
+                  className="sr-only"
+                />
+                No vehicle
+              </label>
+            </div>
+
+            {bringingVehicle && (
+              <>
+                <p className="text-sm text-ink-muted">List each vehicle coming to campus, up to {MAX_VEHICLES}.</p>
+                <ol className="space-y-3">
+                  {vehicleRows.map((rowId, index) => {
+                    const rowErrors = vehicleErrors[index];
+                    return (
+                      <li key={rowId} className="rounded-xl border border-line p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-semibold text-ink">Vehicle {index + 1}</p>
+                          {vehicleRows.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVehicleRows((rows) => rows.filter((id) => id !== rowId));
+                                setVehicleErrors([]);
+                              }}
+                              aria-label={`Remove vehicle ${index + 1}`}
+                              className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
+                            >
+                              <CloseIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-2 grid gap-4 sm:grid-cols-3">
+                          <Field label="Plate Number" htmlFor={`visit-plate-${rowId}`} error={rowErrors?.plateNumber}>
+                            <input
+                              id={`visit-plate-${rowId}`}
+                              name="plateNumber"
+                              type="text"
+                              placeholder="ABC 1234"
+                              required
+                              maxLength={20}
+                              className={fieldClasses}
+                              {...fieldErrorProps(`visit-plate-${rowId}`, rowErrors?.plateNumber)}
+                            />
+                          </Field>
+                          <Field label="Car Brand" htmlFor={`visit-car-brand-${rowId}`} optional error={rowErrors?.carBrand}>
+                            <input
+                              id={`visit-car-brand-${rowId}`}
+                              name="carBrand"
+                              type="text"
+                              placeholder="Toyota"
+                              maxLength={100}
+                              className={fieldClasses}
+                              {...fieldErrorProps(`visit-car-brand-${rowId}`, rowErrors?.carBrand)}
+                            />
+                          </Field>
+                          <Field label="Car Type" htmlFor={`visit-car-type-${rowId}`} optional error={rowErrors?.carType}>
+                            <input
+                              id={`visit-car-type-${rowId}`}
+                              name="carType"
+                              type="text"
+                              placeholder="Van, Sedan, School Bus"
+                              maxLength={100}
+                              className={fieldClasses}
+                              {...fieldErrorProps(`visit-car-type-${rowId}`, rowErrors?.carType)}
+                            />
+                          </Field>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+
+                {vehicleRows.length < MAX_VEHICLES && (
+                  <button
+                    type="button"
+                    onClick={() => setVehicleRows((rows) => [...rows, nextRowId()])}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add another vehicle
+                  </button>
+                )}
+              </>
+            )}
+          </fieldset>
+        </div>
+
+        <div>
+          <div className="space-y-4">
+            <FieldGroupLabel>Additional Info</FieldGroupLabel>
+            <Field label="Equipment to Bring" htmlFor="visit-equipment" optional error={errors.equipment}>
+              <input
+                id="visit-equipment"
+                name="equipment"
+                type="text"
+                placeholder="Cameras, notebooks, recording gear"
+                maxLength={500}
+                className={fieldClasses}
+                {...fieldErrorProps("visit-equipment", errors.equipment)}
+              />
+            </Field>
+            <Field label="Additional Notes" htmlFor="visit-notes" optional error={errors.notes}>
+              <textarea
+                id="visit-notes"
+                name="notes"
+                rows={3}
+                placeholder="Anything else we should know"
+                maxLength={1000}
+                className={fieldClasses}
+                {...fieldErrorProps("visit-notes", errors.notes)}
+              />
+            </Field>
+          </div>
+        </div>
       </div>
-
-      <PrivacyConsent id="visit-consent" purpose="this visit request" error={errors.consent} />
 
       {failure && (
         <FormAlert
@@ -498,16 +508,22 @@ export function RequestVisitForm({
         />
       )}
 
-      <div className="flex justify-end gap-3 border-t border-line pt-6">
-        {onCancel && (
-          <Button type="button" variant="outline-forest" onClick={onCancel}>
-            Cancel
+      {/* Desktop: consent beside the buttons to save a row; phones keep them stacked. */}
+      <div className="space-y-6 border-t border-line pt-6 lg:flex lg:items-center lg:gap-8 lg:space-y-0">
+        <div className="lg:flex-1">
+          <PrivacyConsent id="visit-consent" purpose="this visit request" error={errors.consent} />
+        </div>
+        <div className="flex shrink-0 justify-end gap-3">
+          {onCancel && (
+            <Button type="button" variant="outline-forest" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+          <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked} aria-busy={submitting || undefined}>
+            {submitting ? "Sending…" : "Submit Request"}
+            {!submitting && <ArrowRightIcon className="h-4 w-4" />}
           </Button>
-        )}
-        <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked} aria-busy={submitting || undefined}>
-          {submitting ? "Sending…" : "Submit Request"}
-          {!submitting && <ArrowRightIcon className="h-4 w-4" />}
-        </Button>
+        </div>
       </div>
     </form>
   );

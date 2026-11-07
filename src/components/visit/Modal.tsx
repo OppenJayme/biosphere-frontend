@@ -8,11 +8,14 @@ export function Modal({
   description,
   onClose,
   children,
+  size = "default",
 }: {
   title: string;
   description?: string;
   onClose: () => void;
   children: ReactNode;
+  /** "wide" gives long forms room for two columns on desktop; phones are unchanged. */
+  size?: "default" | "wide";
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -72,7 +75,7 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] outline-none sm:p-8">
+      <div className={`w-full ${size === "wide" ? "max-w-lg lg:max-w-5xl" : "max-w-lg"} rounded-2xl border border-line bg-surface p-6 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] outline-none sm:p-8`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2

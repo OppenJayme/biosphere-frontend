@@ -83,6 +83,7 @@ export function VisitOptionsSection() {
         <Modal
           title="Request a Visit"
           description="Tell us about your planned visit to the museum."
+          size="wide"
           onClose={() => setOpenModal(null)}
         >
           <RequestVisitForm onCancel={() => setOpenModal(null)} onSubmitted={() => setOpenModal(null)} />
