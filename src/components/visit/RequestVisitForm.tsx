@@ -67,12 +67,14 @@ export function RequestVisitForm({
         }}
       >
         <p>
-          Thank you. A curator usually reviews requests within 3 to 5 office weekdays and will email
-          you once one of your preferred schedules is approved. Your visit is not confirmed until
-          you hear from us.
+          Thank you. A curator will review your request and email you once one of your preferred
+          schedules is approved. Your visit is not confirmed until you hear from us. Campus entry is
+          usually issued within 3 to 5 office days once we have all the details we need, so please
+          send your request well before your preferred date.
         </p>
         <p>
-          Save your reference number. If you have not heard from us by then, check your spam or
+          Save your reference number. If you have not heard from us and your visit date is getting
+          close, check your spam or
           junk folder first, then send a General Inquiry or contact the museum. To change or cancel
           this request, send a General Inquiry with the topic &ldquo;Follow up, change, or cancel a
           visit request&rdquo; and your reference number. Please do not send a new visit request.
