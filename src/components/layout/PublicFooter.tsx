@@ -94,8 +94,9 @@ export function PublicFooter() {
         <div className="mx-auto flex max-w-[1240px] flex-col gap-2 px-5 py-5 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p>&copy; {new Date().getFullYear()} USC Biological Museum. All rights reserved.</p>
           <p className="flex gap-5">
-            <span>Terms of Service</span>
-            <span>Privacy Policy</span>
+            <Link href="/privacy" className="transition-colors hover:text-brand">
+              Privacy notice
+            </Link>
           </p>
         </div>
       </div>
