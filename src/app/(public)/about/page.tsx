@@ -177,10 +177,10 @@ export default function AboutPage() {
           <h2 className="reveal font-display text-4xl font-semibold tracking-tight text-ink">
             Curatorial team
           </h2>
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-10 grid gap-5 md:grid-cols-2">
             {CURATORIAL_TEAM.map((member) => (
               <li key={member.name} className="reveal rounded-2xl bg-surface p-7">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                   <span aria-hidden className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-solid font-display text-lg font-semibold text-white">
                     {member.initials}
                   </span>
