@@ -56,18 +56,21 @@ export const KINGDOM_OPTIONS: FieldOptionList = {
   allowOther: false,
 };
 
-/** The nine IUCN Red List categories. CITES and national listings go in tags. */
+/**
+ * The nine IUCN Red List categories, written "Least Concern (IUCN)" to match the values already
+ * recorded. CITES and national listings go in tags.
+ */
 export const CONSERVATION_STATUS_OPTIONS: FieldOptionList = {
   options: [
-    "Extinct (EX)",
-    "Extinct in the Wild (EW)",
-    "Critically Endangered (CR)",
-    "Endangered (EN)",
-    "Vulnerable (VU)",
-    "Near Threatened (NT)",
-    "Least Concern (LC)",
-    "Data Deficient (DD)",
-    "Not Evaluated (NE)",
+    "Extinct (IUCN)",
+    "Extinct in the Wild (IUCN)",
+    "Critically Endangered (IUCN)",
+    "Endangered (IUCN)",
+    "Vulnerable (IUCN)",
+    "Near Threatened (IUCN)",
+    "Least Concern (IUCN)",
+    "Data Deficient (IUCN)",
+    "Not Evaluated (IUCN)",
   ],
   allowOther: false,
 };
