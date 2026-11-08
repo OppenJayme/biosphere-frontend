@@ -6,6 +6,7 @@ import {
   askFaqAssistant,
   faqAssistantFailure,
   fetchFaqSuggestions,
+  isFaqFollowup,
   normalizeVisitorQuestion,
 } from "./assistant";
 
@@ -156,6 +157,15 @@ describe("FAQ assistant client", () => {
       cache: "no-store",
     });
     expect(result).toMatchObject({ ok: true, data: { items: [{ id: ENTRY_ID }] } });
+  });
+
+  it("recognizes only the explicit follow-up openers the backend accepts", () => {
+    for (const question of ["What about Saturday?", "How about?", "how about on weekends", "And on Saturday?", "and for students", "And if we bring kids?"]) {
+      expect(isFaqFollowup(question)).toBe(true);
+    }
+    for (const question of ["And how much is the entrance fee?", "And?", "Android app?", "Tell me about the museum", "When is the museum open?"]) {
+      expect(isFaqFollowup(question)).toBe(false);
+    }
   });
 
   it("normalizes visitor questions before sending", () => {
