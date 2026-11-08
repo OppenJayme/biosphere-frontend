@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { externalGltfReferences, glbFileError } from "./glb";
-import { glbBytes, glbFile, SELF_CONTAINED_GLTF } from "./test-glb";
+import {
+  externalGltfReferences,
+  GLB_TOO_LARGE,
+  glbFileError,
+  inspectGlbFile,
+  MAX_GLB_SIZE_BYTES,
+  textureTooLargeMessage,
+} from "./glb";
+import { glbBytes, glbFile, pngHeader, SELF_CONTAINED_GLTF } from "./test-glb";
 import { AR_ASSET_MAX_BYTES } from "./types";
 
 describe("GLB external references", () => {
@@ -43,5 +50,38 @@ describe("GLB file check", () => {
       /references external files/,
     );
     expect(await glbFileError(glbFile())).toBeUndefined();
+  });
+});
+
+describe("GLB Scene Viewer compatibility (REQ-4.2-05)", () => {
+  it("rejects a GLB over 15 MB before reading it", async () => {
+    const big = glbFile();
+    Object.defineProperty(big, "size", { value: MAX_GLB_SIZE_BYTES + 1 });
+    expect(await glbFileError(big)).toBe(GLB_TOO_LARGE);
+  });
+
+  it("rejects compressed models and oversized textures, as the backend does", async () => {
+    expect(
+      await glbFileError(glbFile({ ...SELF_CONTAINED_GLTF, extensionsUsed: ["KHR_draco_mesh_compression"] })),
+    ).toMatch(/KHR_draco_mesh_compression .*cannot open/);
+    expect(await glbFileError(glbFile(SELF_CONTAINED_GLTF, "big.glb", pngHeader(4096, 4096)))).toBe(
+      textureTooLargeMessage(4096, 4096),
+    );
+  });
+
+  it("returns metadata and warnings for an accepted model", async () => {
+    const result = await inspectGlbFile(
+      glbFile({
+        ...SELF_CONTAINED_GLTF,
+        accessors: [{ count: 300_003 }],
+        meshes: [{ primitives: [{ attributes: { POSITION: 0 } }] }],
+        nodes: [{ mesh: 0 }],
+      }),
+    );
+    expect(result.error).toBeUndefined();
+    expect(result).toMatchObject({
+      metadata: { triangleCount: 100_001, textureCount: 1, largestTexture: { width: 1, height: 1 } },
+      warnings: [expect.stringContaining("100,001 triangles")],
+    });
   });
 });

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { glbFileError } from "./glb";
-import { previewStateFor, startModelPreview, type PreviewStatus } from "./model-preview";
+import {
+  formatModelSize,
+  previewStateFor,
+  previewSummary,
+  startModelPreview,
+  type PreviewStatus,
+} from "./model-preview";
 import { glbFile, SELF_CONTAINED_GLTF as SELF_CONTAINED } from "./test-glb";
 
 class FakeViewer extends EventTarget {
@@ -49,7 +55,13 @@ describe("starting a model preview", () => {
     await vi.waitFor(() => expect(viewer.src).toBe("blob:preview/heron.glb"));
     expect(deps.createObjectURL).toHaveBeenCalledWith(file);
     expect(deps.loadViewer).toHaveBeenCalledOnce();
-    expect(statuses.at(-1)).toEqual({ file, state: "loading", message: undefined });
+    expect(statuses.at(-1)).toEqual({
+      file,
+      state: "loading",
+      message: undefined,
+      // The compatibility check's findings travel with the status (REQ-4.2-05).
+      report: { metadata: expect.objectContaining({ textureCount: 1, triangleCount: 0 }), warnings: [] },
+    });
 
     viewer.dispatchEvent(new Event("load"));
     expect(statuses.at(-1)?.state).toBe("ready");
@@ -99,5 +111,38 @@ describe("replacing the previewed file", () => {
     });
     expect(previewStateFor({ file: previous, state: "loading" }, next)).toEqual({ state: "validating" });
     expect(previewStateFor({ file: next, state: "ready" }, next)).toEqual({ state: "ready", message: undefined });
+  });
+});
+
+describe("previewSummary", () => {
+  const metadata = {
+    sizeBytes: 0,
+    meshCount: 1,
+    triangleCount: 1,
+    materialCount: 1,
+    textureCount: 0,
+    largestTexture: null,
+    animationCount: 0,
+    extensionsUsed: [],
+  };
+
+  it("shows KB under 1 MB and MB above", () => {
+    expect(formatModelSize(1872)).toBe("2 KB");
+    expect(formatModelSize(100)).toBe("1 KB");
+    expect(formatModelSize(12.04 * 1024 * 1024)).toBe("12.0 MB");
+  });
+
+  it("uses singular and plural counts and names the largest texture", () => {
+    expect(previewSummary(1872, { metadata, warnings: [] })).toBe("2 KB, 1 triangle, 1 material, 0 textures");
+    expect(
+      previewSummary(2048, {
+        metadata: { ...metadata, triangleCount: 12_000, materialCount: 2, textureCount: 1, largestTexture: { width: 1024, height: 512 } },
+        warnings: [],
+      }),
+    ).toBe("2 KB, 12,000 triangles, 2 materials, 1 texture (largest 1024×512)");
+  });
+
+  it("shows only the size before the check passes", () => {
+    expect(previewSummary(1872)).toBe("2 KB");
   });
 });
