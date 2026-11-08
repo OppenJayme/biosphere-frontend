@@ -37,6 +37,25 @@ describe("audit entry wording", () => {
     );
   });
 
+  it("describes a developer handover with the outgoing curator's name (REQ-4.1-09)", () => {
+    const developer = { id: "7c1f4b55-0d2e-4f0b-9a35-1f6a2f3d8e10", fullName: "Dev Admin", role: "DEVELOPER" as const };
+    const entry = {
+      actor: developer,
+      action: "HAND_OVER_CURATOR",
+      affectedRecordType: "user_account",
+      details: { successorAccountId: "b1e0d5c2-1111-4c4c-8888-000000000001", previousStatus: "ACTIVE" },
+    };
+    expect(describeAuditEntry({ ...entry, result: "SUCCESS" }, "Maria Santos")).toBe(
+      "Dev Admin recorded a handover from Maria Santos to a successor.",
+    );
+    expect(describeAuditEntry({ ...entry, result: "SUCCESS" })).toBe(
+      "Dev Admin recorded a handover from a curator account to a successor.",
+    );
+    expect(describeAuditEntry({ ...entry, result: "FAILED" }, "Maria Santos")).toBe(
+      "Dev Admin tried to record a handover from Maria Santos to a successor, but it failed.",
+    );
+  });
+
   it("attributes public submissions to a visitor and unknown codes stay readable", () => {
     expect(describeAuditEntry({ actor: null, action: "SUBMIT_INQUIRY", details: null, result: "SUCCESS" })).toBe(
       "A visitor sent a general inquiry.",

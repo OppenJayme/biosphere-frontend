@@ -119,6 +119,8 @@ const PHRASES: Record<string, [past: string, base: string]> = {
   EMAIL_VISITOR: ["emailed the visitor about {t}", "email the visitor about {t}"],
   UPDATE_CURATOR_STATUS: ["changed the account status of {t}", "change the account status of {t}"],
   INVITE_CURATOR: ["invited {t} as a curator", "invite {t} as a curator"],
+  // Developer handover (REQ-4.1-09): the record is the outgoing curator.
+  HAND_OVER_CURATOR: ["recorded a handover from {t} to a successor", "record a handover from {t} to a successor"],
   ONBOARD_CURATOR: ["set up {t} as a curator", "set up {t} as a curator"],
   ONBOARDING_COMPLETED: ["finished setting up their account", "finish setting up their account"],
   PASSWORD_CHANGED: ["changed their password", "change their password"],

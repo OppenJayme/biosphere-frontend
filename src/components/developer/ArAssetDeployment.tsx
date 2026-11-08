@@ -211,8 +211,8 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
         Upload AR asset
       </h3>
       <p className="mt-1 text-xs text-zinc-600">
-        Single-file GLB or USDZ only, up to 50 MB. The file&apos;s extension and contents must match the
-        selected format.
+        Single-file GLB (up to 15 MB, so Android Scene Viewer can open it) or USDZ (up to 50 MB) only. The
+        file&apos;s extension and contents must match the selected format.
       </p>
 
       {exhibits.length === 0 ? (

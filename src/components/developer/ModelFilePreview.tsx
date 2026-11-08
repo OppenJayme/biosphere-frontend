@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { ModelViewerElement } from "@google/model-viewer";
 import { CubeIcon, InfoIcon } from "@/components/icons";
-import { previewStateFor, startModelPreview, type PreviewStatus } from "@/features/developer/model-preview";
+import {
+  previewStateFor,
+  previewSummary,
+  startModelPreview,
+  type PreviewStatus,
+} from "@/features/developer/model-preview";
 
 /**
  * Local preview of a model file before it is uploaded, so the developer can check it renders
@@ -15,7 +20,7 @@ export function ModelFilePreview({ file }: { file: File }) {
   const [status, setStatus] = useState<PreviewStatus | null>(null);
   const viewerRef = useRef<ModelViewerElement>(null);
   // Status is tied to the file it was reported for, so a replaced file starts from "validating".
-  const { state, message } = previewStateFor(status, file);
+  const { state, message, report } = previewStateFor(status, file);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -58,8 +63,18 @@ export function ModelFilePreview({ file }: { file: File }) {
         )}
       </div>
       <p className="mt-1 text-xs text-zinc-500">
-        {(file.size / (1024 * 1024)).toFixed(1)} MB. Drag to rotate; check orientation, scale, and textures.
+        {previewSummary(file.size, report)}. Drag to rotate; check orientation, scale, and textures.
       </p>
+      {report && report.warnings.length > 0 && (
+        <ul className="mt-2 space-y-1 rounded-lg bg-gold-100 px-3 py-2 text-xs text-zinc-700">
+          {report.warnings.map((warning) => (
+            <li key={warning} className="flex items-start gap-2">
+              <InfoIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-500" />
+              {warning}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
