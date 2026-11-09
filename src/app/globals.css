@@ -162,3 +162,24 @@ html:has(> body.site) {
     opacity: 0.85;
   }
 }
+
+/* Museum assistant: chat bubbles ease in and the "typing" dots bounce (motion-safe only). */
+@keyframes faq-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes faq-typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
