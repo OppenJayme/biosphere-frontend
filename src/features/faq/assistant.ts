@@ -98,6 +98,20 @@ export function askFaqAssistant(question: string, selectedFaqId?: string, contex
   });
 }
 
+/**
+ * Mirrors the backend's explicit follow-up openers (backend `parseFaqFollowup`): "How/What about …"
+ * and "And on/for/at/in/with/if …". Only these send the single topic hint; keep both in sync.
+ */
+export function isFaqFollowup(question: string): boolean {
+  const normalized = question
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  return /^(?:(?:how|what) about|and(?= (?:on|for|at|in|with|if) ))(?: |$)/.test(normalized);
+}
+
 /** Trims and bounds a visitor question before it is sent; returns null when there is nothing to ask. */
 export function normalizeVisitorQuestion(value: string): string | null {
   const question = value.trim().replace(/\s+/g, " ");

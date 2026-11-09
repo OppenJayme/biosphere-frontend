@@ -17,6 +17,7 @@ import {
   ChevronDownIcon,
   InfoIcon,
   LeafIcon,
+  RotateCcwIcon,
 } from "@/components/icons";
 import {
   FAQ_DEFAULT_NOTICE,
@@ -24,6 +25,7 @@ import {
   FAQ_REDIRECTS,
   askFaqAssistant,
   fetchFaqSuggestions,
+  isFaqFollowup,
   normalizeVisitorQuestion,
   type FaqAssistantRedirect,
   type PublicFaqQuestion,
@@ -97,6 +99,15 @@ export function FaqAssistantWidget() {
     launcherRef.current?.focus();
   }
 
+  // Clears the in-memory conversation and its topic hint; nothing is stored elsewhere.
+  function startNewChat() {
+    if (pending) return;
+    setMessages([]);
+    setDraft("");
+    lastAnsweredFaqId.current = undefined;
+    inputRef.current?.focus();
+  }
+
   async function ask(rawQuestion: string, selectedFaqId?: string) {
     const question = normalizeVisitorQuestion(rawQuestion);
     if (!question || pending) return;
@@ -105,7 +116,7 @@ export function FaqAssistantWidget() {
     setPending(true);
     setMessages((current) => [...current, { id: nextId.current++, from: "visitor", text: question }]);
 
-    const contextFaqId = !selectedFaqId && /^(?:how|what) about\b/i.test(question)
+    const contextFaqId = !selectedFaqId && isFaqFollowup(question)
       ? lastAnsweredFaqId.current
       : undefined;
     lastAnsweredFaqId.current = undefined;
@@ -176,6 +187,18 @@ export function FaqAssistantWidget() {
               </h2>
               <p className="text-xs text-white/80">USC Biological Museum FAQ</p>
             </div>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={startNewChat}
+                disabled={pending}
+                aria-label="Start a new chat"
+                title="New chat"
+                className="rounded-full p-1.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-50"
+              >
+                <RotateCcwIcon className="h-5 w-5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={minimize}
@@ -244,6 +267,7 @@ export function FaqAssistantWidget() {
                 onChange={(event) => setDraft(event.target.value)}
                 maxLength={FAQ_QUESTION_MAX_LENGTH}
                 autoComplete="off"
+                aria-describedby={`${panelId}-privacy`}
                 placeholder="Ask a museum-related question"
                 className="min-w-0 flex-1 rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
               />
@@ -256,7 +280,11 @@ export function FaqAssistantWidget() {
                 <ArrowRightIcon className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-2 text-center text-xs text-ink-muted">
+            {/* Proposed wording; privacy text still needs the pending university approval. */}
+            <p id={`${panelId}-privacy`} className="mt-2 text-center text-xs text-ink-muted">
+              Please don&apos;t include personal details such as your name, phone number, or email.
+            </p>
+            <p className="mt-1 text-center text-xs text-ink-muted">
               Can&apos;t find an answer?{" "}
               <Link
                 href={FAQ_REDIRECTS.GENERAL_INQUIRY.href}
