@@ -1,8 +1,9 @@
 /**
  * Browser-side client for the public FAQ Assistant. Like the public forms, the visitor's browser
  * calls the backend directly so the backend's per-IP FAQ rate limit applies to each visitor rather
- * than to the shared Next.js server. Only question text and an optional public FAQ choice
- * identifier/context ID are sent; no personal information or conversation history (REQ-4.11-07).
+ * than to the shared Next.js server. It sends the question, an optional public FAQ choice or topic
+ * ID, and up to four earlier questions from the open chat so follow-ups can be understood. Nothing is
+ * stored, and earlier questions never add facts: answers still come only from approved FAQs.
  */
 
 import { z } from "zod";
@@ -10,6 +11,8 @@ import { env } from "@/lib/env";
 
 export const FAQ_QUESTION_MAX_LENGTH = 500;
 export const FAQ_SUGGESTION_LIMIT = 6;
+/** Earlier visitor questions sent with each message (backend maximum). */
+export const FAQ_HISTORY_LIMIT = 4;
 
 /** Shown before the backend responds, and if it cannot be reached (REQ-4.11-10). */
 export const FAQ_DEFAULT_NOTICE =
@@ -27,13 +30,20 @@ const suggestionListSchema = z.object({
 });
 
 const assistantResponseSchema = z.object({
-  outcome: z.enum(["ANSWERED", "CLARIFICATION_NEEDED", "NO_MATCH", "VISIT_REQUEST_REDIRECT"]),
+  outcome: z.enum(["ANSWERED", "CLARIFICATION_NEEDED", "NO_MATCH", "VISIT_REQUEST_REDIRECT", "SMALL_TALK"]),
   answer: publicQuestionSchema.extend({ answer: z.string().min(1) }).nullable(),
   related: z.array(publicQuestionSchema),
   message: z.string().nullable(),
   redirect: z.enum(["GENERAL_INQUIRY", "VISIT_REQUEST"]).nullable(),
+  // True when the wording was produced by the optional AI layer from the listed approved sources.
+  assisted: z.boolean().default(false),
+  sources: z.array(publicQuestionSchema).default([]),
   notice: z.string().min(1),
-}).refine((data) => data.outcome !== "CLARIFICATION_NEEDED" || (
+}).refine((data) => !data.assisted || data.outcome !== "ANSWERED" || data.sources.length > 0,
+  "An AI-assisted answer must name its approved sources.",
+).refine((data) => data.outcome !== "SMALL_TALK" || (data.answer === null && Boolean(data.message)),
+  "Small talk carries a message, never an answer.",
+).refine((data) => data.outcome !== "CLARIFICATION_NEEDED" || (
   data.answer === null &&
   data.related.length >= 2 && data.related.length <= 3 &&
   new Set(data.related.map((item) => item.id)).size === data.related.length
@@ -90,11 +100,22 @@ export function fetchFaqSuggestions(): Promise<FaqAssistantResult<FaqSuggestionL
   );
 }
 
-export function askFaqAssistant(question: string, selectedFaqId?: string, contextFaqId?: string): Promise<FaqAssistantResult<FaqAssistantResponse>> {
+export function askFaqAssistant(
+  question: string,
+  selectedFaqId?: string,
+  contextFaqId?: string,
+  history: string[] = [],
+): Promise<FaqAssistantResult<FaqAssistantResponse>> {
+  const recent = history.slice(-FAQ_HISTORY_LIMIT);
   return requestAssistant("/faq/assistant/ask", assistantResponseSchema, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, ...(selectedFaqId ? { selectedFaqId } : {}), ...(contextFaqId ? { contextFaqId } : {}) }),
+    body: JSON.stringify({
+      question,
+      ...(selectedFaqId ? { selectedFaqId } : {}),
+      ...(contextFaqId ? { contextFaqId } : {}),
+      ...(recent.length ? { history: recent } : {}),
+    }),
   });
 }
 

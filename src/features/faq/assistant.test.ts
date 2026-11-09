@@ -33,6 +33,39 @@ afterEach(() => {
 });
 
 describe("FAQ assistant client", () => {
+  it("sends at most four earlier questions as history, and none when the chat is new", async () => {
+    const fetchMock = mockFetch(json({ outcome: "NO_MATCH", answer: null, related: [], message: "No approved answer.", redirect: "GENERAL_INQUIRY", notice: NOTICE }));
+    const sentBody = (call: number) => {
+      const [, init] = fetchMock.mock.calls[call] as unknown as [string, RequestInit];
+      return JSON.parse(String(init.body)) as unknown;
+    };
+    await askFaqAssistant("What about Saturday?", undefined, undefined, ["q1", "q2", "q3", "q4", "q5"]);
+    expect(sentBody(0)).toEqual({ question: "What about Saturday?", history: ["q2", "q3", "q4", "q5"] });
+    await askFaqAssistant("Hello?", undefined, undefined, []);
+    expect(sentBody(1)).toEqual({ question: "Hello?" });
+  });
+
+  it("accepts small talk with a message and no answer", async () => {
+    mockFetch(json({ outcome: "SMALL_TALK", answer: null, related: [], message: "Hello! What would you like to know?", redirect: null, assisted: false, sources: [], notice: NOTICE }));
+    const result = await askFaqAssistant("Hello");
+    expect(result).toMatchObject({ ok: true, data: { outcome: "SMALL_TALK", message: "Hello! What would you like to know?" } });
+  });
+
+  it("accepts AI-assisted answers only when they name approved sources", async () => {
+    const answer = { id: ENTRY_ID, question: "Where is the museum located?", category: null, answer: "It is on the Talamban Campus." };
+    const source = { id: ENTRY_ID, question: "Where is the museum located?", category: null };
+    mockFetch(json({ outcome: "ANSWERED", answer, related: [], message: null, redirect: null, assisted: true, sources: [source], notice: NOTICE }));
+    expect(await askFaqAssistant("museum where")).toMatchObject({ ok: true, data: { assisted: true, sources: [source] } });
+
+    mockFetch(json({ outcome: "ANSWERED", answer, related: [], message: null, redirect: null, assisted: true, sources: [], notice: NOTICE }));
+    expect(await askFaqAssistant("museum where")).toMatchObject({ ok: false });
+  });
+
+  it("treats responses from an older backend as curated answers", async () => {
+    mockFetch(json({ outcome: "NO_MATCH", answer: null, related: [], message: "No approved answer.", redirect: "GENERAL_INQUIRY", notice: NOTICE }));
+    expect(await askFaqAssistant("anything")).toMatchObject({ ok: true, data: { assisted: false, sources: [] } });
+  });
+
   it("sends only the public context identifier with a follow-up, never conversation history", async () => {
     const fetchMock = mockFetch(json({ outcome: "NO_MATCH", answer: null, related: [], message: "Please ask a complete museum question.", redirect: "GENERAL_INQUIRY", notice: NOTICE }));
     await askFaqAssistant("How about weekends?", undefined, ENTRY_ID);
