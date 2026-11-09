@@ -1,8 +1,9 @@
 /**
- * Public Controlled Knowledge-Based FAQ Assistant (SRS 3.1.6, 4.11). Shows only curator-approved
- * answers returned by the backend, always discloses that limit, and keeps a visible path to the
- * General Inquiry form. Conversation remains in memory; a separate, feature-gated form can submit
- * one explicitly consented unanswered question, never the conversation (REQ-4.11-07).
+ * Public museum assistant (SRS 3.1.6, 4.11). Shows curator-approved answers, or, when the backend's
+ * optional AI layer is on, AI wording that is labelled and names its approved sources. It always
+ * discloses its limits and keeps a visible path to the General Inquiry form. The conversation and
+ * up to four earlier questions stay in memory only; New chat clears them. A separate, feature-gated
+ * form can submit one explicitly consented unanswered question, never the conversation.
  */
 
 "use client";
@@ -21,6 +22,7 @@ import {
 } from "@/components/icons";
 import {
   FAQ_DEFAULT_NOTICE,
+  FAQ_HISTORY_LIMIT,
   FAQ_QUESTION_MAX_LENGTH,
   FAQ_REDIRECTS,
   askFaqAssistant,
@@ -36,9 +38,12 @@ type Message =
   | {
       id: number;
       from: "assistant";
-      kind: "answer" | "clarification" | "fallback" | "error";
+      kind: "answer" | "clarification" | "fallback" | "error" | "chat";
       text: string;
       answeredQuestion?: string;
+      /** AI-assisted wording; `sources` are the approved FAQs it was based on. */
+      assisted?: boolean;
+      sources?: PublicFaqQuestion[];
       reviewQuestion?: string;
       related: PublicFaqQuestion[];
       redirect: FaqAssistantRedirect | null;
@@ -68,6 +73,8 @@ export function FaqAssistantWidget() {
   const logRef = useRef<HTMLDivElement>(null);
   // One public topic hint in component memory only, never a chat-history export.
   const lastAnsweredFaqId = useRef<string | undefined>(undefined);
+  // Earlier visitor questions in this open chat, sent only to interpret follow-ups.
+  const recentQuestions = useRef<string[]>([]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -105,6 +112,7 @@ export function FaqAssistantWidget() {
     setMessages([]);
     setDraft("");
     lastAnsweredFaqId.current = undefined;
+    recentQuestions.current = [];
     inputRef.current?.focus();
   }
 
@@ -120,7 +128,11 @@ export function FaqAssistantWidget() {
       ? lastAnsweredFaqId.current
       : undefined;
     lastAnsweredFaqId.current = undefined;
-    const result = await askFaqAssistant(question, selectedFaqId, contextFaqId);
+    const history = [...recentQuestions.current];
+    const result = await askFaqAssistant(question, selectedFaqId, contextFaqId, history);
+    if (!result.ok || result.data.outcome !== "SMALL_TALK") {
+      recentQuestions.current = [...history, question].slice(-FAQ_HISTORY_LIMIT);
+    }
     let reply: Message;
     if (!result.ok) {
       reply = {
@@ -135,13 +147,24 @@ export function FaqAssistantWidget() {
       const { data } = result;
       lastAnsweredFaqId.current = data.outcome === "ANSWERED" ? data.answer?.id : undefined;
       setNotice(data.notice);
-      reply = data.answer
+      reply = data.outcome === "SMALL_TALK"
+        ? {
+            id: nextId.current++,
+            from: "assistant",
+            kind: "chat",
+            text: data.message ?? "",
+            related: data.related,
+            redirect: null,
+          }
+        : data.answer
         ? {
             id: nextId.current++,
             from: "assistant",
             kind: "answer",
             text: data.answer.answer,
-            answeredQuestion: data.answer.question,
+            answeredQuestion: data.assisted ? undefined : data.answer.question,
+            assisted: data.assisted,
+            sources: data.sources,
             related: data.related,
             redirect: data.redirect,
           }
@@ -394,6 +417,9 @@ function AssistantReply({
     <div className="space-y-2">
       <AssistantBubble>
         <span className="sr-only">Assistant: </span>
+        {message.assisted && (
+          <span className="mb-1 block text-xs font-semibold text-brand">AI-assisted wording from approved FAQs</span>
+        )}
         {message.answeredQuestion && (
           <span className="mb-1 block text-xs font-semibold text-brand">{message.answeredQuestion}</span>
         )}
@@ -411,6 +437,12 @@ function AssistantReply({
           </Link>
         )}
       </AssistantBubble>
+      {message.assisted && message.sources && message.sources.length > 0 && (
+        <div className="pl-1">
+          <p className="mb-1.5 text-xs text-ink-muted">Based on (tap for the exact approved answer)</p>
+          <QuestionChips questions={message.sources} disabled={disabled} onPick={onAsk} />
+        </div>
+      )}
       {message.reviewQuestion && <FaqReviewConsent question={message.reviewQuestion} />}
       {message.related.length > 0 && (
         <div className="pl-1">
