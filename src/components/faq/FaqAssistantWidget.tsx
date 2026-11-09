@@ -4,18 +4,24 @@
  * discloses its limits and keeps a visible path to the General Inquiry form. The conversation and
  * up to four earlier questions stay in memory only; New chat clears them. A separate, feature-gated
  * form can submit one explicitly consented unanswered question, never the conversation.
+ *
+ * The limits notice can be closed, but an info button in the header brings it back, and any change
+ * to its wording shows it again (REQ-4.11-10). Replies are typed out visually; screen readers get
+ * each reply's full text at once, and reduced-motion visitors see it without animation.
  */
 
 "use client";
 
 import Link from "next/link";
 import { FaqReviewConsent } from "./FaqReviewConsent";
+import { useTypewriter } from "./useTypewriter";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRightIcon,
   ChatIcon,
   ChevronDownIcon,
+  CloseIcon,
   InfoIcon,
   LeafIcon,
   RotateCcwIcon,
@@ -47,6 +53,8 @@ type Message =
       reviewQuestion?: string;
       related: PublicFaqQuestion[];
       redirect: FaqAssistantRedirect | null;
+      /** Set once the reply has been typed out, so reopening the panel doesn't type it again. */
+      typed?: boolean;
     };
 
 type SuggestionState =
@@ -65,12 +73,19 @@ export function FaqAssistantWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [suggestions, setSuggestions] = useState<SuggestionState>({ status: "idle" });
   const [notice, setNotice] = useState(FAQ_DEFAULT_NOTICE);
+  // The wording the visitor closed; a different notice from the backend shows again.
+  const [dismissedNotice, setDismissedNotice] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const nextId = useRef(0);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const noticeCloseRef = useRef<HTMLButtonElement>(null);
+  const noticeShowRef = useRef<HTMLButtonElement>(null);
+  // Set when the visitor toggles the notice, so focus follows to the control that replaces it.
+  const focusNoticeControl = useRef(false);
+  const noticeVisible = notice !== dismissedNotice;
   // One public topic hint in component memory only, never a chat-history export.
   const lastAnsweredFaqId = useRef<string | undefined>(undefined);
   // Earlier visitor questions in this open chat, sent only to interpret follow-ups.
@@ -84,7 +99,34 @@ export function FaqAssistantWidget() {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
 
+  useEffect(() => {
+    if (!focusNoticeControl.current) return;
+    focusNoticeControl.current = false;
+    (noticeVisible ? noticeCloseRef : noticeShowRef).current?.focus();
+  }, [noticeVisible]);
+
   if (HIDDEN_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) return null;
+
+  function toggleNotice(show: boolean) {
+    focusNoticeControl.current = true;
+    setDismissedNotice(show ? null : notice);
+  }
+
+  // Follows a reply as it types, unless the visitor has scrolled up to reread something.
+  function followTyping() {
+    const log = logRef.current;
+    if (log && log.scrollHeight - log.scrollTop - log.clientHeight < 80) {
+      log.scrollTop = log.scrollHeight;
+    }
+  }
+
+  function markTyped(id: number) {
+    setMessages((current) =>
+      current.some((message) => message.id === id && message.from === "assistant" && !message.typed)
+        ? current.map((message) => (message.id === id ? { ...message, typed: true } : message))
+        : current,
+    );
+  }
 
   function openPanel() {
     setOpen(true);
@@ -210,6 +252,18 @@ export function FaqAssistantWidget() {
               </h2>
               <p className="text-xs text-white/80">USC Biological Museum FAQ</p>
             </div>
+            {!noticeVisible && (
+              <button
+                ref={noticeShowRef}
+                type="button"
+                onClick={() => toggleNotice(true)}
+                aria-label="Show what the assistant can answer"
+                title="About these answers"
+                className="rounded-full p-1.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <InfoIcon className="h-5 w-5" />
+              </button>
+            )}
             {messages.length > 0 && (
               <button
                 type="button"
@@ -232,10 +286,22 @@ export function FaqAssistantWidget() {
             </button>
           </header>
 
-          <p className="flex gap-2 border-b border-line bg-brand-soft px-4 py-2.5 text-xs leading-relaxed text-ink-muted">
-            <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-            <span>{notice}</span>
-          </p>
+          {noticeVisible && (
+            <div className="flex items-start gap-2 border-b border-line bg-brand-soft py-2.5 pr-2 pl-4 text-xs leading-relaxed text-ink-muted">
+              <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+              <p className="flex-1">{notice}</p>
+              <button
+                ref={noticeCloseRef}
+                type="button"
+                onClick={() => toggleNotice(false)}
+                aria-label="Hide this notice"
+                title="Hide"
+                className="-mt-0.5 shrink-0 rounded-full p-1 text-ink-muted hover:bg-brand/10 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           <div
             ref={logRef}
@@ -255,7 +321,7 @@ export function FaqAssistantWidget() {
               message.from === "visitor" ? (
                 <p
                   key={message.id}
-                  className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-brand-solid px-3.5 py-2 whitespace-pre-wrap text-white"
+                  className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-brand-solid px-3.5 py-2 whitespace-pre-wrap text-white motion-safe:animate-[faq-bubble-in_0.2s_ease-out]"
                 >
                   <span className="sr-only">You asked: </span>
                   {message.text}
@@ -267,13 +333,16 @@ export function FaqAssistantWidget() {
                   disabled={pending}
                   onAsk={(item) => void ask(item.question, item.id)}
                   onNavigate={() => setOpen(false)}
+                  onTyping={followTyping}
+                  onTyped={() => markTyped(message.id)}
                 />
               ),
             )}
 
             {pending && (
               <AssistantBubble>
-                <span className="text-ink-muted">Checking approved answers…</span>
+                <span className="sr-only">Checking approved answers…</span>
+                <TypingDots />
               </AssistantBubble>
             )}
           </div>
@@ -343,9 +412,24 @@ export function FaqAssistantWidget() {
 
 function AssistantBubble({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-fit max-w-[90%] rounded-2xl rounded-bl-sm bg-paper px-3.5 py-2.5 leading-relaxed text-ink">
+    <div className="w-fit max-w-[90%] rounded-2xl rounded-bl-sm bg-paper px-3.5 py-2.5 leading-relaxed text-ink motion-safe:animate-[faq-bubble-in_0.2s_ease-out]">
       {children}
     </div>
+  );
+}
+
+/** Three bouncing dots while a reply is on its way; they hold still under reduced motion. */
+function TypingDots() {
+  return (
+    <span aria-hidden="true" className="flex h-5 items-center gap-1">
+      {[0, 1, 2].map((dot) => (
+        <span
+          key={dot}
+          style={{ animationDelay: `${dot * 160}ms` }}
+          className="h-1.5 w-1.5 rounded-full bg-ink-muted motion-safe:animate-[faq-typing-dot_1s_ease-in-out_infinite]"
+        />
+      ))}
+    </span>
   );
 }
 
@@ -405,13 +489,18 @@ function AssistantReply({
   disabled,
   onAsk,
   onNavigate,
+  onTyping,
+  onTyped,
 }: {
   message: Extract<Message, { from: "assistant" }>;
   disabled: boolean;
   onAsk: (question: PublicFaqQuestion) => void;
   onNavigate: () => void;
+  onTyping: () => void;
+  onTyped: () => void;
 }) {
   const redirect = message.redirect ? FAQ_REDIRECTS[message.redirect] : null;
+  const { visible, done } = useTypewriter(message.text, !message.typed, { onProgress: onTyping, onDone: onTyped });
 
   return (
     <div className="space-y-2">
@@ -423,10 +512,15 @@ function AssistantReply({
         {message.answeredQuestion && (
           <span className="mb-1 block text-xs font-semibold text-brand">{message.answeredQuestion}</span>
         )}
-        <span className={`whitespace-pre-wrap ${message.kind === "error" ? "text-ink-muted" : ""}`}>
-          {message.text}
+        {/* The live region reads the full reply once; the typed copy is visual only. */}
+        <span className="sr-only">{message.text}</span>
+        <span aria-hidden="true" className={`whitespace-pre-wrap ${message.kind === "error" ? "text-ink-muted" : ""}`}>
+          {visible}
+          {!done && (
+            <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 bg-brand motion-safe:animate-pulse" />
+          )}
         </span>
-        {redirect && (
+        {done && redirect && (
           <Link
             href={redirect.href}
             onClick={onNavigate}
@@ -437,14 +531,15 @@ function AssistantReply({
           </Link>
         )}
       </AssistantBubble>
-      {message.assisted && message.sources && message.sources.length > 0 && (
+      {/* Follow-ups appear once the reply has finished typing. */}
+      {done && message.assisted && message.sources && message.sources.length > 0 && (
         <div className="pl-1">
           <p className="mb-1.5 text-xs text-ink-muted">Based on (tap for the exact approved answer)</p>
           <QuestionChips questions={message.sources} disabled={disabled} onPick={onAsk} />
         </div>
       )}
-      {message.reviewQuestion && <FaqReviewConsent question={message.reviewQuestion} />}
-      {message.related.length > 0 && (
+      {done && message.reviewQuestion && <FaqReviewConsent question={message.reviewQuestion} />}
+      {done && message.related.length > 0 && (
         <div className="pl-1">
           <p className="mb-1.5 text-xs text-ink-muted">
             {message.kind === "answer" ? "Related questions" : message.kind === "clarification" ? "Choose the question you meant" : "Did you mean one of these?"}
