@@ -4,8 +4,8 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 type Variant = "solid-forest" | "outline-forest" | "solid-gold" | "outline-white";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  "solid-forest": "bg-forest-700 text-white hover:bg-forest-800",
-  "outline-forest": "border border-forest-700 text-forest-800 hover:bg-forest-100/60",
+  "solid-forest": "bg-brand-solid text-white hover:bg-brand-solid-hover",
+  "outline-forest": "border border-brand/70 text-brand hover:bg-brand-soft",
   "solid-gold": "bg-gold-600 text-white hover:bg-gold-700",
   "outline-white": "border border-white/70 text-white hover:bg-white/10",
 };
@@ -18,7 +18,7 @@ const RADIUS_CLASSES: Record<Radius, string> = {
 };
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-forest-700 disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold transition-[background-color,color,transform] duration-200 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand focus-visible:ring-offset-paper disabled:opacity-50 disabled:pointer-events-none";
 
 type CommonProps = {
   variant?: Variant;

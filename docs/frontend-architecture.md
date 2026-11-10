@@ -130,9 +130,13 @@ Reads happen directly in Server Components; writes go through `'use server'` Ser
 2. `lib/session.ts`'s `verifySession()` — the real check, re-run inside every Server Action/data
    call, because proxy matchers can drift out of sync with real routes.
 
-Env vars: only `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SUPABASE_URL` /
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` are client-safe. No service-role key or backend secret ever
-belongs in this repo.
+Env vars: only `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL` /
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SESSION_IDLE_MINUTES` are client-safe. No
+service-role key or backend secret ever belongs in this repo. `.env.example` lists them all.
+
+`NEXT_PUBLIC_SESSION_IDLE_MINUTES` is a required deployment value with no default in the code, and
+a build without it stops. It is fixed at build time. The 30 in `.env.example` is the team's proposed
+value, pending final client acceptance (REQ-4.1-05).
 
 ## 3. Mirroring the backend's NestJS modules
 
@@ -166,7 +170,9 @@ Once the backend has real endpoints, generate `types/api.ts` from its Swagger/Op
 
 ## Open items / not yet decided
 
-- Exact Dexie schema and sync-conflict handling for `features/offline/`.
+- Offline specimen drafts now use the Dexie schema and conflict rules documented
+  in `docs/offline-specimen-drafts.md`. Service-worker app-shell caching and other
+  PWA asset strategies remain to be implemented.
 - Whether report exports (DOCX/PDF/CSV) are generated client-side or requested from the backend.
 - OpenAPI-based type generation isn't wired up yet — `types/api.ts` is hand-written until the
   backend has stable endpoints to generate from.

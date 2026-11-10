@@ -1,90 +1,142 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
+import { useMemo, useState } from "react";
+import { TABLE_PAGE_SIZES, TablePagination } from "@/components/ui/TablePagination";
+import type { ExhibitRow, ExhibitStatus } from "@/features/exhibits-qr/types";
 import { ExhibitToolbar } from "./ExhibitToolbar";
 import { ExhibitTable } from "./ExhibitTable";
 import { ExhibitDetailPanel } from "./ExhibitDetailPanel";
 import { CreateExhibitModal } from "./CreateExhibitModal";
-import type { Exhibit, EXHIBIT_FILTERS } from "@/lib/dummy-data/exhibits";
 
-const PAGE_SIZES = ["5 / page", "10 / page", "25 / page"];
-const TOTAL_EXHIBITS = 128;
-const PAGE_COUNT = 26;
+export type ExhibitNotice = { tone: "success" | "error"; message: string };
+
+type ModalState = { mode: "create" } | { mode: "edit"; exhibitId: string } | null;
+
+function matches(row: ExhibitRow, term: string) {
+  if (!term) return true;
+  return [row.specimen?.commonName, row.specimen?.scientificName, row.specimen?.accessionNumber, row.publicSlug].some(
+    (value) => value?.toLowerCase().includes(term),
+  );
+}
 
 export function ExhibitsWorkspace({
   exhibits,
-  filters,
+  initialSelectedId,
+  openCreate = false,
 }: {
-  exhibits: Exhibit[];
-  filters: typeof EXHIBIT_FILTERS;
+  exhibits: ExhibitRow[];
+  initialSelectedId: string | null;
+  /** Opens the create dialog on arrival, e.g. from the dashboard's "Create exhibit" action. */
+  openCreate?: boolean;
 }) {
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(exhibits[0]?.slug ?? null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<ExhibitStatus | "">("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZES[0]);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    exhibits.some((e) => e.id === initialSelectedId) ? initialSelectedId : (exhibits[0]?.id ?? null),
+  );
+  const [modal, setModal] = useState<ModalState>(openCreate ? { mode: "create" } : null);
+  const [notice, setNotice] = useState<ExhibitNotice | null>(null);
 
-  const selected = exhibits.find((e) => e.slug === selectedSlug) ?? null;
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return exhibits.filter((row) => (!status || row.status === status) && matches(row, term));
+  }, [exhibits, search, status]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const selected = exhibits.find((e) => e.id === selectedId) ?? null;
+  const statusCounts = { PUBLISHED: 0, UNPUBLISHED: 0, DISABLED: 0 };
+  for (const exhibit of exhibits) statusCounts[exhibit.status] += 1;
+  const editing = modal?.mode === "edit" ? (exhibits.find((e) => e.id === modal.exhibitId) ?? null) : null;
 
   return (
     <div className="space-y-4">
-      <ExhibitToolbar filters={filters} onAddClick={() => setModalOpen(true)} />
+      <ExhibitToolbar
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        status={status}
+        onStatusChange={(value) => {
+          setStatus(value);
+          setPage(1);
+        }}
+        counts={statusCounts}
+        onAddClick={() => setModal({ mode: "create" })}
+      />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+      {notice && (
+        <div
+          role={notice.tone === "error" ? "alert" : "status"}
+          className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+            notice.tone === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          <p>{notice.message}</p>
+          <button type="button" onClick={() => setNotice(null)} className="shrink-0 text-xs font-semibold underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* items-start + a sticky, self-scrolling detail panel: the long panel no longer
+          stretches the row and leaves empty space under a short exhibit list. */}
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
-          <ExhibitTable exhibits={exhibits} selectedSlug={selectedSlug} onSelect={setSelectedSlug} />
-
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
-            <p>
-              Showing 1 to {exhibits.length} of {TOTAL_EXHIBITS} exhibits
+          {visible.length > 0 ? (
+            <ExhibitTable exhibits={visible} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : (
+            <p className="py-10 text-center text-sm text-zinc-500">
+              {exhibits.length === 0
+                ? "No exhibits yet. Create one from a Cataloged specimen approved for public display."
+                : "No exhibits match your search or filter."}
             </p>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Previous page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
-              >
-                <ChevronLeftIcon className="h-3.5 w-3.5" />
-              </button>
-              {[1, 2, 3, 4, 5].map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
-                    page === 1 ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <span className="px-1">&hellip;</span>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                {PAGE_COUNT}
-              </button>
-              <button
-                type="button"
-                aria-label="Next page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
-              >
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="relative">
-              <select
-                defaultValue={PAGE_SIZES[0]}
-                className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
-              >
-                {PAGE_SIZES.map((size) => (
-                  <option key={size}>{size}</option>
-                ))}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
-            </div>
-          </div>
+          )}
+
+          <TablePagination
+            label="Exhibit pages"
+            noun="exhibits"
+            page={currentPage}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
         </div>
 
-        <ExhibitDetailPanel exhibit={selected} onClear={() => setSelectedSlug(null)} />
+        <div className="xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:rounded-xl">
+          <ExhibitDetailPanel
+            key={selected?.id ?? "none"}
+            exhibit={selected}
+            onClear={() => setSelectedId(null)}
+            onEdit={(id) => setModal({ mode: "edit", exhibitId: id })}
+            onNotice={setNotice}
+            onArchived={() => setSelectedId(null)}
+          />
+        </div>
       </div>
 
-      <CreateExhibitModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      {(modal?.mode === "create" || editing) && (
+        <CreateExhibitModal
+          key={editing?.id ?? "create"}
+          exhibit={editing}
+          onClose={() => setModal(null)}
+          onSaved={(id, message) => {
+            setSelectedId(id);
+            setModal(null);
+            setNotice({ tone: "success", message });
+          }}
+        />
+      )}
     </div>
   );
 }

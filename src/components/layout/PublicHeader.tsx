@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { LogoMark } from "./LogoMark";
-import { MenuIcon, CloseIcon, CalendarIcon } from "@/components/icons";
+import { MenuIcon, CloseIcon } from "@/components/icons";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/gallery", label: "Gallery" },
   { href: "/visit", label: "Visit" },
   { href: "/about", label: "About" },
-];
+] as const;
 
 export function PublicHeader() {
   const pathname = usePathname();
@@ -20,58 +20,59 @@ export function PublicHeader() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  // Unlisted QR exhibit pages ship their own compact chrome — skip the full site header.
+  // Unlisted QR exhibit pages ship their own compact chrome, so skip the site header.
   if (pathname.startsWith("/exhibits/")) return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-3">
-          <LogoMark className="h-9 w-9 text-forest-700" />
-          <span className="flex flex-col leading-tight">
-            <span className="font-serif text-lg font-semibold text-forest-800">
+    <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-6 px-5 sm:px-8 lg:h-[72px]">
+        <Link href="/" className="group flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+          <LogoMark className="h-9 w-9 transition-transform duration-500 group-hover:rotate-[-8deg]" />
+          <span className="flex flex-col leading-none">
+            <span className="font-display text-[17px] font-semibold tracking-tight text-ink">
               USC Biological Museum
             </span>
-            <span className="text-xs font-medium text-gold-600">
-              University of San Carlos &middot; Cebu City
+            <span className="mt-1 font-mono text-[10.5px] tracking-wide text-ink-muted">
+              University of San Carlos
             </span>
           </span>
         </Link>
 
         <nav aria-label="Primary" className="hidden md:block">
-          <ul className="flex items-center gap-8 font-serif text-[15px] text-forest-900">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  aria-current={isActive(link.href) ? "page" : undefined}
-                  className={`pb-1 transition-colors hover:text-forest-700 ${
-                    isActive(link.href)
-                      ? "border-b-2 border-forest-700 text-forest-700"
-                      : "border-b-2 border-transparent"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+          <ul className="flex items-center gap-1 text-[15px]">
+            {NAV_LINKS.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`relative rounded-full px-4 py-2 transition-colors ${
+                      active ? "bg-brand-soft font-medium text-brand" : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
             href="/visit"
-            className="hidden items-center gap-2 rounded-full bg-gold-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gold-700 sm:inline-flex"
+            className="hidden rounded-full bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white transition-[background-color,transform] hover:bg-brand-solid-hover active:translate-y-px sm:inline-flex"
           >
-            <CalendarIcon className="h-4 w-4" />
-            Plan Your Visit
+            Plan a visit
           </Link>
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-forest-800 md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-brand-soft md:hidden"
             aria-expanded={mobileOpen}
-            aria-label="Toggle menu"
+            aria-controls="mobile-nav"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
             onClick={() => setMobileOpen((open) => !open)}
           >
             {mobileOpen ? <CloseIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
@@ -80,28 +81,29 @@ export function PublicHeader() {
       </div>
 
       {mobileOpen && (
-        <nav aria-label="Primary" className="border-t border-black/5 md:hidden">
-          <ul className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-3 font-serif text-base text-forest-900">
+        <nav id="mobile-nav" aria-label="Primary" className="border-t border-line md:hidden">
+          <ul className="mx-auto flex max-w-[1240px] flex-col px-5 py-3">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`block rounded-lg px-3 py-2 ${
-                    isActive(link.href) ? "bg-forest-100 text-forest-800" : "hover:bg-sage-100"
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                  className={`block py-3 font-display text-2xl tracking-tight ${
+                    isActive(link.href) ? "text-brand" : "text-ink"
                   }`}
                 >
                   {link.label}
                 </Link>
               </li>
             ))}
-            <li>
+            <li className="pt-3 pb-2">
               <Link
                 href="/visit"
                 onClick={() => setMobileOpen(false)}
-                className="mt-2 block rounded-full bg-gold-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                className="block rounded-full bg-brand-solid px-4 py-3 text-center text-sm font-semibold text-white"
               >
-                Plan Your Visit
+                Plan a visit
               </Link>
             </li>
           </ul>

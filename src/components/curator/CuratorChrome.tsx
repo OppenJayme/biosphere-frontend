@@ -7,7 +7,15 @@ import { CuratorTopbar } from "./CuratorTopbar";
 
 const COLLAPSE_STORAGE_KEY = "biosphere_curator_sidebar_collapsed";
 
-export function CuratorChrome({ children }: { children: ReactNode }) {
+export function CuratorChrome({
+  children,
+  ownerId,
+  profile,
+}: {
+  children: ReactNode;
+  ownerId: string;
+  profile: { fullName: string; role: string } | null;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -36,15 +44,16 @@ export function CuratorChrome({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-sage-50/60">
-      <CuratorSidebar
-        mobileOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapse={toggleCollapsed}
-      />
+      <CuratorSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} collapsed={collapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <CuratorTopbar onMenuClick={() => setMobileOpen(true)} />
+        <CuratorTopbar
+          onMenuClick={() => setMobileOpen(true)}
+          onToggleCollapse={toggleCollapsed}
+          sidebarCollapsed={collapsed}
+          ownerId={ownerId}
+          profile={profile}
+        />
         <main className="flex-1 p-5 lg:p-6">{children}</main>
       </div>
     </div>

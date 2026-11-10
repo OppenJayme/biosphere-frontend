@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    // Generated fixture bundles contain vendored React/Next code, not lintable source.
+    "tools/browser/artifacts/**",
     "next-env.d.ts",
   ]),
 ]);

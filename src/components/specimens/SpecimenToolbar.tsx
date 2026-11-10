@@ -1,100 +1,367 @@
+import { SearchIcon } from "@/components/icons";
+import { FilterChips } from "@/components/ui/FilterChips";
+import { FILTER_TOGGLE_CLASSES, FilterToggleContent } from "@/components/ui/FilterToggle";
+import { InfoTip } from "@/components/ui/InfoTip";
+import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
+import { ConditionField } from "./ConditionField";
 import {
-  SearchIcon,
-  ChevronDownIcon,
-  PlusIcon,
-  DownloadIcon,
-  QrCodeIcon,
-  ListIcon,
-  GridIcon,
-} from "@/components/icons";
-import type { SPECIMEN_FILTERS } from "@/lib/dummy-data/specimens";
+  DEFAULT_SPECIMEN_PAGE_SIZE,
+  hasAdvancedSpecimenFilters,
+  SORT_DIRECTIONS,
+  SPECIMEN_GENDERS,
+  SPECIMEN_SORT_FIELDS,
+  type MuseumCollection,
+  specimenListHref,
+  type SpecimenListQuery,
+  type SpecimenStatus,
+} from "@/features/specimens/types";
+import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
 
-function FilterSelect({ options }: { options: readonly string[] }) {
+const SORT_LABELS: Record<(typeof SPECIMEN_SORT_FIELDS)[number], string> = {
+  updatedAt: "Last updated",
+  createdAt: "Date created",
+  accessionNumber: "Accession number",
+  scientificName: "Scientific name",
+  commonName: "Common name",
+  status: "Catalog status",
+  specimenCategory: "Category",
+  family: "Family",
+};
+
+const TAXONOMY_FIELDS = [
+  ["kingdom", "Kingdom"],
+  ["phylum", "Phylum"],
+  ["taxonClass", "Class"],
+  ["taxonOrder", "Order"],
+  ["family", "Family"],
+  ["genus", "Genus"],
+  ["species", "Species"],
+] as const;
+
+function enumLabel(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function hasNonDefaultFilters(query: SpecimenListQuery) {
   return (
-    <div className="relative">
-      <select
-        defaultValue={options[0]}
-        className="w-full appearance-none rounded-lg border border-black/15 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-    </div>
+    query.search.length > 0 ||
+    query.status !== null ||
+    query.collectionId !== null ||
+    query.specimenCategory.length > 0 ||
+    query.gender !== null ||
+    query.publicDisplay !== null ||
+    hasAdvancedSpecimenFilters(query) ||
+    query.sortBy !== "updatedAt" ||
+    query.sortDirection !== "desc"
   );
 }
 
+// A fixed height keeps text boxes and dropdowns level; browsers size them differently otherwise.
+const baseControlClasses =
+  "block h-11 w-full rounded-lg border border-black/15 bg-white px-3 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:bg-zinc-100 disabled:text-zinc-500";
+const controlClasses = `mt-1.5 ${baseControlClasses}`;
+
 export function SpecimenToolbar({
-  filters,
-  onAddClick,
+  query,
+  collections,
+  collectionLookupAvailable,
+  storageOptions,
+  storageLookupAvailable,
+  filterError,
+  statusCounts,
 }: {
-  filters: typeof SPECIMEN_FILTERS;
-  onAddClick: () => void;
+  query: SpecimenListQuery;
+  collections: MuseumCollection[];
+  collectionLookupAvailable: boolean;
+  storageOptions: StoragePathOption[];
+  storageLookupAvailable: boolean;
+  filterError: string | null;
+  /** Whole-catalog totals per status, for the chip counts. Omitted when unavailable. */
+  statusCounts?: Record<SpecimenStatus, number>;
 }) {
+  const hasFilters = hasNonDefaultFilters(query);
+  const advancedOpen =
+    hasAdvancedSpecimenFilters(query) ||
+    query.specimenCategory.length > 0 ||
+    query.gender !== null ||
+    query.publicDisplay !== null;
+  const hasOtherFilters =
+    query.search.length > 0 || query.collectionId !== null || advancedOpen;
+  const selectedUnitMissing =
+    Boolean(query.storageUnitId) && !storageOptions.some((option) => option.id === query.storageUnitId);
+  const selectedCollectionMissing =
+    query.collectionId !== null &&
+    !collections.some((collection) => collection.id === query.collectionId);
+
+  const statusChip = (label: string, status: SpecimenListQuery["status"], count?: number) => ({
+    label,
+    // Totals describe the whole catalog, so they are hidden while other filters narrow the list.
+    count: hasOtherFilters ? undefined : count,
+    active: query.status === status,
+    href: specimenListHref({ ...query, status }, 1),
+  });
+
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="relative lg:col-span-1">
-          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="search"
-            placeholder="Search specimens..."
-            className="w-full rounded-lg border border-black/15 py-2 pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-          />
-        </div>
-        <FilterSelect options={filters.collectionType} />
-        <FilterSelect options={filters.status} />
-        <FilterSelect options={filters.condition} />
-        <FilterSelect options={filters.storageLocation} />
-        <FilterSelect options={filters.dateAdded} />
-      </div>
+    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-5">
+      <FilterChips
+        label="Filter by catalog status"
+        chips={[
+          statusChip("All active", null, statusCounts ? statusCounts.UNCATALOGED + statusCounts.CATALOGED : undefined),
+          statusChip("Uncataloged", "UNCATALOGED", statusCounts?.UNCATALOGED),
+          statusChip("Cataloged", "CATALOGED", statusCounts?.CATALOGED),
+          statusChip("Archived", "ARCHIVED", statusCounts?.ARCHIVED),
+        ]}
+      />
 
-      <div className="flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={onAddClick}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest-800"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Add New Specimen
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-sage-100"
-        >
-          <DownloadIcon className="h-4 w-4" />
-          Import Record/s
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-sage-100"
-        >
-          <QrCodeIcon className="h-4 w-4" />
-          Scan QR
-        </button>
+      {/* Reset uncontrolled fields only when the applied query changes. This
+          keeps Clear all and Back/Forward aligned with the displayed results. */}
+      <form
+        key={JSON.stringify(query)}
+        action="/specimens"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <input type="hidden" name="status" defaultValue={query.status ?? ""} />
+        {query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE && (
+          <input type="hidden" name="limit" defaultValue={query.limit} />
+        )}
+        <label className="text-xs font-medium text-zinc-600 sm:col-span-2 xl:col-span-2">
+          Search
+          <span className="relative mt-1.5 block">
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="search"
+              name="search"
+              defaultValue={query.search}
+              maxLength={100}
+              placeholder="Name, accession no., category, or collection…"
+              className={`${baseControlClasses} pl-10`}
+            />
+          </span>
+        </label>
 
-        <div className="ml-auto flex items-center gap-2.5">
-          <div className="flex items-center gap-1 rounded-lg border border-black/15 p-1 text-sm">
-            <span className="flex items-center gap-1.5 rounded-md bg-forest-700 px-2.5 py-1.5 font-medium text-white">
-              <ListIcon className="h-4 w-4" />
-              List
-            </span>
-            <span className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-medium text-zinc-500">
-              <GridIcon className="h-4 w-4" />
-              Grid
-            </span>
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-sage-100"
+        <label className="text-xs font-medium text-zinc-600">
+          Collection
+          <select
+            name="collectionId"
+            defaultValue={query.collectionId ?? ""}
+            disabled={!collectionLookupAvailable}
+            className={controlClasses}
           >
-            <DownloadIcon className="h-4 w-4" />
-            Export
-            <ChevronDownIcon className="h-3.5 w-3.5" />
-          </button>
+            <option value="">
+              {collectionLookupAvailable ? "All collections" : "Collection lookup unavailable"}
+            </option>
+            {selectedCollectionMissing && query.collectionId && (
+              <option value={query.collectionId}>Selected collection unavailable</option>
+            )}
+            {collections.map((collection) => (
+              <option key={collection.id} value={collection.id}>{collection.collectionName}</option>
+            ))}
+          </select>
+          {!collectionLookupAvailable && query.collectionId && (
+            <input type="hidden" name="collectionId" value={query.collectionId} />
+          )}
+        </label>
+
+        <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] gap-2">
+          <label className="text-xs font-medium text-zinc-600">
+            Sort by
+            <select name="sortBy" defaultValue={query.sortBy} className={controlClasses}>
+              {SPECIMEN_SORT_FIELDS.map((field) => (
+                <option key={field} value={field}>{SORT_LABELS[field]}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-zinc-600">
+            Order
+            <select
+              name="sortDirection"
+              defaultValue={query.sortDirection}
+              className={controlClasses}
+            >
+              {SORT_DIRECTIONS.map((direction) => (
+                <option key={direction} value={direction}>
+                  {direction === "asc" ? "Ascending" : "Descending"}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      </div>
+
+        <div className="flex flex-wrap items-start gap-3 sm:col-span-2 xl:col-span-4">
+          <details open={advancedOpen} className="group min-w-0 flex-1">
+            <summary className={FILTER_TOGGLE_CLASSES}>
+              <FilterToggleContent>
+                More filters
+                <InfoTip label="More filters" align="start">
+                  Category, gender, public display, condition, storage location, tag, date added and taxonomy. Text
+                  filters must match the whole value (capital letters don&apos;t matter). Dates use Philippine time.
+                </InfoTip>
+              </FilterToggleContent>
+            </summary>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="text-xs font-medium text-zinc-600">
+              Specimen category
+              <input
+                name="specimenCategory"
+                defaultValue={query.specimenCategory}
+                maxLength={100}
+                placeholder="Exact category"
+                className={controlClasses}
+              />
+            </label>
+            <label className="text-xs font-medium text-zinc-600">
+              Gender
+              <select name="gender" defaultValue={query.gender ?? ""} className={controlClasses}>
+                <option value="">All genders</option>
+                {SPECIMEN_GENDERS.map((gender) => (
+                  <option key={gender} value={gender}>{enumLabel(gender)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-zinc-600">
+              Public eligibility
+              <select
+                name="publicDisplay"
+                defaultValue={query.publicDisplay === null ? "" : String(query.publicDisplay)}
+                className={controlClasses}
+              >
+                <option value="">All eligibility states</option>
+                <option value="true">Eligible</option>
+                <option value="false">Not eligible</option>
+              </select>
+            </label>
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 pb-1 sm:grid-cols-2 xl:grid-cols-4">
+              <label className="text-xs font-medium text-zinc-600">
+                Classification status
+                <input
+                  name="classificationStatus"
+                  defaultValue={query.classificationStatus}
+                  maxLength={100}
+                  placeholder="e.g. Identified"
+                  className={controlClasses}
+                />
+              </label>
+
+              <label className="text-xs font-medium text-zinc-600">
+                Condition (active lot)
+                <ConditionField
+                  name="conditionClass"
+                  defaultValue={query.conditionClass}
+                  emptyLabel="All conditions"
+                  className={controlClasses}
+                />
+              </label>
+
+              <label className="text-xs font-medium text-zinc-600">
+                Tag
+                <input
+                  name="tag"
+                  defaultValue={query.tag}
+                  maxLength={100}
+                  placeholder="Exact tag name"
+                  className={controlClasses}
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs font-medium text-zinc-600">
+                  Added from
+                  <input type="date" name="createdFrom" defaultValue={query.createdFrom} className={controlClasses} />
+                </label>
+                <label className="text-xs font-medium text-zinc-600">
+                  Added to
+                  <input type="date" name="createdTo" defaultValue={query.createdTo} className={controlClasses} />
+                </label>
+              </div>
+
+              <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
+                Storage location (active lot)
+                <select
+                  name="storageUnitId"
+                  defaultValue={query.storageUnitId ?? ""}
+                  disabled={!storageLookupAvailable}
+                  className={controlClasses}
+                >
+                  <option value="">
+                    {storageLookupAvailable ? "All locations" : "Location lookup unavailable"}
+                  </option>
+                  {selectedUnitMissing && query.storageUnitId && (
+                    <option value={query.storageUnitId}>Selected location unavailable</option>
+                  )}
+                  {storageOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.pathLabel}
+                      {option.archived ? " (archived)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {!storageLookupAvailable && query.storageUnitId && (
+                  <input type="hidden" name="storageUnitId" value={query.storageUnitId} />
+                )}
+              </label>
+
+              <label className="text-xs font-medium text-zinc-600 sm:col-span-2">
+                Units inside the location
+                <select
+                  name="includeDescendantUnits"
+                  defaultValue={query.includeDescendantUnits === false ? "false" : "true"}
+                  className={controlClasses}
+                >
+                  <option value="true">Include cabinets, drawers, and other units inside it</option>
+                  <option value="false">Only lots stored directly in it</option>
+                </select>
+              </label>
+
+              {TAXONOMY_FIELDS.map(([name, label]) => (
+                <label key={name} className="text-xs font-medium text-zinc-600">
+                  {label}
+                  <input
+                    name={name}
+                    defaultValue={query[name]}
+                    maxLength={100}
+                    placeholder="Exact name"
+                    className={controlClasses}
+                  />
+                </label>
+              ))}
+            </div>
+          </details>
+
+          <div className="flex items-center gap-2">
+            {hasFilters && <ClearSpecimenFiltersLink />}
+            <button
+              type="submit"
+              className="h-10 rounded-lg bg-forest-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-forest-800"
+            >
+              Search
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {filterError && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {filterError}
+        </p>
+      )}
+
+      {!storageLookupAvailable && (
+        <p role="status" className="text-xs text-amber-800">
+          Storage locations could not be loaded, so the location filter is unavailable.
+        </p>
+      )}
+
+      {!collectionLookupAvailable && (
+        <p role="status" className="text-xs text-amber-800">
+          Collection choices could not be loaded. Other catalog filters remain available.
+        </p>
+      )}
     </div>
   );
 }

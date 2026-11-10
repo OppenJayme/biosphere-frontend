@@ -1,104 +1,157 @@
 "use client";
 
-import { BugIcon, LizardIcon, LeafIcon, PawIcon, FishIcon } from "@/components/icons";
-import type { Specimen } from "@/lib/dummy-data/specimens";
+import Link from "next/link";
+import type { MouseEvent } from "react";
+import { EyeIcon } from "@/components/icons";
+import type { SpecimenSearchItem, SpecimenSummary } from "@/features/specimens/types";
 
-const GROUP_ICONS = {
-  insect: BugIcon,
-  reptile: LizardIcon,
-  botany: LeafIcon,
-  mammal: PawIcon,
-  marine: FishIcon,
-} as const;
-
-const CONDITION_DOT: Record<Specimen["condition"], string> = {
-  Good: "bg-forest-600",
-  Fair: "bg-amber-500",
-  Poor: "bg-red-500",
+const STATUS_STYLES: Record<SpecimenSummary["status"], string> = {
+  UNCATALOGED: "bg-zinc-100 text-zinc-700",
+  CATALOGED: "bg-forest-100 text-forest-700",
+  ARCHIVED: "bg-amber-100 text-amber-700",
 };
 
-const CATALOG_STATUS_STYLES: Record<Specimen["catalogStatus"], string> = {
-  Cataloged: "bg-forest-100 text-forest-700",
-  Draft: "bg-zinc-100 text-zinc-600",
-  "Needs Review": "bg-sky-100 text-sky-700",
-  Archived: "bg-amber-100 text-amber-700",
-};
+function displayValue(value: string | null) {
+  return value ?? "—";
+}
+
+function statusLabel(status: SpecimenSummary["status"]) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+/**
+ * Full storage paths repeat every parent ("Room 2 › Cabinet › Drawer A") and wrapped
+ * into tall rows. Show the unit itself, with the full path on hover and in the
+ * detail panel, and count any further lots' units.
+ */
+function StorageUnitsCell({ units }: { units: SpecimenSearchItem["storageUnits"] }) {
+  if (units.length === 0) return <>—</>;
+  const [first, ...rest] = units;
+  return (
+    <span title={units.map((unit) => unit.pathLabel).join(", ")}>
+      {first.label}
+      {rest.length > 0 && <span className="ml-1 text-xs text-zinc-500">+{rest.length} more</span>}
+    </span>
+  );
+}
+
+const DATE_ONLY = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : DATE_ONLY.format(date);
+}
 
 export function SpecimenTable({
   specimens,
-  selectedAccessionNo,
+  selectedId,
   onSelect,
+  onOpen,
+  previewHref,
 }: {
-  specimens: Specimen[];
-  selectedAccessionNo: string | null;
-  onSelect: (accessionNo: string) => void;
+  specimens: SpecimenSearchItem[];
+  selectedId: string | null;
+  onSelect: (event: MouseEvent<HTMLElement>, id: string) => void;
+  /** Double-click: open the full record. */
+  onOpen: (id: string) => void;
+  previewHref: (id: string) => string;
 }) {
+  if (specimens.length === 0) {
+    return (
+      <p className="py-12 text-center text-sm text-zinc-500">
+        No specimen records match the current search and filters.
+      </p>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1120px] text-left text-sm">
+      <table className="w-full min-w-[680px] text-left text-sm">
         <thead>
           <tr className="border-b border-black/10 text-xs text-zinc-500">
-            <th className="w-10 py-2 pr-3">
-              <input type="checkbox" className="h-4 w-4 rounded border-black/20 accent-forest-700" />
-            </th>
-            <th className="py-2 pr-3 font-medium">Accession No.</th>
+            <th className="py-2 pr-3 pl-3 font-medium">Accession No.</th>
             <th className="py-2 pr-3 font-medium">Specimen</th>
-            <th className="py-2 pr-3 font-medium">Common Name</th>
-            <th className="py-2 pr-3 font-medium">Scientific Name</th>
-            <th className="py-2 pr-3 font-medium">Family</th>
-            <th className="py-2 pr-3 font-medium">Collection Type</th>
-            <th className="py-2 pr-3 font-medium">Date Collection</th>
-            <th className="py-2 pr-3 font-medium">Collector</th>
-            <th className="py-2 pr-3 font-medium">Storage Location</th>
-            <th className="py-2 pr-3 font-medium">Condition</th>
+            <th className="py-2 pr-3 font-medium">Category</th>
             <th className="py-2 pr-3 font-medium">Catalog Status</th>
-            <th className="py-2 pr-0 font-medium">Last Updated</th>
+            <th className="py-2 pr-3 text-right font-medium">Qty</th>
+            <th className="py-2 pr-3 font-medium">Storage</th>
+            {/* Shown in the detail panel; the column only fits on wide screens. */}
+            <th className="hidden py-2 pr-3 font-medium min-[1800px]:table-cell">Updated</th>
+            <th className="py-2 pr-0">
+              <span className="sr-only">Full details</span>
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-black/5">
           {specimens.map((specimen) => {
-            const Icon = GROUP_ICONS[specimen.group];
-            const selected = specimen.accessionNo === selectedAccessionNo;
+            const selected = specimen.id === selectedId;
+
             return (
               <tr
-                key={specimen.accessionNo}
-                onClick={() => onSelect(specimen.accessionNo)}
-                className={`cursor-pointer transition-colors ${selected ? "bg-forest-50" : "hover:bg-sage-50"}`}
+                key={specimen.id}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("a,button")) return;
+                  onSelect(event, specimen.id);
+                }}
+                onDoubleClick={(event) => {
+                  // The eye link already opens the record from its first click.
+                  if ((event.target as HTMLElement).closest("[data-open-record]")) return;
+                  onOpen(specimen.id);
+                }}
+                title="Click to preview. Double-click to open the full record."
+                className={`cursor-pointer border-l-4 transition-colors ${
+                  selected ? "border-forest-600 bg-forest-50" : "border-transparent hover:bg-sage-50"
+                }`}
               >
-                <td className="py-2.5 pr-3" onClick={(e) => e.stopPropagation()}>
-                  <input type="checkbox" className="h-4 w-4 rounded border-black/20 accent-forest-700" />
+                <td className="py-2.5 pr-3 pl-3 font-medium whitespace-nowrap text-zinc-900">
+                  {specimen.accessionNumber ?? <span className="font-normal text-zinc-500">Unassigned</span>}
                 </td>
-                <td className="py-2.5 pr-3 font-medium whitespace-nowrap text-zinc-900">
-                  {specimen.accessionNo}
+                <td className="max-w-56 py-2.5 pr-3 text-zinc-700">
+                  <Link
+                    href={previewHref(specimen.id)}
+                    prefetch={false}
+                    onClick={(event) => onSelect(event, specimen.id)}
+                    aria-current={selected ? "true" : undefined}
+                    className="block truncate font-medium text-zinc-900 underline decoration-forest-300 underline-offset-4 hover:text-forest-800 focus-visible:outline-2 focus-visible:outline-forest-700"
+                  >
+                    {specimen.commonName ?? specimen.accessionNumber ?? "Preview specimen"}
+                  </Link>
+                  {specimen.scientificName && (
+                    <span className="block truncate text-xs italic text-zinc-500">{specimen.scientificName}</span>
+                  )}
                 </td>
-                <td className="py-2.5 pr-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sage-100 text-forest-700">
-                    <Icon className="h-4.5 w-4.5" />
-                  </span>
-                </td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-700">{specimen.commonName}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap italic text-zinc-600">
-                  {specimen.scientificName}
-                </td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{specimen.family}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{specimen.collectionType}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{specimen.dateCollection}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{specimen.collector}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{specimen.storageLocation}</td>
-                <td className="py-2.5 pr-3 whitespace-nowrap">
-                  <span className="flex items-center gap-1.5 text-zinc-700">
-                    <span className={`h-2 w-2 rounded-full ${CONDITION_DOT[specimen.condition]}`} />
-                    {specimen.condition}
-                  </span>
+                <td className="max-w-32 py-2.5 pr-3 text-zinc-600">
+                  {displayValue(specimen.specimenCategory)}
                 </td>
                 <td className="py-2.5 pr-3">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${CATALOG_STATUS_STYLES[specimen.catalogStatus]}`}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${STATUS_STYLES[specimen.status]}`}
                   >
-                    {specimen.catalogStatus}
+                    {statusLabel(specimen.status)}
                   </span>
                 </td>
-                <td className="py-2.5 pr-0 whitespace-nowrap text-zinc-500">{specimen.lastUpdated}</td>
+                <td className="py-2.5 pr-3 text-right whitespace-nowrap tabular-nums text-zinc-700">
+                  {specimen.totalQuantity.toLocaleString()}
+                </td>
+                <td className="max-w-36 truncate py-2.5 pr-3 whitespace-nowrap text-zinc-600">
+                  <StorageUnitsCell units={specimen.storageUnits} />
+                </td>
+                <td className="hidden py-2.5 pr-3 whitespace-nowrap text-zinc-500 min-[1800px]:table-cell">
+                  {formatDate(specimen.updatedAt)}
+                </td>
+                <td className="py-2.5 pr-0 text-right">
+                  {/* A real link, so the full record opens without JavaScript and with modifier clicks. */}
+                  <Link
+                    href={`/specimens/${specimen.id}`}
+                    prefetch={false}
+                    data-open-record
+                    aria-label={`View details for ${specimen.commonName ?? specimen.accessionNumber ?? "specimen"}`}
+                    title="View full details"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-forest-700 hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-forest-700"
+                  >
+                    <EyeIcon className="h-4 w-4" />
+                  </Link>
+                </td>
               </tr>
             );
           })}

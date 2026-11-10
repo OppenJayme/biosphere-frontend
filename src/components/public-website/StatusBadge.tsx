@@ -1,47 +1,30 @@
-import type { InquiryStatus, VisitStatus } from "@/lib/dummy-data/public-website";
+import type { InquiryStatus } from "@/features/inquiries/types";
+import { INQUIRY_STATUS_LABELS } from "@/features/inquiries/workflow";
+import type { VisitRequestStatus } from "@/features/visit-requests/types";
+import { VISIT_REQUEST_STATUS_LABELS } from "@/features/visit-requests/workflow";
 
 const INQUIRY_STYLES: Record<InquiryStatus, string> = {
-  Pending: "bg-forest-100 text-forest-700",
-  Reviewed: "bg-amber-100 text-amber-700",
-  "Converted to Visit Request": "bg-sky-100 text-sky-700",
-  Close: "bg-zinc-100 text-zinc-600",
+  PENDING: "bg-amber-100 text-amber-800",
+  REVIEWED: "bg-sky-100 text-sky-800",
+  TURNED_TO_VISIT_REQUEST: "bg-forest-100 text-forest-700",
+  CLOSED: "bg-zinc-100 text-zinc-600",
 };
 
-const VISIT_STYLES: Record<VisitStatus, string> = {
-  Pending: "bg-amber-100 text-amber-700",
-  Approved: "bg-forest-100 text-forest-700",
-  Declined: "bg-red-100 text-red-600",
-  Cancelled: "bg-orange-100 text-orange-700",
-  "Submitted for Campus Entry": "bg-sky-100 text-sky-700",
+const VISIT_STYLES: Record<VisitRequestStatus, string> = {
+  PENDING: "bg-amber-100 text-amber-800",
+  APPROVED_BY_CURATOR: "bg-forest-100 text-forest-700",
+  SUBMITTED_FOR_CAMPUS_ENTRY: "bg-sky-100 text-sky-800",
+  COMPLETED: "bg-zinc-100 text-zinc-700",
+  DECLINED: "bg-red-100 text-red-700",
+  CANCELLED: "bg-orange-100 text-orange-800",
 };
+
+const badgeClasses = "inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap";
 
 export function InquiryStatusBadge({ status }: { status: InquiryStatus }) {
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${INQUIRY_STYLES[status]}`}>
-      {status}
-    </span>
-  );
+  return <span className={`${badgeClasses} ${INQUIRY_STYLES[status]}`}>{INQUIRY_STATUS_LABELS[status]}</span>;
 }
 
-export function VisitStatusBadge({ status }: { status: VisitStatus }) {
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${VISIT_STYLES[status]}`}>
-      {status}
-    </span>
-  );
+export function VisitStatusBadge({ status }: { status: VisitRequestStatus }) {
+  return <span className={`${badgeClasses} ${VISIT_STYLES[status]}`}>{VISIT_REQUEST_STATUS_LABELS[status]}</span>;
 }
-
-export const VISIT_STATUS_DOT: Record<VisitStatus, string> = {
-  Pending: "bg-amber-500",
-  Approved: "bg-forest-600",
-  Declined: "bg-red-500",
-  Cancelled: "bg-orange-500",
-  "Submitted for Campus Entry": "bg-sky-500",
-};
-
-export const INQUIRY_STATUS_DOT: Record<InquiryStatus, string> = {
-  Pending: "bg-forest-600",
-  Reviewed: "bg-amber-500",
-  "Converted to Visit Request": "bg-sky-500",
-  Close: "bg-zinc-400",
-};

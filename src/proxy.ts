@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import {
+  IDLE_COOKIE_NAME,
+  idleCookieOptions,
+  isIdleExpired,
+  parseLastActivity,
+  sessionIdleLimitMs,
+} from "@/lib/session-idle";
 
 // Route prefixes that require an authenticated curator — one entry per
 // src/app/(curator)/ page. Route groups don't affect the URL, so these are
@@ -17,9 +24,14 @@ const PROTECTED_PREFIX_PATHS = [
   "/storage",
   "/cataloging",
   "/audit-logs",
+  "/backup-history",
+  "/faq-knowledge",
   "/public-website",
   "/reports",
   "/users",
+  "/account",
+  // Restricted Developer interface — src/app/(developer)/developer/.
+  "/developer",
 ];
 
 const LOGIN_PATH = "/login";
@@ -75,12 +87,30 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Catches a session left open with no tab running InactivityGuard, such as a closed
+  // laptop (REQ-4.1-05). The sign-out revokes the session in Supabase, not only here.
+  const now = Date.now();
+  const lastActivity = parseLastActivity(request.cookies.get(IDLE_COOKIE_NAME)?.value);
+  if (isIdleExpired(lastActivity, now, sessionIdleLimitMs())) {
+    await supabase.auth.signOut();
+    const loginUrl = new URL(LOGIN_PATH, request.url);
+    loginUrl.searchParams.set("error", "session_timeout");
+    loginUrl.searchParams.set("from", pathname);
+    const signedOut = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach((cookie) => signedOut.cookies.set(cookie));
+    signedOut.cookies.delete(IDLE_COOKIE_NAME);
+    return signedOut;
+  }
+
+  response.cookies.set(IDLE_COOKIE_NAME, String(now), idleCookieOptions());
   return response;
 }
 
 export const config = {
   matcher: [
     // Run on everything except static assets, image optimization, and metadata files.
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    // api/developer/ar-assets is also skipped: proxy buffers at most 10 MB of a request
+    // body, which would truncate 50 MB AR models. That route authorizes itself.
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/developer/ar-assets).*)",
   ],
 };

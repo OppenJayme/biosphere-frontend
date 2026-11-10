@@ -1,43 +1,104 @@
 "use client";
 
-import { useState } from "react";
-import { SpecimenToolbar } from "./SpecimenToolbar";
-import { SpecimenTable } from "./SpecimenTable";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { MouseEvent } from "react";
+import { selectedSpecimenId, specimenSelectionHref } from "@/features/specimens/selection";
 import { SpecimenDetailPanel } from "./SpecimenDetailPanel";
-import { AddSpecimenModal } from "./AddSpecimenModal";
-import type { Specimen, SPECIMEN_FILTERS } from "@/lib/dummy-data/specimens";
+import { SpecimenTable } from "./SpecimenTable";
+import { SpecimenToolbar } from "./SpecimenToolbar";
+import { TablePagination } from "@/components/ui/TablePagination";
+import {
+  specimenListHref,
+  type MuseumCollection,
+  type SpecimenListQuery,
+  type SpecimenPage,
+  type SpecimenStatus,
+} from "@/features/specimens/types";
+import type { StoragePathOption } from "@/features/storage-locations/hierarchy";
+import { OfflineSpecimenPanel } from "@/features/offline/components/OfflineSpecimenPanel";
 
 export function SpecimensWorkspace({
-  specimens,
-  filters,
+  specimenPage,
+  query,
+  collections,
+  collectionLookupAvailable,
+  storageOptions,
+  storageLookupAvailable,
+  filterError,
+  offlineOwnerId,
+  statusCounts,
 }: {
-  specimens: Specimen[];
-  filters: typeof SPECIMEN_FILTERS;
+  specimenPage: SpecimenPage;
+  query: SpecimenListQuery;
+  collections: MuseumCollection[];
+  collectionLookupAvailable: boolean;
+  storageOptions: StoragePathOption[];
+  storageLookupAvailable: boolean;
+  filterError: string | null;
+  offlineOwnerId: string;
+  statusCounts?: Record<SpecimenStatus, number>;
 }) {
-  const [selectedAccessionNo, setSelectedAccessionNo] = useState<string | null>(
-    specimens[0]?.accessionNo ?? null,
-  );
-  const [modalOpen, setModalOpen] = useState(false);
+  const { items, limit, page, total } = specimenPage;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedId = selectedSpecimenId(searchParams.get("selected"), items);
 
-  const selected = specimens.find((s) => s.accessionNo === selectedAccessionNo) ?? null;
+  // Native history updates Next's search parameters without refetching this
+  // already-loaded page. Modified clicks retain ordinary link navigation.
+  function selectSpecimen(event: MouseEvent<HTMLElement>, id: string | null) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
+    event.preventDefault();
+    // A double-click selects twice; one history entry keeps Back on the list.
+    if (id !== selectedId) window.history.pushState(null, "", specimenSelectionHref(query, id));
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      document.getElementById("selected-specimen")?.scrollIntoView({ block: "start" });
+    }
+  }
+
+  const selected = items.find((specimen) => specimen.id === selectedId) ?? null;
 
   return (
     <div className="space-y-4">
-      <SpecimenToolbar filters={filters} onAddClick={() => setModalOpen(true)} />
+      <SpecimenToolbar
+        query={query}
+        collections={collections}
+        collectionLookupAvailable={collectionLookupAvailable}
+        storageOptions={storageOptions}
+        storageLookupAvailable={storageLookupAvailable}
+        filterError={filterError}
+        statusCounts={statusCounts}
+      />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
-        <div className="min-w-0 rounded-xl border border-black/10 bg-white p-5">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
           <SpecimenTable
-            specimens={specimens}
-            selectedAccessionNo={selectedAccessionNo}
-            onSelect={setSelectedAccessionNo}
+            specimens={items}
+            selectedId={selectedId}
+            previewHref={(id) => specimenSelectionHref(query, id)}
+            onSelect={selectSpecimen}
+            onOpen={(id) => router.push(`/specimens/${id}`)}
+          />
+
+          <TablePagination
+            label="Specimen catalog pages"
+            noun="records"
+            page={page}
+            pageSize={limit}
+            total={total}
+            hrefFor={(target) => specimenListHref(query, target)}
+            sizeHrefFor={(size) => specimenListHref({ ...query, limit: size }, 1)}
           />
         </div>
 
-        <SpecimenDetailPanel specimen={selected} onClear={() => setSelectedAccessionNo(null)} />
+        <SpecimenDetailPanel
+          specimen={selected}
+          clearHref={specimenSelectionHref(query, null)}
+          onClear={(event) => selectSpecimen(event, null)}
+        />
       </div>
 
-      <AddSpecimenModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <OfflineSpecimenPanel ownerId={offlineOwnerId} />
     </div>
   );
 }

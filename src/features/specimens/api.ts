@@ -1,0 +1,682 @@
+import "server-only";
+import { apiFetch } from "@/lib/api-client";
+import {
+  catalogReadinessSchema,
+  changeSpecimenTagResultSchema,
+  collectionPageSchema,
+  attachSpecimenTagResultSchema,
+  detachSpecimenTagResultSchema,
+  removeSpecimenMediaResultSchema,
+  replaceSpecimenMediaResultSchema,
+  SPECIMEN_PAGE_LIMIT,
+  SPECIMEN_TEXT_FILTERS,
+  specimenCreatedBounds,
+  specimenCreateResultSchema,
+  specimenDetailSchema,
+  specimenDuplicateCheckResultSchema,
+  specimenListSchema,
+  specimenPageSchema,
+  specimenProvenanceSchema,
+  specimenRevisionPageSchema,
+  specimenRestoreResultSchema,
+  specimenMediaSchema,
+  specimenMediaSignedUrlSchema,
+  specimenSummarySchema,
+  specimenTaxonomySchema,
+  specimenTagSchema,
+  museumCollectionSchema,
+  type CollectionPage,
+  type MuseumCollection,
+  type SpecimenListQuery,
+  type SpecimenSummary,
+} from "./types";
+import { accessionNumberAvailabilitySchema } from "./accession";
+import type { DuplicateCheckInput } from "./duplicates";
+import type { SpecimenMutationInput } from "./form";
+import type { ProvenanceMutationInput } from "./provenance-form";
+import {
+  REVISION_PAGE_LIMIT,
+  type SpecimenRevisionQuery,
+} from "./revision-history";
+import type { TaxonomyMutationInput } from "./taxonomy-form";
+import type { AttachSpecimenTagInput } from "./tag-form";
+import type { SpecimenMediaMetadataInput } from "./media-form";
+import type {
+  CollectionListQuery,
+  CollectionMutationInput,
+} from "./collection-management";
+
+const COLLECTION_LOOKUP_PAGE_LIMIT = 100;
+
+async function getCollectionPage(
+  page: number,
+  limit: number,
+  search = "",
+): Promise<CollectionPage> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search) params.set("search", search);
+  const response = await apiFetch<unknown>(
+    `/collections?${params}`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = collectionPageSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid collection response.");
+  }
+
+  return result.data;
+}
+
+export async function listCollections(): Promise<MuseumCollection[]> {
+  const firstPage = await getCollectionPage(1, COLLECTION_LOOKUP_PAGE_LIMIT);
+  const pageCount = Math.ceil(firstPage.total / firstPage.limit);
+  if (pageCount <= 1) return firstPage.items;
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) =>
+      getCollectionPage(index + 2, COLLECTION_LOOKUP_PAGE_LIMIT),
+    ),
+  );
+
+  return [firstPage, ...remainingPages].flatMap((page) => page.items);
+}
+
+/** Read one bounded collection-management page without duplicating collection models. */
+export function searchCollections(query: CollectionListQuery): Promise<CollectionPage> {
+  return getCollectionPage(query.page, query.limit, query.search);
+}
+
+export async function createCollection(input: CollectionMutationInput) {
+  const response = await apiFetch<unknown>("/collections", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const result = museumCollectionSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid created collection response.");
+  }
+
+  return result.data;
+}
+
+export async function updateCollection(id: string, input: CollectionMutationInput) {
+  const response = await apiFetch<unknown>(`/collections/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  const result = museumCollectionSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid updated collection response.");
+  }
+
+  return result.data;
+}
+
+// The complete active feed supports the offline cache; interactive catalog pages use the
+// bounded /specimens/search endpoint below instead of downloading every record.
+export async function listSpecimens(): Promise<SpecimenSummary[]> {
+  const response = await apiFetch<unknown>("/specimens", {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenListSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen list response.");
+  }
+
+  return result.data;
+}
+
+export async function searchSpecimens(query: SpecimenListQuery) {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    limit: String(query.limit ?? SPECIMEN_PAGE_LIMIT),
+    sortBy: "updatedAt",
+    sortDirection: "desc",
+  });
+
+  if (query.search) params.set("search", query.search);
+  if (query.status) params.set("status", query.status);
+  if (query.collectionId) params.set("collectionId", query.collectionId);
+  if (query.specimenCategory) params.set("specimenCategory", query.specimenCategory);
+  if (query.gender) params.set("gender", query.gender);
+  if (query.publicDisplay !== null) {
+    params.set("publicDisplay", String(query.publicDisplay));
+  }
+  for (const key of SPECIMEN_TEXT_FILTERS) {
+    const value = query[key];
+    if (value) params.set(key, value);
+  }
+  if (query.storageUnitId) {
+    params.set("storageUnitId", query.storageUnitId);
+    if (query.includeDescendantUnits === false) params.set("includeDescendantUnits", "false");
+  }
+  const created = specimenCreatedBounds(query);
+  if (created.from) params.set("createdFrom", created.from);
+  if (created.to) params.set("createdTo", created.to);
+  params.set("sortBy", query.sortBy);
+  params.set("sortDirection", query.sortDirection);
+
+  const response = await apiFetch<unknown>(`/specimens/search?${params}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenPageSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen catalog response.");
+  }
+
+  return result.data;
+}
+
+export async function getSpecimenDetails(id: string) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}/details`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenDetailSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen detail response.");
+  }
+
+  return result.data;
+}
+
+/** Fetch only the core record when an aggregate detail response is unnecessary. */
+export async function getSpecimen(id: string) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Read a bounded, validated page of immutable catalog revision records. */
+export async function getSpecimenRevisionHistory(
+  specimenId: string,
+  query: SpecimenRevisionQuery,
+) {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    limit: String(REVISION_PAGE_LIMIT),
+  });
+  if (query.fieldChanged) params.set("fieldChanged", query.fieldChanged);
+  if (query.sourceSection) params.set("sourceSection", query.sourceSection);
+
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/revisions?${params}`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenRevisionPageSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen revision-history response.");
+  }
+
+  return result.data;
+}
+
+// Bounds the field-list scan: 20 pages of 100 covers any realistic specimen history.
+const REVISION_FIELD_SCAN_LIMIT = 100;
+const REVISION_FIELD_SCAN_MAX_PAGES = 20;
+
+/**
+ * Collect the distinct field names this specimen's history has recorded, for the
+ * "Field changed" filter. The backend has no distinct-fields endpoint, so this pages
+ * through the unfiltered history (bounded above).
+ */
+export async function listSpecimenRevisionFields(specimenId: string) {
+  const fields = new Set<string>();
+
+  for (let page = 1; page <= REVISION_FIELD_SCAN_MAX_PAGES; page += 1) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(REVISION_FIELD_SCAN_LIMIT),
+    });
+    const response = await apiFetch<unknown>(
+      `/specimens/${encodeURIComponent(specimenId)}/revisions?${params}`,
+      { method: "GET", cache: "no-store" },
+    );
+    const result = specimenRevisionPageSchema.safeParse(response);
+    if (!result.success) {
+      throw new Error("The backend returned an invalid specimen revision-history response.");
+    }
+
+    for (const revision of result.data.items) fields.add(revision.fieldChanged);
+    if (page * result.data.limit >= result.data.total) break;
+  }
+
+  return [...fields];
+}
+
+/** Read the tags currently attached to one specimen. */
+export async function listSpecimenTags(specimenId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenTagSchema.array().safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen-tag response.");
+  }
+
+  return result.data;
+}
+
+/** Search the reusable vocabulary without treating its extensible values as an enum. */
+export async function searchAvailableTags(search: string) {
+  const params = new URLSearchParams({ limit: "25" });
+  if (search) params.set("search", search);
+  const response = await apiFetch<unknown>(`/tags?${params}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = specimenTagSchema.array().safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid tag-vocabulary response.");
+  }
+
+  return result.data;
+}
+
+/** Create or reuse a vocabulary tag and attach it to the requested specimen. */
+export async function attachSpecimenTag(
+  specimenId: string,
+  input: AttachSpecimenTagInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  const result = attachSpecimenTagResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid attached-tag response.");
+  }
+
+  return result.data;
+}
+
+/**
+ * Swap one of a specimen's tags for another name in a single backend transaction, recorded
+ * as one revision (old name -> new name). The shared tag is never renamed for other specimens.
+ */
+export async function changeSpecimenTag(
+  specimenId: string,
+  tagId: string,
+  input: AttachSpecimenTagInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags/${encodeURIComponent(tagId)}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  const result = changeSpecimenTagResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid changed-tag response.");
+  }
+
+  return result.data;
+}
+
+/** Detach one specimen relationship; the shared vocabulary tag is retained. */
+export async function detachSpecimenTag(specimenId: string, tagId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/tags/${encodeURIComponent(tagId)}`,
+    { method: "DELETE" },
+  );
+  const result = detachSpecimenTagResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid detached-tag response.");
+  }
+
+  return result.data;
+}
+
+/** Read stable media metadata without exposing a permanent public object URL. */
+export async function listSpecimenMedia(specimenId: string, signal?: AbortSignal) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media`,
+    { method: "GET", cache: "no-store", signal },
+  );
+  const result = specimenMediaSchema.array().safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen-media response.");
+  }
+
+  return result.data;
+}
+
+/** Request a short-lived private image URL after backend ownership checks. */
+export async function getSpecimenMediaSignedUrl(specimenId: string, mediaId: string, signal?: AbortSignal) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/signed-url`,
+    { method: "GET", cache: "no-store", signal },
+  );
+  const result = specimenMediaSignedUrlSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen-media URL response.");
+  }
+
+  return result.data;
+}
+
+/** Forward an already validated multipart upload to the protected backend. */
+export async function createSpecimenMedia(specimenId: string, formData: FormData) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media`,
+    { method: "POST", body: formData },
+  );
+  const result = specimenMediaSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid uploaded-media response.");
+  }
+
+  return result.data;
+}
+
+export async function updateSpecimenMedia(
+  specimenId: string,
+  mediaId: string,
+  input: SpecimenMediaMetadataInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  const result = specimenMediaSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid updated-media response.");
+  }
+
+  return result.data;
+}
+
+export async function setSpecimenMediaCover(specimenId: string, mediaId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/cover`,
+    { method: "PATCH", body: JSON.stringify({}) },
+  );
+  const result = specimenMediaSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid cover-media response.");
+  }
+
+  return result.data;
+}
+
+export async function removeSpecimenMedia(specimenId: string, mediaId: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}`,
+    { method: "DELETE" },
+  );
+  const result = removeSpecimenMediaResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid removed-media response.");
+  }
+
+  return result.data;
+}
+
+/** Replace only the private object while preserving its metadata relationship. */
+export async function replaceSpecimenMediaFile(
+  specimenId: string,
+  mediaId: string,
+  formData: FormData,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/media/${encodeURIComponent(mediaId)}/file`,
+    { method: "PUT", body: formData },
+  );
+  const result = replaceSpecimenMediaResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid replacement-media response.");
+  }
+
+  return result.data;
+}
+
+export async function createSpecimen(input: SpecimenMutationInput) {
+  const response = await apiFetch<unknown>("/specimens", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  // Keep possibleDuplicates and duplicateCheckAvailable: dropping them would make a failed
+  // post-save duplicate lookup look the same as "no duplicates found".
+  const result = specimenCreateResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid created specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Warn about possible duplicates of unsaved values; nothing is saved (REQ-4.4-21). */
+export async function checkSpecimenDuplicates(input: DuplicateCheckInput) {
+  const response = await apiFetch<unknown>("/specimens/duplicate-check", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const result = specimenDuplicateCheckResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid duplicate-check response.");
+  }
+
+  return result.data;
+}
+
+/** Re-check a saved specimen, including its provenance, for possible duplicates. */
+export async function getSpecimenPossibleDuplicates(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/possible-duplicates`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = specimenDuplicateCheckResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid possible-duplicates response.");
+  }
+
+  return result.data;
+}
+
+export async function updateSpecimen(id: string, input: SpecimenMutationInput) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid updated specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Archive a catalog record through the backend's preserve-history operation. */
+export async function archiveSpecimen(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/archive`,
+    { method: "PATCH" },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid archived specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Restore the same record; NestJS decides its status without changing any inventory. */
+export async function restoreSpecimen(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/restore`,
+    { method: "PATCH" },
+  );
+  const result = specimenRestoreResultSchema.safeParse(response);
+  if (!result.success) {
+    throw new Error("The backend returned an invalid restored specimen response.");
+  }
+  return result.data;
+}
+
+/** Read each catalog-completion rule and whether it passes (works for any status). */
+export async function getCatalogReadiness(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/catalog-readiness`,
+    { method: "GET", cache: "no-store" },
+  );
+  const result = catalogReadinessSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid catalog-readiness response.");
+  }
+
+  return result.data;
+}
+
+/** Promote a complete Uncataloged specimen to Cataloged; the backend re-checks every rule. */
+export async function completeCataloging(id: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/complete-cataloging`,
+    { method: "PATCH" },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid cataloged specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Return a Cataloged specimen to Uncataloged for correction; the reason is audited. */
+export async function reopenCataloging(id: string, reason: string) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/reopen-cataloging`,
+    { method: "PATCH", body: JSON.stringify({ reason }) },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid reopened specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Change public eligibility only; this does not publish an exhibit or internal record. */
+export async function setSpecimenPublicDisplay(id: string, publicDisplay: boolean) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(id)}/public-display`,
+    { method: "PATCH", body: JSON.stringify({ publicDisplay }) },
+  );
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid public-display response.");
+  }
+
+  return result.data;
+}
+
+async function mutateTaxonomy(
+  specimenId: string,
+  method: "POST" | "PATCH",
+  input: TaxonomyMutationInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/taxonomy`,
+    { method, body: JSON.stringify(input) },
+  );
+  const result = specimenTaxonomySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen taxonomy response.");
+  }
+
+  return result.data;
+}
+
+export function createSpecimenTaxonomy(specimenId: string, input: TaxonomyMutationInput) {
+  return mutateTaxonomy(specimenId, "POST", input);
+}
+
+export function updateSpecimenTaxonomy(specimenId: string, input: TaxonomyMutationInput) {
+  return mutateTaxonomy(specimenId, "PATCH", input);
+}
+
+async function mutateProvenance(
+  specimenId: string,
+  method: "POST" | "PATCH",
+  input: ProvenanceMutationInput,
+) {
+  const response = await apiFetch<unknown>(
+    `/specimens/${encodeURIComponent(specimenId)}/provenance`,
+    { method, body: JSON.stringify(input) },
+  );
+  const result = specimenProvenanceSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid specimen provenance response.");
+  }
+
+  return result.data;
+}
+
+export function createSpecimenProvenance(
+  specimenId: string,
+  input: ProvenanceMutationInput,
+) {
+  return mutateProvenance(specimenId, "POST", input);
+}
+
+export function updateSpecimenProvenance(
+  specimenId: string,
+  input: ProvenanceMutationInput,
+) {
+  return mutateProvenance(specimenId, "PATCH", input);
+}
+
+/** Advisory check for the core form; create/update enforce the same rule (REQ-4.4-04). */
+export async function checkAccessionNumber(accessionNumber: string, excludeSpecimenId?: string) {
+  const params = new URLSearchParams({ accessionNumber });
+  if (excludeSpecimenId) params.set("excludeSpecimenId", excludeSpecimenId);
+  const response = await apiFetch<unknown>(`/specimens/accession-number-availability?${params}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = accessionNumberAvailabilitySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid accession-number availability response.");
+  }
+
+  return result.data;
+}

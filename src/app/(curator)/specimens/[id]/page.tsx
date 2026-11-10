@@ -1,0 +1,170 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
+import { SpecimenFullDetails } from "@/components/specimens/SpecimenFullDetails";
+import { SpecimenCatalogPanel } from "@/components/specimens/SpecimenCatalogPanel";
+import { SpecimenSavedDuplicates } from "@/components/specimens/SpecimenSavedDuplicates";
+import { SpecimenLifecyclePanel } from "@/components/specimens/SpecimenLifecyclePanel";
+import { getCatalogReadiness, getSpecimenDetails } from "@/features/specimens/api";
+import { duplicateRecheckTrigger } from "@/features/specimens/duplicates";
+import { ApiError } from "@/lib/api-client";
+import { verifySession } from "@/lib/session";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { PAGE_ACTION_PRIMARY, PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
+
+const STATUS_LABELS = { UNCATALOGED: "Uncataloged", CATALOGED: "Cataloged", ARCHIVED: "Archived" } as const;
+const STATUS_TONES: Record<keyof typeof STATUS_LABELS, BadgeTone> = {
+  UNCATALOGED: "warning",
+  CATALOGED: "success",
+  ARCHIVED: "neutral",
+};
+
+export const metadata: Metadata = {
+  title: "Specimen Details",
+};
+
+type SpecimenDetailsPageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function specimenNotice(params: Record<string, string | string[] | undefined>) {
+  const lifecycle = firstValue(params.lifecycle);
+  if (lifecycle === "public-enabled") return "The specimen is now eligible for public display.";
+  if (lifecycle === "public-disabled") return "Public-display eligibility was removed.";
+  if (lifecycle === "archived") return "The specimen was archived and public eligibility was disabled.";
+  if (lifecycle === "restored-cataloged") return "The specimen was restored as Cataloged after revalidation. Public display is off.";
+  if (lifecycle === "restored-uncataloged") return "The specimen was restored as Uncataloged. Public display is off. Complete the missing requirements below.";
+  if (lifecycle === "restore-unchanged") return "This specimen was already active. Restoration did not change its status, public eligibility, or history.";
+  if (lifecycle === "cataloged") {
+    return "The specimen is now Cataloged and can be marked eligible for public display.";
+  }
+  if (lifecycle === "reopened") {
+    return "Cataloging was reopened. The specimen is Uncataloged again and public display is off.";
+  }
+  if (firstValue(params.created) === "1") return "The uncataloged specimen draft was created.";
+  if (firstValue(params.updated) === "1") return "The specimen core record was updated.";
+  if (firstValue(params.taxonomy) === "created") return "The specimen taxonomy record was created.";
+  if (firstValue(params.taxonomy) === "updated") return "The specimen taxonomy record was updated.";
+  if (firstValue(params.provenance) === "created") return "The specimen provenance record was created.";
+  if (firstValue(params.provenance) === "updated") return "The specimen provenance record was updated.";
+  if (firstValue(params.lot) === "created") {
+    return "The specimen lot and its initial quantity history were created.";
+  }
+  return null;
+}
+
+export default async function SpecimenDetailsPage({
+  params,
+  searchParams,
+}: SpecimenDetailsPageProps) {
+  const { id } = await params;
+  if (!z.uuid().safeParse(id).success) notFound();
+
+  const user = await verifySession();
+  if (!user) redirect(`/login?from=${encodeURIComponent(`/specimens/${id}`)}`);
+
+  let detail;
+  try {
+    detail = await getSpecimenDetails(id);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) notFound();
+
+    return (
+      <div className="space-y-5">
+        <Link href="/specimens" className="text-sm font-semibold text-forest-800 hover:underline">
+          ← All specimens
+        </Link>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+          <p className="font-semibold">This specimen could not be loaded.</p>
+          <p className="mt-1 text-amber-900">
+            Check your connection and try again. Existing catalog data was not replaced or changed.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Readiness drives the Uncataloged checklist and archived restore preview. It is advisory: if it fails to load, the
+  // panel still renders and the backend re-checks every requirement on submit.
+  const readiness =
+    detail.specimen.status !== "CATALOGED"
+      ? await getCatalogReadiness(id).catch(() => null)
+      : null;
+
+  const title =
+    detail.specimen.accessionNumber ??
+    detail.specimen.scientificName ??
+    detail.specimen.commonName ??
+    "Unnamed specimen";
+  const noticeParams = await searchParams;
+  const savedNotice = specimenNotice(noticeParams);
+  // Saves that can change the duplicate result trigger a fresh backend check.
+  const duplicateRecheck = duplicateRecheckTrigger(noticeParams);
+
+  return (
+    <div className="space-y-5">
+      <Link href="/specimens" className="text-sm font-medium text-forest-800 hover:underline">
+        ← All specimens
+      </Link>
+
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-serif text-2xl font-semibold text-forest-800">
+              {detail.specimen.commonName ?? title}
+            </h1>
+            <Badge tone={STATUS_TONES[detail.specimen.status]}>{STATUS_LABELS[detail.specimen.status]}</Badge>
+          </div>
+          <p className="mt-1 text-sm text-zinc-600">
+            {detail.specimen.scientificName && <span className="italic">{detail.specimen.scientificName}</span>}
+            {detail.specimen.scientificName && " · "}
+            Accession no. {detail.specimen.accessionNumber ?? "not assigned yet"}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/specimens/${id}/history`} className={PAGE_ACTION_SECONDARY}>
+            Change history
+          </Link>
+          {detail.specimen.status !== "ARCHIVED" && (
+            <Link href={`/specimens/${id}/edit`} className={PAGE_ACTION_PRIMARY}>
+              Edit basic details
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {savedNotice && (
+        <div
+          role="status"
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
+        >
+          {savedNotice}
+        </div>
+      )}
+
+      {duplicateRecheck && (
+        <SpecimenSavedDuplicates specimenId={id} trigger={duplicateRecheck} />
+      )}
+
+      <SpecimenCatalogPanel
+        specimenId={id}
+        status={detail.specimen.status}
+        readiness={readiness}
+      />
+
+      <SpecimenLifecyclePanel
+        specimen={detail.specimen}
+        activeLotCount={detail.lotOverview.activeLotCount}
+        readiness={readiness}
+      />
+
+      <SpecimenFullDetails detail={detail} />
+    </div>
+  );
+}

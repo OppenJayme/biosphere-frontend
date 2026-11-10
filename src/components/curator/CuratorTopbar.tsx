@@ -1,9 +1,37 @@
-import { SearchIcon, BellIcon, ChevronDownIcon, MenuIcon } from "@/components/icons";
-import { CURATOR, SYNC_STATUS } from "@/lib/dummy-data/dashboard";
+"use client";
 
-export function CuratorTopbar({ onMenuClick }: { onMenuClick: () => void }) {
+import { MenuIcon, SearchIcon } from "@/components/icons";
+import { AccountMenu } from "./AccountMenu";
+import { NotificationBell } from "./NotificationBell";
+import { useSyncStatus } from "@/features/offline/use-sync-status";
+
+function formatLastSynced(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(diffMs / 60_000);
+  if (minutes < 1) return "Last sync just now";
+  if (minutes < 60) return `Last sync ${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Last sync ${hours}h ago`;
+  return `Last sync ${Math.round(hours / 24)}d ago`;
+}
+
+export function CuratorTopbar({
+  onMenuClick,
+  onToggleCollapse,
+  sidebarCollapsed,
+  ownerId,
+  profile,
+}: {
+  onMenuClick: () => void;
+  onToggleCollapse: () => void;
+  sidebarCollapsed: boolean;
+  ownerId: string;
+  profile: { fullName: string; role: string } | null;
+}) {
+  const { online, lastSyncedAt } = useSyncStatus(ownerId);
+
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-black/10 bg-white/95 px-5 py-3.5 backdrop-blur">
+    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-black/10 bg-white/95 px-5 py-3 backdrop-blur">
       <button
         type="button"
         onClick={onMenuClick}
@@ -12,45 +40,50 @@ export function CuratorTopbar({ onMenuClick }: { onMenuClick: () => void }) {
       >
         <MenuIcon className="h-6 w-6" />
       </button>
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!sidebarCollapsed}
+        title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className="hidden rounded-lg p-1.5 text-zinc-600 hover:bg-sage-100 hover:text-forest-800 lg:block"
+      >
+        <MenuIcon className="h-5 w-5" />
+      </button>
 
-      <div className="relative hidden max-w-xl flex-1 sm:block">
-        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      {/* Global search (SRS 3.1.3 "search access"): a plain GET form, so it works without JavaScript. */}
+      <form action="/specimens" role="search" className="relative hidden w-full max-w-md md:block">
+        <label htmlFor="global-search" className="sr-only">
+          Search specimens
+        </label>
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
         <input
+          id="global-search"
           type="search"
-          placeholder="Search accession no, scientific name, collector, location..."
-          className="w-full rounded-lg border border-black/15 py-2 pl-10 pr-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+          name="search"
+          maxLength={100}
+          placeholder="Search specimens by name or accession no.…"
+          className="w-full rounded-lg border border-black/10 bg-sage-50 py-2 pr-3 pl-9 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-forest-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-forest-700"
         />
-      </div>
+      </form>
 
-      <div className="ml-auto flex items-center gap-5">
-        <div className="hidden flex-col items-end text-xs leading-tight md:flex">
-          <span className="flex items-center gap-1.5 text-zinc-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-forest-600" />
-            {SYNC_STATUS.lastSyncLabel}
+      <div className="ml-auto flex items-center gap-4">
+        <span
+          title={lastSyncedAt ? formatLastSynced(lastSyncedAt) : "No offline copy saved on this device yet"}
+          className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${
+            online ? "bg-forest-100 text-forest-800" : "bg-zinc-200 text-zinc-700"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-forest-600" : "bg-zinc-500"}`} />
+          {online ? "Online" : "Offline"}
+          <span className="font-normal text-zinc-500">
+            · {lastSyncedAt ? formatLastSynced(lastSyncedAt).replace("Last sync ", "synced ") : "not synced yet"}
           </span>
-          {SYNC_STATUS.offlineReady && (
-            <span className="flex items-center gap-1.5 text-forest-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-forest-600" />
-              Offline-ready
-            </span>
-          )}
-        </div>
+        </span>
 
-        <button type="button" aria-label="Notifications" className="relative text-zinc-600">
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-        </button>
+        <NotificationBell ownerId={ownerId} />
 
-        <button type="button" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-700 text-xs font-semibold text-white">
-            {CURATOR.initials}
-          </span>
-          <span className="hidden flex-col items-start leading-tight sm:flex">
-            <span className="text-[11px] text-zinc-500">{CURATOR.role}</span>
-            <span className="text-sm font-semibold text-forest-900">{CURATOR.name}</span>
-          </span>
-          <ChevronDownIcon className="hidden h-4 w-4 text-zinc-400 sm:block" />
-        </button>
+        <AccountMenu profile={profile} />
       </div>
     </header>
   );

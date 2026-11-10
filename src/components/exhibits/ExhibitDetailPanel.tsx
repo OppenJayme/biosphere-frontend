@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type ComponentType, type ReactNode, type SVGProps } from "react";
+import { useEffect, useState, useTransition, type ComponentType, type ReactNode, type SVGProps } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { LogoMark } from "@/components/layout/LogoMark";
 import {
   ExternalLinkIcon,
   PrinterIcon,
@@ -12,25 +12,74 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   LinkIcon,
-  QrCodeIcon,
-  CubeIcon,
-  MapPinIcon,
   ClockIcon,
+  GridIcon,
+  ImageIcon,
+  ArchiveIcon,
+  CalendarIcon,
+  CubeIcon,
+  SparkleIcon,
 } from "@/components/icons";
-import type { Exhibit } from "@/lib/dummy-data/exhibits";
+import {
+  changeExhibitStatusAction,
+  loadExhibitMediaAction,
+  replaceExhibitUrlAction,
+  setExhibitArAction,
+  setExhibitArSelectionAction,
+  type ExhibitMediaResult,
+} from "@/features/exhibits-qr/actions";
+import type { ExhibitLifecycleCommand, ExhibitQrFile } from "@/features/exhibits-qr/api";
+import { AR_SELECTION_NOTE_MAX_LENGTH, SLUG_MAX_LENGTH } from "@/features/exhibits-qr/form";
+import { EXHIBIT_STATUS_LABELS, exhibitDisplayName, type ExhibitRow } from "@/features/exhibits-qr/types";
+import { formatExhibitDate, layoutLabel, STATUS_STYLES } from "./exhibit-format";
+import type { ExhibitNotice } from "./ExhibitsWorkspace";
 
-const PUBLISH_STYLES: Record<Exhibit["publishStatus"], string> = {
-  Published: "bg-forest-100 text-forest-700",
-  Draft: "bg-zinc-100 text-zinc-600",
-  "Needs Review": "bg-amber-100 text-amber-700",
-};
+/** Covers the photo frame while a photo downloads; the previous/next buttons stay usable above it. */
+function PhotoLoading() {
+  return (
+    <div role="status" className="absolute inset-0 flex flex-col items-center justify-center bg-sage-100 px-10 text-center">
+      <LogoMark className="h-10 w-10 motion-safe:animate-[loading-breathe_1.8s_ease-in-out_infinite]" />
+      <p className="mt-2 text-xs font-semibold text-forest-900">Loading photo…</p>
+      <div className="mt-2 h-1 w-full max-w-32 overflow-hidden rounded-full bg-forest-100">
+        <div className="h-full w-2/5 rounded-full bg-forest-700 motion-safe:animate-[loading-bar_1.2s_ease-in-out_infinite] motion-reduce:w-full motion-reduce:animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
-function Carousel({ images, alt }: { images: string[]; alt: string }) {
+function Carousel({ images, alt }: { images: { mediaUrl: string; caption: string | null }[]; alt: string }) {
   const [index, setIndex] = useState(0);
+  // Remembered per photo: one already downloaded shows straight away when revisited.
+  const [photoStatus, setPhotoStatus] = useState<Record<string, "loaded" | "failed">>({});
+  const image = images[index];
+  const status = photoStatus[image.mediaUrl];
+  const settle = (next: "loaded" | "failed") =>
+    setPhotoStatus((current) => ({ ...current, [image.mediaUrl]: next }));
 
   return (
     <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-sage-100">
-      <Image src={images[index]} alt={alt} fill sizes="320px" className="object-cover" />
+      {/* Short-lived signed storage links, so next/image optimisation is not used. */}
+      {/* The key replaces the element, so the previous photo never lingers as if nothing happened. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={image.mediaUrl}
+        src={image.mediaUrl}
+        alt={image.caption ?? alt}
+        decoding="async"
+        onLoad={() => settle("loaded")}
+        onError={() => settle("failed")}
+        className="h-full w-full object-cover"
+      />
+      {!status && <PhotoLoading />}
+      {status === "failed" && (
+        <div
+          role="alert"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-sage-100 px-10 text-center text-xs text-zinc-600"
+        >
+          <ImageIcon className="h-6 w-6 text-forest-700/60" />
+          This photo could not be loaded.
+        </div>
+      )}
       {images.length > 1 && (
         <>
           <button
@@ -58,6 +107,24 @@ function Carousel({ images, alt }: { images: string[]; alt: string }) {
   );
 }
 
+function MediaPreview({ media, alt }: { media: ExhibitMediaResult | null; alt: string }) {
+  if (media && media.previews.length > 0) return <Carousel images={media.previews} alt={alt} />;
+
+  let text = "Loading images…";
+  if (media?.message) text = media.message;
+  else if (media && media.media.length === 0) text = "No images uploaded yet.";
+  else if (media) {
+    text = `${media.media.length} image${media.media.length === 1 ? "" : "s"} uploaded. Images can be previewed here once the exhibit is published.`;
+  }
+
+  return (
+    <div className="flex aspect-4/3 flex-col items-center justify-center gap-2 rounded-lg bg-sage-100 px-6 text-center text-xs text-zinc-500">
+      <ImageIcon className="h-6 w-6 text-forest-700/60" />
+      {text}
+    </div>
+  );
+}
+
 function InfoRow({
   icon: Icon,
   label,
@@ -73,21 +140,316 @@ function InfoRow({
         <Icon className="h-3.5 w-3.5 shrink-0" />
         {label}
       </span>
-      <span className="text-right font-medium text-zinc-800">{children}</span>
+      <span className="text-right font-medium break-all text-zinc-800">{children}</span>
     </div>
   );
 }
 
+async function responseMessage(response: Response, fallback: string) {
+  try {
+    const body: unknown = await response.json();
+    if (body && typeof body === "object" && "message" in body && typeof body.message === "string") return body.message;
+  } catch {
+    // Fall through to the fallback.
+  }
+  return fallback;
+}
+
+/** Fetches a QR file through the same-origin route so failures (e.g. no public site URL) are reported. */
+async function fetchQrFile(exhibitId: string, file: ExhibitQrFile) {
+  const response = await fetch(`/api/exhibits/${exhibitId}/qr?file=${file}`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(await responseMessage(response, "The QR code could not be generated. Try again."));
+  }
+  return response.blob();
+}
+
+const QR_FILE_NAMES: Record<ExhibitQrFile, (slug: string) => string> = {
+  "qr-png": (slug) => `${slug}-qr.png`,
+  "qr-svg": (slug) => `${slug}-qr.svg`,
+  label: (slug) => `${slug}-label.svg`,
+};
+
+function saveBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Prints the label from a hidden frame. The SVG is shown through <img>, which never runs
+ * scripts, and sized to a typical 10 cm label.
+ */
+function printBlob(blob: Blob, title: string) {
+  const url = URL.createObjectURL(blob);
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.cssText = "position:fixed;width:0;height:0;border:0;visibility:hidden";
+  const cleanup = () => {
+    frame.remove();
+    URL.revokeObjectURL(url);
+  };
+  frame.onload = () => {
+    const view = frame.contentWindow;
+    const image = frame.contentDocument?.querySelector("img");
+    if (!view || !image) return cleanup();
+    const print = () => {
+      view.addEventListener("afterprint", () => setTimeout(cleanup, 0), { once: true });
+      view.focus();
+      view.print();
+    };
+    if (image.complete) print();
+    else image.addEventListener("load", print, { once: true });
+  };
+  const safeTitle = title.replace(/[<>&"]/g, "");
+  frame.srcdoc = `<!doctype html><title>${safeTitle}</title><style>@page{margin:1cm}html,body{margin:0}img{width:10cm;height:auto;display:block;margin:0 auto}</style><img src="${url}" alt="">`;
+  document.body.append(frame);
+}
+
+/**
+ * Curator marks an exhibit for AR preparation (REQ-4.13-02). The listed considerations come from
+ * SRS 4.13.1 and are guidance only: nothing is scored or ranked (REQ-4.13-08). The note is shown
+ * to the developer who deploys the model.
+ */
+function ArSelectionForm({
+  exhibit,
+  onDone,
+  onNotice,
+}: {
+  exhibit: ExhibitRow;
+  onDone: () => void;
+  onNotice: (notice: ExhibitNotice) => void;
+}) {
+  const [note, setNote] = useState(exhibit.arSelectionNote ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const unchanged = exhibit.arSelected && note.trim() === (exhibit.arSelectionNote ?? "");
+
+  function submit() {
+    startTransition(async () => {
+      const result = await setExhibitArSelectionAction(exhibit.id, exhibit.publicSlug, true, note);
+      if (!result.ok) {
+        setError(result.message ?? "The AR selection could not be saved.");
+        return;
+      }
+      onNotice({ tone: "success", message: result.message ?? "AR selection saved." });
+      onDone();
+    });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-forest-700/20 bg-forest-50 p-3 text-xs text-zinc-700">
+      <label htmlFor="ar-selection-note" className="block font-semibold text-zinc-800">
+        Reason for AR (optional, shown to the developer)
+      </label>
+      <textarea
+        id="ar-selection-note"
+        rows={3}
+        value={note}
+        maxLength={AR_SELECTION_NOTE_MAX_LENGTH}
+        onChange={(e) => {
+          setNote(e.target.value);
+          setError(null);
+        }}
+        placeholder="e.g. Endemic species featured in the Grade 7 biodiversity tour"
+        className="w-full resize-none rounded-lg border border-black/15 bg-white px-2.5 py-2 text-zinc-900 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
+      />
+      <p className="text-zinc-500">
+        You may consider its research or educational objective, conservation status, rarity, endemism, exotic or
+        invasive status, and economic or ecological value. The choice is yours; BioSphere does not score
+        specimens.
+      </p>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={pending || unchanged}
+          onClick={submit}
+          className="flex-1 rounded-lg bg-forest-700 px-3 py-2 font-semibold text-white hover:bg-forest-800 disabled:opacity-50"
+        >
+          {pending ? "Saving…" : exhibit.arSelected ? "Save note" : "Mark for AR"}
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onDone}
+          className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Curator switch for developer-uploaded AR models; unavailable until marked for AR and a model is uploaded. */
+function ArSwitch({
+  exhibit,
+  pending,
+  onChange,
+}: {
+  exhibit: ExhibitRow;
+  pending: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  const unavailable = !exhibit.arSelected || exhibit.arAssetCount === 0;
+  return (
+    <span className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={exhibit.arEnabled}
+        aria-label="View in AR on the public page"
+        disabled={pending || unavailable}
+        onClick={() => onChange(!exhibit.arEnabled)}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          exhibit.arEnabled ? "bg-forest-700" : "bg-zinc-300"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+            exhibit.arEnabled ? "translate-x-4.5" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+      <span className="text-[11px] font-normal text-zinc-500">
+        {!exhibit.arSelected
+          ? "Mark for AR first"
+          : exhibit.arAssetCount === 0
+          ? "Waiting for a developer to upload a model"
+          : `${exhibit.arEnabled ? "On" : "Off"} · ${exhibit.arAssetCount} model${exhibit.arAssetCount === 1 ? "" : "s"}`}
+      </span>
+    </span>
+  );
+}
+
+/** Deliberate URL replacement. Printed QR labels for the old URL stop working (REQ-4.12-10). */
+function ReplaceUrlForm({
+  exhibit,
+  onDone,
+  onNotice,
+}: {
+  exhibit: ExhibitRow;
+  onDone: () => void;
+  onNotice: (notice: ExhibitNotice) => void;
+}) {
+  const [slug, setSlug] = useState(exhibit.publicSlug);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const unchanged = slug.trim() === exhibit.publicSlug;
+
+  function submit(formData: FormData) {
+    startTransition(async () => {
+      const result = await replaceExhibitUrlAction(exhibit.id, exhibit.publicSlug, formData);
+      if (!result.ok) {
+        setError(result.message ?? "The URL could not be replaced.");
+        return;
+      }
+      onNotice({ tone: "success", message: result.message ?? "Public URL replaced." });
+      onDone();
+    });
+  }
+
+  return (
+    <form action={submit} className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+      <label htmlFor="replace-slug" className="block font-semibold">
+        New URL ending
+      </label>
+      <div className="flex items-center rounded-lg border border-black/15 bg-white focus-within:border-forest-700 focus-within:ring-1 focus-within:ring-forest-700">
+        <span className="pl-2.5 text-zinc-400">/exhibits/</span>
+        <input
+          id="replace-slug"
+          name="publicSlug"
+          value={slug}
+          maxLength={SLUG_MAX_LENGTH}
+          onChange={(e) => {
+            setSlug(e.target.value);
+            setError(null);
+          }}
+          autoComplete="off"
+          className="w-full rounded-r-lg py-2 pr-2.5 text-zinc-900 focus:outline-none"
+        />
+      </div>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+      <p>
+        QR labels already printed for /exhibits/{exhibit.publicSlug} will stop working. Print new labels after
+        replacing the URL.
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={pending || unchanged}
+          className="flex-1 rounded-lg bg-amber-600 px-3 py-2 font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+        >
+          {pending ? "Replacing…" : "Replace URL"}
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onDone}
+          className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+const secondaryButton =
+  "flex items-center justify-center gap-2 rounded-lg border border-black/15 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-sage-100 disabled:cursor-not-allowed disabled:text-zinc-400 disabled:hover:bg-transparent";
+
 export function ExhibitDetailPanel({
   exhibit,
   onClear,
+  onEdit,
+  onNotice,
+  onArchived,
 }: {
-  exhibit: Exhibit | null;
+  exhibit: ExhibitRow | null;
   onClear: () => void;
+  onEdit: (id: string) => void;
+  onNotice: (notice: ExhibitNotice) => void;
+  onArchived: () => void;
 }) {
+  const [media, setMedia] = useState<ExhibitMediaResult | null>(null);
+  const [confirm, setConfirm] = useState<"archive" | "disable" | null>(null);
+  const [replacingUrl, setReplacingUrl] = useState(false);
+  const [editingArSelection, setEditingArSelection] = useState(false);
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [qrBusy, setQrBusy] = useState<ExhibitQrFile | "print" | null>(null);
+  const [pending, startTransition] = useTransition();
+  const exhibitId = exhibit?.id;
+  const status = exhibit?.status;
+
+  // Reload when the status changes too: preview links exist only while published.
+  useEffect(() => {
+    if (!exhibitId) return;
+    let cancelled = false;
+    loadExhibitMediaAction(exhibitId).then((result) => {
+      if (!cancelled) setMedia(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [exhibitId, status]);
+
   if (!exhibit) {
     return (
-      <div className="rounded-xl border border-black/10 bg-white p-4">
+      <div className="rounded-xl border border-black/10 bg-white p-5">
         <h3 className="mb-3 text-sm font-semibold text-zinc-900">Selected Exhibit</h3>
         <p className="py-6 text-center text-xs text-zinc-500">
           Select an exhibit from the table to see its details here.
@@ -96,8 +458,52 @@ export function ExhibitDetailPanel({
     );
   }
 
+  const name = exhibitDisplayName(exhibit);
+  const current = exhibit;
+
+  function run(command: ExhibitLifecycleCommand) {
+    startTransition(async () => {
+      const result = await changeExhibitStatusAction(current.id, current.publicSlug, command);
+      onNotice({ tone: result.ok ? "success" : "error", message: result.message ?? "The exhibit could not be changed." });
+      if (result.ok && command === "archive") onArchived();
+      setConfirm(null);
+    });
+  }
+
+  function withdrawArSelection() {
+    startTransition(async () => {
+      const result = await setExhibitArSelectionAction(current.id, current.publicSlug, false, "");
+      onNotice({ tone: result.ok ? "success" : "error", message: result.message ?? "The AR selection could not be changed." });
+      setConfirmWithdraw(false);
+    });
+  }
+
+  function toggleAr(enabled: boolean) {
+    startTransition(async () => {
+      const result = await setExhibitArAction(current.id, current.publicSlug, enabled);
+      onNotice({ tone: result.ok ? "success" : "error", message: result.message ?? "AR could not be changed." });
+    });
+  }
+
+  async function qrFile(file: ExhibitQrFile, mode: "download" | "print") {
+    if (qrBusy) return;
+    setQrBusy(mode === "print" ? "print" : file);
+    try {
+      const blob = await fetchQrFile(current.id, file);
+      if (mode === "print") printBlob(blob, `${name} label`);
+      else saveBlob(blob, QR_FILE_NAMES[file](current.publicSlug));
+    } catch (error) {
+      onNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "The QR code could not be generated. Try again.",
+      });
+    } finally {
+      setQrBusy(null);
+    }
+  }
+
   return (
-    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-4">
+    <div className="space-y-4 rounded-xl border border-black/10 bg-white p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-zinc-900">Selected Exhibit</h3>
         <button
@@ -110,56 +516,129 @@ export function ExhibitDetailPanel({
         </button>
       </div>
 
-      <Carousel images={exhibit.images} alt={exhibit.commonName} />
+      <MediaPreview media={media} alt={name} />
 
       <div>
-        <p className="text-sm font-semibold text-zinc-900">{exhibit.commonName}</p>
-        <p className="text-xs italic text-zinc-500">{exhibit.scientificName}</p>
+        <p className="text-sm font-semibold text-zinc-900">{name}</p>
+        {exhibit.specimen?.scientificName && (
+          <p className="text-xs italic text-zinc-500">{exhibit.specimen.scientificName}</p>
+        )}
       </div>
 
       <div className="divide-y divide-black/5 border-t border-black/5">
-        <InfoRow icon={LinkIcon} label="Public Slug">
-          {exhibit.slug}
+        <InfoRow icon={LinkIcon} label="Public URL">
+          {exhibit.publicUrl ?? `/exhibits/${exhibit.publicSlug}`}
+          {!replacingUrl && (
+            <button
+              type="button"
+              onClick={() => setReplacingUrl(true)}
+              className="mt-0.5 block w-full text-right text-[11px] font-semibold text-forest-700 underline hover:text-forest-800"
+            >
+              Replace URL
+            </button>
+          )}
         </InfoRow>
-        <InfoRow icon={QrCodeIcon} label="QR Status">
-          <span
-            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              exhibit.qrEnabled ? "bg-forest-100 text-forest-700" : "bg-zinc-100 text-zinc-500"
-            }`}
-          >
-            {exhibit.qrEnabled ? "QR Enabled" : "Not Generated"}
-          </span>
-        </InfoRow>
-        <InfoRow icon={CubeIcon} label="AR Availability">
-          <span
-            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              exhibit.arEnabled ? "bg-forest-100 text-forest-700" : "bg-zinc-100 text-zinc-500"
-            }`}
-          >
-            {exhibit.arEnabled ? "AR Available" : "No AR"}
-          </span>
-        </InfoRow>
+        {replacingUrl && (
+          <div className="py-2">
+            <ReplaceUrlForm exhibit={exhibit} onDone={() => setReplacingUrl(false)} onNotice={onNotice} />
+          </div>
+        )}
         <InfoRow icon={PencilIcon} label="Publish Status">
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${PUBLISH_STYLES[exhibit.publishStatus]}`}>
-            {exhibit.publishStatus}
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLES[exhibit.status]}`}>
+            {EXHIBIT_STATUS_LABELS[exhibit.status]}
           </span>
+        </InfoRow>
+        <InfoRow icon={GridIcon} label="Page Layout">
+          {layoutLabel(exhibit.layoutType)}
+        </InfoRow>
+        <InfoRow icon={CalendarIcon} label="Published">
+          {formatExhibitDate(exhibit.publishedAt)}
         </InfoRow>
         <InfoRow icon={ClockIcon} label="Last Updated">
-          <span className="block">
-            {exhibit.updatedAt}
-            <br />
-            {exhibit.updatedBy}
-          </span>
+          {formatExhibitDate(exhibit.updatedAt)}
         </InfoRow>
-        <InfoRow icon={MapPinIcon} label="Primary Location">
-          {exhibit.primaryLocation}
+        <InfoRow icon={SparkleIcon} label="AR Selection">
+          {exhibit.arSelected ? (
+            <>
+              <span className="rounded-full bg-forest-100 px-2 py-0.5 text-[11px] font-medium text-forest-700">
+                Marked for AR
+              </span>
+              <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
+                Since {formatExhibitDate(exhibit.arSelectedAt)}
+              </span>
+            </>
+          ) : (
+            <span className="font-normal text-zinc-500">Not selected</span>
+          )}
+          {!editingArSelection && !confirmWithdraw && (
+            <span className="mt-0.5 flex justify-end gap-3 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setEditingArSelection(true)}
+                className="font-semibold text-forest-700 underline hover:text-forest-800"
+              >
+                {exhibit.arSelected ? "Edit note" : "Mark for AR"}
+              </button>
+              {exhibit.arSelected && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setConfirmWithdraw(true)}
+                  className="font-semibold text-red-600 underline hover:text-red-700 disabled:opacity-50"
+                >
+                  Withdraw
+                </button>
+              )}
+            </span>
+          )}
+        </InfoRow>
+        {exhibit.arSelected && exhibit.arSelectionNote && !editingArSelection && (
+          <p className="py-2 text-xs whitespace-pre-line text-zinc-600">
+            <span className="font-semibold text-zinc-700">Reason: </span>
+            {exhibit.arSelectionNote}
+          </p>
+        )}
+        {editingArSelection && (
+          <div className="py-2">
+            <ArSelectionForm exhibit={exhibit} onDone={() => setEditingArSelection(false)} onNotice={onNotice} />
+          </div>
+        )}
+        {confirmWithdraw && (
+          <div className="my-2 space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            <p>
+              Withdraw the AR selection?{exhibit.arEnabled && " View in AR turns off on the public page."} Developers
+              can no longer deploy or activate models for this exhibit. Uploaded models are kept until a developer
+              removes them.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={withdrawArSelection}
+                className="flex-1 rounded-lg bg-red-600 px-3 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {pending ? "Withdrawing…" : "Withdraw"}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setConfirmWithdraw(false)}
+                className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        <InfoRow icon={CubeIcon} label="View in AR">
+          <ArSwitch exhibit={exhibit} pending={pending} onChange={toggleAr} />
         </InfoRow>
       </div>
 
       <div className="space-y-2 pt-1">
-        {exhibit.publishStatus === "Published" ? (
+        {exhibit.status === "PUBLISHED" ? (
           <Link
-            href={`/exhibits/${exhibit.slug}`}
+            href={`/exhibits/${exhibit.publicSlug}`}
             target="_blank"
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-700 hover:bg-forest-50"
           >
@@ -170,35 +649,155 @@ export function ExhibitDetailPanel({
           <button
             type="button"
             disabled
+            title="Only published exhibits have a public page."
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-black/10 px-4 py-2.5 text-sm font-semibold text-zinc-400"
           >
             <ExternalLinkIcon className="h-4 w-4" />
             Preview Public Page
           </button>
         )}
+
+        {exhibit.status === "UNPUBLISHED" && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run("publish")}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:opacity-50"
+          >
+            {pending ? "Working…" : "Publish Exhibit"}
+          </button>
+        )}
+
+        {exhibit.status === "PUBLISHED" &&
+          (confirm === "disable" ? (
+            <div className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+              <p>
+                Disable this exhibit? Its public page and QR code stop working, and a disabled exhibit cannot be
+                published again. To take the page offline temporarily, unpublish it instead.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => run("disable")}
+                  className="flex-1 rounded-lg bg-red-600 px-3 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {pending ? "Disabling…" : "Disable"}
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setConfirm(null)}
+                  className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" disabled={pending} onClick={() => run("unpublish")} className={secondaryButton}>
+                {pending ? "Working…" : "Unpublish"}
+              </button>
+              <button type="button" disabled={pending} onClick={() => setConfirm("disable")} className={secondaryButton}>
+                Disable
+              </button>
+            </div>
+          ))}
+
+        {exhibit.status === "DISABLED" && (
+          <p className="rounded-lg bg-zinc-50 px-3 py-2.5 text-xs text-zinc-600">
+            This exhibit is disabled and cannot be published again. Archive it if it is no longer needed.
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-black/15 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
+            disabled={qrBusy !== null}
+            onClick={() => qrFile("label", "print")}
+            title="Print the exhibit label: QR code, specimen name, and public URL."
+            className={secondaryButton}
           >
             <PrinterIcon className="h-4 w-4" />
-            Print QR
+            {qrBusy === "print" ? "Preparing…" : "Print Label"}
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-black/15 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
+            disabled={qrBusy !== null}
+            onClick={() => qrFile("qr-png", "download")}
+            className={secondaryButton}
           >
             <DownloadIcon className="h-4 w-4" />
-            Download QR
+            {qrBusy === "qr-png" ? "Preparing…" : "Download QR"}
           </button>
         </div>
+        <p className="text-center text-[11px] text-zinc-500">
+          Also as{" "}
+          <button
+            type="button"
+            disabled={qrBusy !== null}
+            onClick={() => qrFile("qr-svg", "download")}
+            className="font-semibold text-forest-700 underline hover:text-forest-800 disabled:text-zinc-400"
+          >
+            QR (SVG)
+          </button>{" "}
+          or{" "}
+          <button
+            type="button"
+            disabled={qrBusy !== null}
+            onClick={() => qrFile("label", "download")}
+            className="font-semibold text-forest-700 underline hover:text-forest-800 disabled:text-zinc-400"
+          >
+            label (SVG)
+          </button>
+          {exhibit.status !== "PUBLISHED" && ". The QR code only opens a page once the exhibit is published."}
+        </p>
+
         <button
           type="button"
+          onClick={() => onEdit(exhibit.id)}
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-700 hover:bg-forest-50"
         >
           <PencilIcon className="h-4 w-4" />
           Edit Exhibit
         </button>
+
+        {confirm === "archive" ? (
+          <div className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            <p>
+              Archive this exhibit? Its public page and QR code stop working, and it leaves this list. The record is kept
+              for the audit history.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run("archive")}
+                className="flex-1 rounded-lg bg-red-600 px-3 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {pending ? "Archiving…" : "Archive"}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setConfirm(null)}
+                className="flex-1 rounded-lg border border-black/15 bg-white px-3 py-2 font-semibold text-zinc-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirm("archive")}
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+          >
+            <ArchiveIcon className="h-4 w-4" />
+            Archive Exhibit
+          </button>
+        )}
       </div>
     </div>
   );

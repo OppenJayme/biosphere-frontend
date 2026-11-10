@@ -1,91 +1,224 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@/components/icons";
-import { PublicWebsiteToolbar, type WebsiteTab } from "./PublicWebsiteToolbar";
-import { InquiryTable } from "./InquiryTable";
-import { InquiryDetailPanel } from "./InquiryDetailPanel";
-import { INQUIRY_STATUSES, VISIT_STATUSES, type Inquiry, type VisitRequest } from "@/lib/dummy-data/public-website";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from "@/components/icons";
+import type { Inquiry } from "@/features/inquiries/types";
+import type { CommunicationEntry } from "@/features/public-submissions/history";
+import { hasListFilters, publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
+import type { CampusEntrySummary, VisitRequest } from "@/features/visit-requests/types";
+import { InquiryDetail } from "./InquiryDetail";
+import { PublicWebsiteToolbar } from "./PublicWebsiteToolbar";
+import { SubmissionTable, type SubmissionRows } from "./SubmissionTable";
+import { VisitRequestDetail } from "./VisitRequestDetail";
 
-const PAGE_SIZES = ["10 / page", "25 / page", "50 / page"];
+export type SubmissionSelection =
+  | { kind: "inquiry"; record: Inquiry; history: CommunicationEntry[] | null }
+  | {
+      kind: "visit";
+      record: VisitRequest;
+      history: CommunicationEntry[] | null;
+      campusEntry: CampusEntrySummary | null;
+    };
+
+const PAGE_SIZES = [10, 25, 50];
+
+function EmptyDetail({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-black/10 bg-white p-5">
+      <p className="py-6 text-center text-xs text-zinc-500">{message}</p>
+    </div>
+  );
+}
 
 export function PublicWebsiteWorkspace({
-  inquiries,
-  visitRequests,
+  query,
+  rows,
+  listError,
+  selection,
+  selectionError,
+  statusCounts,
+  currentAccountId,
 }: {
-  inquiries: Inquiry[];
-  visitRequests: VisitRequest[];
+  query: PublicWebsiteQuery;
+  rows: SubmissionRows | null;
+  listError?: string;
+  selection: SubmissionSelection | null;
+  selectionError?: string;
+  statusCounts: Record<string, number> | null;
+  currentAccountId: string | null;
 }) {
-  const [tab, setTab] = useState<WebsiteTab>("inquiries");
-  const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(inquiries[0]?.id ?? null);
-  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(visitRequests[0]?.id ?? null);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const total = rows?.items.length ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
-  const items = tab === "inquiries" ? inquiries : visitRequests;
-  const selectedId = tab === "inquiries" ? selectedInquiryId : selectedVisitId;
-  const onSelect = tab === "inquiries" ? setSelectedInquiryId : setSelectedVisitId;
-  const selected = items.find((item) => item.id === selectedId) ?? null;
-  const total = tab === "inquiries" ? 132 : 48;
-  const pageCount = tab === "inquiries" ? 14 : 5;
-  const statusOptions = tab === "inquiries" ? ["All Statuses", ...INQUIRY_STATUSES] : ["All Statuses", ...VISIT_STATUSES];
+  // Open on the page that holds the selected record, so a selection made elsewhere stays visible.
+  const selectedIndex = rows && selection ? rows.items.findIndex((item) => item.id === selection.record.id) : -1;
+  const [page, setPage] = useState(selectedIndex >= 0 ? Math.floor(selectedIndex / pageSize) + 1 : 1);
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * pageSize;
+
+  const pageRows: SubmissionRows | null = rows
+    ? rows.kind === "inquiry"
+      ? { kind: "inquiry", items: rows.items.slice(start, start + pageSize) }
+      : { kind: "visit", items: rows.items.slice(start, start + pageSize) }
+    : null;
+
+  const returnQuery = {
+    tab: query.tab,
+    status: query.status,
+    search: query.search,
+    submittedFrom: query.submittedFrom,
+    submittedTo: query.submittedTo,
+    visitDateFrom: query.visitDateFrom,
+    visitDateTo: query.visitDateTo,
+  };
+  const hrefFor = (id: string) => publicWebsiteHref(query, { selected: id });
+  const recordLabel = query.tab === "inquiries" ? "inquiries" : "visit requests";
+  const managementTitle = query.tab === "inquiries" ? "General Inquiry Management" : "Visit Request Management";
+  const filtered = hasListFilters(query);
+
+  // The management section sits below the table, so bring it into view when a row is picked,
+  // including the one already selected. The first load and saves within a record keep the
+  // curator where they are.
+  const managementRef = useRef<HTMLElement>(null);
+  const selectedId = selection?.record.id;
+  const previousSelectedId = useRef(selectedId);
+  const showManagement = useCallback(() => {
+    managementRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, []);
+  useEffect(() => {
+    if (selectedId && selectedId !== previousSelectedId.current) showManagement();
+    previousSelectedId.current = selectedId;
+  }, [selectedId, showManagement]);
 
   return (
     <div className="space-y-4">
-      <PublicWebsiteToolbar tab={tab} onTabChange={setTab} statusOptions={statusOptions} />
+      <PublicWebsiteToolbar query={query} statusCounts={statusCounts} />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
-        <div className="min-w-0 space-y-4 rounded-xl border border-black/10 bg-white p-5">
-          <InquiryTable items={items} selectedId={selectedId} onSelect={onSelect} />
-
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
-            <p>
-              Showing 1 to {items.length} of {total} records
+      <div className="space-y-6">
+        <section
+          id="submission-list"
+          aria-label={`${recordLabel} list`}
+          className="min-w-0 scroll-mt-20 space-y-4 rounded-xl border border-black/10 bg-white p-5"
+        >
+          {listError ? (
+            <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              <p className="font-semibold">Unable to load {recordLabel}</p>
+              <p className="mt-1">{listError}</p>
+              <Link
+                href={publicWebsiteHref(query)}
+                className="mt-3 inline-flex rounded-lg bg-forest-700 px-3 py-2 font-semibold text-white hover:bg-forest-800"
+              >
+                Retry
+              </Link>
+            </div>
+          ) : pageRows && total > 0 ? (
+            <SubmissionTable
+              rows={pageRows}
+              selectedId={selection?.record.id ?? null}
+              hrefFor={hrefFor}
+              onSelectedRowActivate={showManagement}
+            />
+          ) : (
+            <p className="py-10 text-center text-sm text-zinc-500">
+              {filtered
+                ? `No ${recordLabel} match these filters.`
+                : `No ${recordLabel} yet. New submissions from the public website appear here.`}
             </p>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Previous page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
-              >
-                <ChevronLeftIcon className="h-3.5 w-3.5" />
-              </button>
-              {[1, 2, 3, 4, 5].map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`flex h-7 w-7 items-center justify-center rounded-md font-medium ${
-                    page === 1 ? "border border-forest-700 text-forest-700" : "text-zinc-600 hover:bg-sage-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <span className="px-1">&hellip;</span>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100">
-                {pageCount}
-              </button>
-              <button
-                type="button"
-                aria-label="Next page"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-sage-100"
-              >
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="relative">
-              <select
-                defaultValue={PAGE_SIZES[0]}
-                className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
-              >
-                {PAGE_SIZES.map((size) => (
-                  <option key={size}>{size}</option>
-                ))}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
-            </div>
-          </div>
-        </div>
+          )}
 
-        <InquiryDetailPanel item={selected} onClear={() => onSelect(null)} />
+          {!listError && total > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
+              <p aria-live="polite">
+                Showing {start + 1} to {Math.min(start + pageSize, total)} of {total} {recordLabel}
+              </p>
+              <nav aria-label="Pagination" className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100 disabled:text-zinc-300 disabled:hover:bg-transparent"
+                >
+                  <ChevronLeftIcon className="h-3.5 w-3.5" />
+                </button>
+                <span className="px-2 tabular-nums">
+                  Page {currentPage} of {pageCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPage + 1)}
+                  disabled={currentPage === pageCount}
+                  aria-label="Next page"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-600 hover:bg-sage-100 disabled:text-zinc-300 disabled:hover:bg-transparent"
+                >
+                  <ChevronRightIcon className="h-3.5 w-3.5" />
+                </button>
+              </nav>
+              <div className="relative">
+                <label htmlFor="submission-page-size" className="sr-only">
+                  Rows per page
+                </label>
+                <select
+                  id="submission-page-size"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setPage(1);
+                  }}
+                  className="appearance-none rounded-md border border-black/15 bg-white py-1 pl-2.5 pr-7 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none"
+                >
+                  {PAGE_SIZES.map((size) => (
+                    <option key={size} value={size}>
+                      {size} / page
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section
+          ref={managementRef}
+          aria-labelledby="submission-management-heading"
+          className="min-w-0 scroll-mt-20 space-y-3"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="submission-management-heading" className="text-lg font-semibold text-zinc-900">
+              {managementTitle}
+            </h2>
+            <a
+              href="#submission-list"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-forest-800 hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-forest-700"
+            >
+              <ChevronUpIcon className="h-3.5 w-3.5" />
+              Back to list
+            </a>
+          </div>
+          {selectionError ? (
+            <EmptyDetail message={selectionError} />
+          ) : selection?.kind === "inquiry" ? (
+            <InquiryDetail
+              inquiry={selection.record}
+              history={selection.history}
+              returnQuery={returnQuery}
+              currentAccountId={currentAccountId}
+            />
+          ) : selection?.kind === "visit" ? (
+            <VisitRequestDetail
+              request={selection.record}
+              history={selection.history}
+              campusEntry={selection.campusEntry}
+              returnQuery={returnQuery}
+              currentAccountId={currentAccountId}
+            />
+          ) : (
+            <EmptyDetail message={`Select one of the ${recordLabel} to see its details here.`} />
+          )}
+        </section>
       </div>
     </div>
   );

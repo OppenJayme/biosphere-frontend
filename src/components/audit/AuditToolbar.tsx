@@ -1,76 +1,121 @@
-import { SearchIcon, ChevronDownIcon, CalendarIcon, DownloadIcon } from "@/components/icons";
-import { LOG_CATEGORIES, type AUDIT_FILTERS, type LogCategory } from "@/lib/dummy-data/audit-logs";
+/** Server-backed audit filters; every submitted value maps to an API query. */
 
-function FilterSelect({ options }: { options: readonly string[] }) {
-  return (
-    <div className="relative">
-      <select
-        defaultValue={options[0]}
-        className="w-full appearance-none rounded-lg border border-black/15 bg-white py-2 pl-3 pr-8 text-sm text-zinc-700 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-    </div>
-  );
-}
+import Link from "next/link";
+import { SearchIcon } from "@/components/icons";
+import { FilterChips } from "@/components/ui/FilterChips";
+import { FILTER_TOGGLE_CLASSES, FilterToggleContent } from "@/components/ui/FilterToggle";
+import { InfoTip } from "@/components/ui/InfoTip";
+import { auditLogListHref } from "@/features/audit/query";
+import { DEFAULT_AUDIT_PAGE_SIZE, type AuditLogListQuery } from "@/features/audit/types";
 
-export function AuditToolbar({
-  filters,
-  category,
-  onCategoryChange,
-}: {
-  filters: typeof AUDIT_FILTERS;
-  category: LogCategory;
-  onCategoryChange: (category: LogCategory) => void;
-}) {
+const inputClasses =
+  "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
+const labelClasses = "mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600";
+
+const RESULT_CHIPS = [
+  { label: "All", value: "" },
+  { label: "Successful", value: "SUCCESS" },
+  { label: "Failed", value: "FAILED" },
+  { label: "Denied", value: "DENIED" },
+] as const;
+
+export function AuditToolbar({ query }: { query: AuditLogListQuery }) {
+  // The code-level filters stay available but folded away, opened automatically when in use.
+  const advancedInUse = Boolean(query.module || query.action || query.affectedRecordType);
+  const anyFilter = Boolean(query.search || query.result || query.fromDate || query.toDate || advancedInUse);
+
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="relative lg:col-span-1">
-          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="search"
-            placeholder="Search logs..."
-            className="w-full rounded-lg border border-black/15 py-2 pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700"
-          />
+    <div className="space-y-3 rounded-xl border border-black/10 bg-white p-5">
+      <FilterChips
+        label="Filter by result"
+        chips={RESULT_CHIPS.map((chip) => ({
+          label: chip.label,
+          active: query.result === chip.value,
+          href: auditLogListHref({ ...query, result: chip.value }, 1),
+        }))}
+      />
+
+      <form action="/audit-logs" method="get" className="space-y-3">
+        {query.result && <input type="hidden" name="result" value={query.result} />}
+        {query.limit !== DEFAULT_AUDIT_PAGE_SIZE && <input type="hidden" name="limit" value={query.limit} />}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
+          <label>
+            <span className={labelClasses}>Search</span>
+            <span className="relative block">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                name="search"
+                type="search"
+                defaultValue={query.search}
+                maxLength={100}
+                placeholder="Person's name, action, or module…"
+                className={`${inputClasses} pl-9`}
+              />
+            </span>
+          </label>
+          <label>
+            <span className={labelClasses}>From</span>
+            <input name="fromDate" type="date" defaultValue={query.fromDate} className={inputClasses} />
+          </label>
+          <label>
+            <span className={labelClasses}>To</span>
+            <input name="toDate" type="date" defaultValue={query.toDate} className={inputClasses} />
+          </label>
         </div>
-        <FilterSelect options={filters.module} />
-        <FilterSelect options={filters.action} />
-        <FilterSelect options={filters.user} />
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 px-3 py-2 text-sm text-zinc-700 hover:bg-sage-100"
-        >
-          <CalendarIcon className="h-4 w-4 shrink-0 text-zinc-400" />
-          <span className="truncate">May 20 &ndash; May 22, 2025</span>
-          <ChevronDownIcon className="ml-auto h-3.5 w-3.5 shrink-0 text-zinc-400" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
-        >
-          <DownloadIcon className="h-4 w-4" />
-          Export
-        </button>
-      </div>
 
-      <div className="flex flex-wrap gap-2">
-        {LOG_CATEGORIES.map((c) => (
+        <details open={advancedInUse} className="group">
+          <summary className={FILTER_TOGGLE_CLASSES}>
+            <FilterToggleContent>More filters</FilterToggleContent>
+          </summary>
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <label>
+              <span className={labelClasses}>
+                Module
+                <InfoTip label="Module filter">
+                  The part of BioSphere where it happened, for example specimens, exhibits or auth (sign-in).
+                </InfoTip>
+              </span>
+              <input name="module" defaultValue={query.module} maxLength={100} placeholder="e.g. specimens" className={inputClasses} />
+            </label>
+            <label>
+              <span className={labelClasses}>
+                Action code
+                <InfoTip label="Action code filter">
+                  The exact action name the system stored, for example UPDATE_SPECIMEN or LOGIN.
+                </InfoTip>
+              </span>
+              <input name="action" defaultValue={query.action} maxLength={100} placeholder="e.g. UPDATE_SPECIMEN" className={inputClasses} />
+            </label>
+            <label>
+              <span className={labelClasses}>Record type</span>
+              <input
+                name="affectedRecordType"
+                defaultValue={query.affectedRecordType}
+                maxLength={100}
+                placeholder="e.g. specimen"
+                className={inputClasses}
+              />
+            </label>
+          </div>
+        </details>
+
+        <div className="flex flex-wrap justify-end gap-2">
+          {anyFilter && (
+            <Link
+              href="/audit-logs"
+              className="rounded-lg border border-black/15 px-3.5 py-2 text-sm font-semibold text-zinc-700 hover:bg-sage-100"
+            >
+              Clear filters
+            </Link>
+          )}
           <button
-            key={c}
-            type="button"
-            onClick={() => onCategoryChange(c)}
-            className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              category === c ? "bg-forest-700 text-white" : "text-zinc-600 hover:bg-sage-100"
-            }`}
+            type="submit"
+            className="rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800"
           >
-            {c}
+            Search
           </button>
-        ))}
-      </div>
+        </div>
+      </form>
     </div>
   );
 }
