@@ -27,7 +27,8 @@ export function PrivacyConsent({ id, purpose, error }: { id: string; purpose: st
         />
         <label htmlFor={id} className="text-sm leading-relaxed text-ink">
           I agree that the USC Biological Museum may keep and use the details above only to respond
-          to {purpose}, in line with the Data Privacy Act of 2012 (RA 10173).
+          to {purpose}, in line with the Data Privacy Act of 2012 (RA 10173). If I reply to the
+          museum&apos;s emails about it, my reply is kept with it too.
         </label>
       </div>
       {error && <FieldError id={fieldErrorId(id)}>{error}</FieldError>}
