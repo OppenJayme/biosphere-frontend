@@ -68,7 +68,7 @@ export function UpcomingVisits({ events, today }: { events: VisitCalendarEvent[]
                     isToday ? "bg-forest-700 text-white" : "bg-forest-50 text-forest-800"
                   }`}
                 >
-                  <span className="text-[10px] font-semibold uppercase">{isToday ? "Today" : weekday}</span>
+                  <span className="text-[0.625rem] font-semibold uppercase">{isToday ? "Today" : weekday}</span>
                   <span className="mt-0.5 text-base font-semibold tabular-nums">{day}</span>
                   <span className="sr-only"> {month}</span>
                 </time>
@@ -80,7 +80,7 @@ export function UpcomingVisits({ events, today }: { events: VisitCalendarEvent[]
                   </span>
                 </span>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${VISIT_STYLES[event.status]}`}
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-medium whitespace-nowrap ${VISIT_STYLES[event.status]}`}
                 >
                   {statusLabel}
                 </span>
