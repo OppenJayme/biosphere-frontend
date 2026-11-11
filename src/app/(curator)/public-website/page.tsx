@@ -8,6 +8,7 @@ import {
 } from "@/components/public-website/PublicWebsiteWorkspace";
 import type { SubmissionRows } from "@/components/public-website/SubmissionTable";
 import { getInquiry, getInquiryHistory, listInquiries } from "@/features/inquiries/api";
+import { getMailboxSyncStatus } from "@/features/mailbox-sync/api";
 import type { Inquiry } from "@/features/inquiries/types";
 import {
   PUBLIC_WEBSITE_PATH,
@@ -228,7 +229,11 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
       }, {})
     : null;
 
-  const account = await getAccountInfo();
+  // The reply import status is only shown in a record's history, so skip it when nothing is selected.
+  const [account, mailboxStatus] = await Promise.all([
+    getAccountInfo(),
+    selection ? optional(getMailboxSyncStatus()) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="space-y-5">
@@ -236,7 +241,7 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         <PageHeader
           title="General Inquiries"
           description="Questions visitors sent through the museum website's inquiry form."
-          info="Replies are emailed from BioSphere. If a visitor writes back, their email goes to the museum's mailbox, not to BioSphere."
+          info="Replies are emailed from BioSphere. When reply checking is set up, a visitor's emailed reply is copied from the museum mailbox into the inquiry's history within a few minutes. Replies sent from a different address than the one on the inquiry stay in the mailbox."
         />
       ) : (
         <PageHeader
@@ -273,6 +278,7 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         selectionError={selectionError}
         statusCounts={statusCounts}
         currentAccountId={account?.accountId ?? null}
+        mailboxStatus={mailboxStatus}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ArrowRightIcon, CalendarIcon, CarIcon, ChatIcon, CheckIcon, ClipboardIcon, UsersIcon } from "@/components/icons";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
 import { formatTimestamp } from "@/features/public-submissions/format";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
 import { publicWebsiteHref, type ReturnQuery } from "@/features/public-submissions/query";
@@ -214,12 +215,14 @@ export function VisitRequestDetail({
   campusEntry,
   returnQuery,
   currentAccountId,
+  mailboxStatus,
 }: {
   request: VisitRequest;
   history: CommunicationEntry[] | null;
   campusEntry: CampusEntrySummary | null;
   returnQuery: ReturnQuery;
   currentAccountId: string | null;
+  mailboxStatus: MailboxSyncStatus | null;
 }) {
   const statusOptions = nextVisitStatuses(request.status).map(statusOption);
   const vehicles = request.vehicles.filter((vehicle) => vehicle.plateNumber || vehicle.brand || vehicle.type);
@@ -332,6 +335,7 @@ export function VisitRequestDetail({
             entries={history}
             statusLabels={VISIT_REQUEST_STATUS_LABELS}
             currentAccountId={currentAccountId}
+            mailboxStatus={mailboxStatus}
           />
         </section>
       </div>

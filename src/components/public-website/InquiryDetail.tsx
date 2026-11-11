@@ -8,6 +8,7 @@ import {
   sendInquiryReplyAction,
   updateInquiryStatusAction,
 } from "@/features/inquiries/actions";
+import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
 import type { Inquiry } from "@/features/inquiries/types";
 import {
   INQUIRY_STATUS_LABELS,
@@ -53,11 +54,13 @@ export function InquiryDetail({
   history,
   returnQuery,
   currentAccountId,
+  mailboxStatus,
 }: {
   inquiry: Inquiry;
   history: CommunicationEntry[] | null;
   returnQuery: ReturnQuery;
   currentAccountId: string | null;
+  mailboxStatus: MailboxSyncStatus | null;
 }) {
   const statusOptions = nextInquiryStatuses(inquiry.status).map((status) => STATUS_OPTIONS[status]);
 
@@ -127,7 +130,7 @@ export function InquiryDetail({
           <PanelHeading
             icon={ChatIcon}
             title="Notes and history"
-            description="Replies the visitor sends to the museum's mailbox are not imported. Record what matters as a note."
+            description="Visitor email replies appear here once they are imported from the museum mailbox. Record calls and other contact as a note."
           />
           <NoteForm key={inquiry.id} action={addInquiryNoteAction.bind(null, inquiry.id, returnQuery)} />
           <HistoryTimeline
@@ -135,6 +138,7 @@ export function InquiryDetail({
             entries={history}
             statusLabels={INQUIRY_STATUS_LABELS}
             currentAccountId={currentAccountId}
+            mailboxStatus={mailboxStatus}
           />
         </section>
       </div>

@@ -10,8 +10,10 @@ export const communicationEntrySchema = z.object({
   message: z.string(),
   recipientEmail: z.string().nullable(),
   deliveryResult: z.string().nullable(),
+  /** For an imported visitor reply, when the museum mailbox received it. */
   sentAt: z.string().nullable(),
-  recordedBy: z.string(),
+  /** The acting curator; null only on imported visitor replies (direction INBOUND, backend spec 0002 AC-4). */
+  recordedBy: z.string().nullable(),
   createdAt: z.string().min(1),
 });
 
@@ -30,6 +32,7 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   NOTE: "Internal note",
   STATUS_UPDATE_EMAIL: "Decision emailed to visitor",
   MESSAGE_EMAIL: "Email to visitor",
+  VISITOR_REPLY: "Visitor reply",
 };
 
 export function entryTypeLabel(type: string) {
@@ -65,6 +68,11 @@ export function deliveryReason(result: string | null) {
 
 export function isOutboundEmail(entry: CommunicationEntry) {
   return entry.direction === "OUTBOUND";
+}
+
+/** A visitor's email reply imported from the museum mailbox (backend spec 0002). No curator recorded it. */
+export function isInboundReply(entry: CommunicationEntry) {
+  return entry.direction === "INBOUND";
 }
 
 /** The newest email on the timeline (entries come oldest first). */
