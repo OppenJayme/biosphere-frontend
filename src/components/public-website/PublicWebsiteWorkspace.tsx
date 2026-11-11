@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from "@/components/icons";
 import type { Inquiry } from "@/features/inquiries/types";
+import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
 import { hasListFilters, publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
 import type { CampusEntrySummary, VisitRequest } from "@/features/visit-requests/types";
@@ -41,6 +42,7 @@ export function PublicWebsiteWorkspace({
   selectionError,
   statusCounts,
   currentAccountId,
+  mailboxStatus,
 }: {
   query: PublicWebsiteQuery;
   rows: SubmissionRows | null;
@@ -51,6 +53,8 @@ export function PublicWebsiteWorkspace({
   selectionError?: string;
   statusCounts: Record<string, number> | null;
   currentAccountId: string | null;
+  /** Museum mailbox reply import status for the history panels; null when it could not be loaded. */
+  mailboxStatus: MailboxSyncStatus | null;
 }) {
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const total = rows?.items.length ?? 0;
@@ -220,6 +224,7 @@ export function PublicWebsiteWorkspace({
               history={selection.history}
               returnQuery={returnQuery}
               currentAccountId={currentAccountId}
+              mailboxStatus={mailboxStatus}
             />
           ) : selection?.kind === "visit" ? (
             <VisitRequestDetail
@@ -228,6 +233,7 @@ export function PublicWebsiteWorkspace({
               campusEntry={selection.campusEntry}
               returnQuery={returnQuery}
               currentAccountId={currentAccountId}
+              mailboxStatus={mailboxStatus}
             />
           ) : (
             <EmptyDetail
