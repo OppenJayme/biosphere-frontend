@@ -135,6 +135,48 @@ describe("public submission outcome", () => {
     },
   );
 
+  it("treats a 409 overlap as a definite rejection and shows the server's reason", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json(
+          {
+            statusCode: 409,
+            message:
+              "preferredSchedules[1] (2030-10-16 13:00-15:00) overlaps a visit that is already booked. Choose another time.",
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+    const { postPublicSubmission } = await import("./submit");
+    const result = await postPublicSubmission("/visit-requests", {});
+    expect(result).toEqual({
+      ok: false,
+      outcome: "rejected",
+      message: expect.stringContaining("already booked"),
+      details: ["Option 2 (2030-10-16 13:00-15:00) overlaps a visit that is already booked. Choose another time."],
+    });
+    expect(JSON.stringify(result)).not.toContain("couldn't confirm");
+  });
+
+  it("names the option in a 400 schedule message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json(
+          { message: ["preferredSchedules[0] must fit within museum opening hours: the museum is closed on Sundays."] },
+          { status: 400 },
+        ),
+      ),
+    );
+    const { postPublicSubmission } = await import("./submit");
+    expect(await postPublicSubmission("/visit-requests", {})).toMatchObject({
+      outcome: "rejected",
+      details: ["Option 1 must fit within museum opening hours: the museum is closed on Sundays."],
+    });
+  });
+
   it.each(["invalid-json", "body-interrupted"])(
     "retains uncertainty when the receipt is %s",
     async (mode) => {

@@ -16,6 +16,7 @@ import {
 } from "@/features/exhibits-qr/form";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { isCrossSiteRequest } from "@/lib/same-origin";
 
 export const runtime = "nodejs";
 
@@ -60,11 +61,7 @@ function backendError(error: unknown) {
  * re-checks it on the upload itself.
  */
 async function authorize(request: Request) {
-  const origin = request.headers.get("origin");
-  if (
-    request.headers.get("sec-fetch-site") === "cross-site" ||
-    (origin !== null && origin !== new URL(request.url).origin)
-  ) {
+  if (isCrossSiteRequest(request)) {
     return json({ message: "Cross-site requests are not allowed." }, 403);
   }
 

@@ -9,7 +9,7 @@ export function QueueSnapshot({ items }: { items: QueueItem[] }) {
             <p className="text-xs font-medium text-zinc-900">{item.accessionNo}</p>
             <p className="truncate text-xs italic text-zinc-500">{item.species}</p>
           </div>
-          <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600">
+          <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-[0.6875rem] font-medium text-zinc-600">
             Uncataloged
           </span>
         </li>

@@ -24,7 +24,7 @@ export function ExhibitStatePage({
         <LogoMark className="h-9 w-9 shrink-0" />
         <div className="leading-tight">
           <p className="font-serif text-base font-semibold text-white">BioSphere</p>
-          <p className="text-[11px] font-medium text-gold-500">USC Biological Museum</p>
+          <p className="text-[0.6875rem] font-medium text-gold-500">USC Biological Museum</p>
         </div>
       </header>
 

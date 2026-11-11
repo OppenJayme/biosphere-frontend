@@ -3,6 +3,7 @@ import {
   syncSpecimenDraftRequestSchema,
   syncSpecimenDraftResultSchema,
 } from "@/features/offline/schema";
+import { isCrossSiteRequest } from "@/lib/same-origin";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ function backendMessage(body: unknown): string | string[] | null {
 }
 
 export async function POST(request: Request) {
-  if (request.headers.get("sec-fetch-site") === "cross-site") {
+  if (isCrossSiteRequest(request)) {
     return json({ message: "Cross-site requests are not allowed." }, 403);
   }
 

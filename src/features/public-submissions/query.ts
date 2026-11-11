@@ -1,5 +1,9 @@
-/** Safe URL state for the curator Public Website page (tab, status filter, search, date range, selection). */
+/**
+ * Safe URL state for the curator Public Website page (tab, status filter, search, date range,
+ * selection, and for visit requests the List or Calendar view and the calendar month).
+ */
 
+import { parseMonth } from "../visit-requests/calendar";
 import { INQUIRY_STATUSES, type InquiryStatus } from "../inquiries/types";
 import { VISIT_REQUEST_STATUSES, type VisitRequestStatus } from "../visit-requests/types";
 
@@ -7,6 +11,12 @@ export const PUBLIC_WEBSITE_PATH = "/public-website";
 export const SEARCH_MAX = 100;
 
 export type WebsiteTab = "inquiries" | "visits";
+
+/** Visit requests only: the table, or the month calendar of approved visits (backend spec 0001 AC-8). */
+export type VisitView = "list" | "calendar";
+
+/** `month` is "YYYY-MM", or "" for the current museum month. Only meaningful in the calendar view. */
+export type VisitViewState = { view: VisitView; month: string };
 
 /**
  * YYYY-MM-DD date filters (REQ-4.8-05, REQ-4.9-08). `submitted*` is the submission date in museum time;
@@ -22,10 +32,11 @@ export type DateFilters = {
 
 export type PublicWebsiteQuery =
   | ({ tab: "inquiries"; status: InquiryStatus | ""; search: string } & DateFilters)
-  | ({ tab: "visits"; status: VisitRequestStatus | ""; search: string } & DateFilters);
+  | ({ tab: "visits"; status: VisitRequestStatus | ""; search: string } & DateFilters & VisitViewState);
 
 /** Plain-object view state the client binds into each curator action so it returns to the same list. */
-export type ReturnQuery = { tab: WebsiteTab; status: string; search: string } & Partial<DateFilters>;
+export type ReturnQuery = { tab: WebsiteTab; status: string; search: string } & Partial<DateFilters> &
+  Partial<VisitViewState>;
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -66,11 +77,14 @@ export function parsePublicWebsiteQuery(searchParams: SearchParams): PublicWebsi
 
   if (firstValue(searchParams.tab) === "visits") {
     const known = VISIT_REQUEST_STATUSES.includes(status as VisitRequestStatus);
+    const calendar = firstValue(searchParams.view) === "calendar";
     return {
       tab: "visits",
       status: known ? (status as VisitRequestStatus) : "",
       search,
       ...parseDateFilters(searchParams, true),
+      view: calendar ? "calendar" : "list",
+      month: calendar ? (parseMonth(firstValue(searchParams.month)) ?? "") : "",
     };
   }
 
@@ -101,11 +115,17 @@ export function parseSelectedId(searchParams: SearchParams) {
 export function publicWebsiteHref(
   query: Pick<PublicWebsiteQuery, "tab"> &
     Partial<Pick<PublicWebsiteQuery, "status" | "search">> &
-    Partial<DateFilters>,
+    Partial<DateFilters> &
+    Partial<VisitViewState>,
   extras: { selected?: string; notice?: string; email?: string } = {},
 ) {
   const params = new URLSearchParams();
   if (query.tab === "visits") params.set("tab", "visits");
+  // List is the default view, so only the calendar is written to the URL.
+  if (query.tab === "visits" && query.view === "calendar") {
+    params.set("view", "calendar");
+    if (query.month) params.set("month", query.month);
+  }
   if (query.status) params.set("status", query.status);
   if (query.search) params.set("search", query.search);
   for (const key of DATE_KEYS) {

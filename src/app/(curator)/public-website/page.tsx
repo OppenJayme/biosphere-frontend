@@ -8,6 +8,7 @@ import {
 } from "@/components/public-website/PublicWebsiteWorkspace";
 import type { SubmissionRows } from "@/components/public-website/SubmissionTable";
 import { getInquiry, getInquiryHistory, listInquiries } from "@/features/inquiries/api";
+import { getMailboxSyncStatus } from "@/features/mailbox-sync/api";
 import type { Inquiry } from "@/features/inquiries/types";
 import {
   PUBLIC_WEBSITE_PATH,
@@ -16,12 +17,16 @@ import {
   parsePublicWebsiteQuery,
   parseSelectedId,
 } from "@/features/public-submissions/query";
+import { museumToday } from "@/features/public-submissions/schedule";
 import {
   getCampusEntrySummary,
+  getVisitCalendar,
   getVisitRequest,
   getVisitRequestHistory,
   listVisitRequests,
 } from "@/features/visit-requests/api";
+import { filterCalendarEvents, monthGridRange, monthOf } from "@/features/visit-requests/calendar";
+import type { VisitCalendarData } from "@/components/public-website/VisitCalendar";
 import type { VisitRequest } from "@/features/visit-requests/types";
 import { hasCampusEntrySummary, isUpcomingVisit } from "@/features/visit-requests/workflow";
 import { ApiError } from "@/lib/api-client";
@@ -140,11 +145,18 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
     submittedTo: query.submittedTo || undefined,
   };
 
+  const calendarView = query.tab === "visits" && query.view === "calendar";
+  // The calendar shows the requested month, or the museum's current month.
+  const today = museumToday();
+  const calendarMonth = calendarView ? query.month || monthOf(today) : "";
+  const calendarRange = calendarView ? monthGridRange(calendarMonth) : null;
+
   // Unfiltered lists feed the stats and tab counts; the backend has no pagination for these yet.
-  const [inquiriesResult, visitsResult, filteredResult] = await Promise.allSettled([
+  // The calendar view filters its own events, so it skips the filtered list request.
+  const [inquiriesResult, visitsResult, filteredResult, calendarResult] = await Promise.allSettled([
     listInquiries(),
     listVisitRequests(),
-    filtered
+    filtered && !calendarView
       ? query.tab === "inquiries"
         ? listInquiries({ ...listFilters, status: query.status || undefined })
         : listVisitRequests({
@@ -154,9 +166,10 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
             visitDateTo: query.visitDateTo || undefined,
           })
       : Promise.resolve(null),
+    calendarRange ? getVisitCalendar(calendarRange.from, calendarRange.to) : Promise.resolve(null),
   ]);
 
-  if ([inquiriesResult, visitsResult, filteredResult].some(isUnauthorized)) {
+  if ([inquiriesResult, visitsResult, filteredResult, calendarResult].some(isUnauthorized)) {
     redirect(`/login?from=${PUBLIC_WEBSITE_PATH}`);
   }
 
@@ -165,7 +178,26 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
 
   let rows: SubmissionRows | null = null;
   let listError: string | undefined;
-  const tabResult = filtered ? filteredResult : query.tab === "inquiries" ? inquiriesResult : visitsResult;
+  const tabResult =
+    filtered && !calendarView ? filteredResult : query.tab === "inquiries" ? inquiriesResult : visitsResult;
+
+  let calendar: VisitCalendarData | null = null;
+  if (calendarView) {
+    calendar =
+      calendarResult.status === "fulfilled"
+        ? {
+            month: calendarMonth,
+            today,
+            events: filterCalendarEvents(calendarResult.value ?? [], { status: query.status, search: query.search }),
+          }
+        : {
+            month: calendarMonth,
+            today,
+            events: null,
+            error: loadErrorMessage(calendarResult.reason, "approved visits"),
+          };
+  }
+
   if (tabResult.status === "rejected") {
     listError = loadErrorMessage(tabResult.reason, query.tab === "inquiries" ? "inquiries" : "visit requests");
   } else if (query.tab === "inquiries") {
@@ -175,7 +207,8 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
   }
 
   const kind = query.tab === "inquiries" ? "inquiry" : "visit";
-  const targetId = selectedId ?? rows?.items[0]?.id;
+  // The list opens its first row; the calendar waits for the curator to choose a visit.
+  const targetId = selectedId ?? (calendarView ? undefined : rows?.items[0]?.id);
   const known =
     targetId === undefined
       ? undefined
@@ -196,7 +229,11 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
       }, {})
     : null;
 
-  const account = await getAccountInfo();
+  // The reply import status is only shown in a record's history, so skip it when nothing is selected.
+  const [account, mailboxStatus] = await Promise.all([
+    getAccountInfo(),
+    selection ? optional(getMailboxSyncStatus()) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="space-y-5">
@@ -204,7 +241,7 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         <PageHeader
           title="General Inquiries"
           description="Questions visitors sent through the museum website's inquiry form."
-          info="Replies are emailed from BioSphere. If a visitor writes back, their email goes to the museum's mailbox, not to BioSphere."
+          info="Replies are emailed from BioSphere. When reply checking is set up, a visitor's emailed reply is copied from the museum mailbox into the inquiry's history within a few minutes. Replies sent from a different address than the one on the inquiry stay in the mailbox."
         />
       ) : (
         <PageHeader
@@ -236,10 +273,12 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         query={query}
         rows={rows}
         listError={listError}
+        calendar={calendar}
         selection={selection}
         selectionError={selectionError}
         statusCounts={statusCounts}
         currentAccountId={account?.accountId ?? null}
+        mailboxStatus={mailboxStatus}
       />
     </div>
   );

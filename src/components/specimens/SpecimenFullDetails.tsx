@@ -268,7 +268,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
                     </p>
                   </div>
                   {item.isCover && (
-                    <span className="rounded-full bg-forest-100 px-2 py-1 text-[11px] font-medium text-forest-700">
+                    <span className="rounded-full bg-forest-100 px-2 py-1 text-[0.6875rem] font-medium text-forest-700">
                       Cover
                     </span>
                   )}

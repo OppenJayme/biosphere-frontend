@@ -10,7 +10,7 @@ import {
   type FieldErrors,
 } from "../public-submissions/form-fields";
 import { NOTE_MAX } from "../public-submissions/history";
-import { validateSchedules } from "../public-submissions/schedule";
+import { validateSchedules, type MuseumClock } from "../public-submissions/schedule";
 import { readScheduleRows, visitorCountField } from "../visit-requests/form";
 import type { InquiryReferralInput } from "./types";
 
@@ -51,7 +51,7 @@ const referralSchema = z.object({
 export function readReferralForm(
   formData: FormData,
   requirements: ReferralRequirements,
-  today?: string,
+  clock?: MuseumClock | string,
 ): ReferralFormResult {
   const values: ReferralFormValues = {
     phone: stringValue(formData, "phone"),
@@ -66,7 +66,7 @@ export function readReferralForm(
 
   const fields = referralSchema.safeParse({ ...values, visitorCount: values.visitorCount.trim() });
   const schedules = readScheduleRows(formData);
-  const scheduleCheck = validateSchedules(schedules, today);
+  const scheduleCheck = validateSchedules(schedules, clock);
 
   const errors: FieldErrors<ReferralFormField> = {};
   if (!fields.success) Object.assign(errors, collectFieldErrors<ReferralFormField>(fields.error));

@@ -236,7 +236,7 @@ function StatusBadge({ status }: { status: FaqStatus }) {
     INACTIVE: "bg-amber-50 text-amber-800",
     ARCHIVED: "bg-zinc-100 text-zinc-600",
   };
-  return <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${styles[status]}`}>{humanize(status)}</span>;
+  return <span className={`inline-flex rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${styles[status]}`}>{humanize(status)}</span>;
 }
 
 function humanize(value: string) {

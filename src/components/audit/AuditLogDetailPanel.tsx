@@ -78,7 +78,7 @@ export function AuditLogDetailPanel({
       <div className="rounded-lg bg-sage-50 px-3 py-2.5">
         <p className="text-sm text-zinc-900">{describeAuditEntry(log, labelFor(recordLabels, log))}</p>
         <span
-          className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
+          className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${
             badge ? badge.className : "bg-forest-100 text-forest-700"
           }`}
         >

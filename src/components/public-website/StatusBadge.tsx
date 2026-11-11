@@ -10,7 +10,8 @@ const INQUIRY_STYLES: Record<InquiryStatus, string> = {
   CLOSED: "bg-zinc-100 text-zinc-600",
 };
 
-const VISIT_STYLES: Record<VisitRequestStatus, string> = {
+/** Status pill colours; the calendar and dashboard reuse them so a status looks the same everywhere. */
+export const VISIT_STYLES: Record<VisitRequestStatus, string> = {
   PENDING: "bg-amber-100 text-amber-800",
   APPROVED_BY_CURATOR: "bg-forest-100 text-forest-700",
   SUBMITTED_FOR_CAMPUS_ENTRY: "bg-sky-100 text-sky-800",
@@ -19,7 +20,7 @@ const VISIT_STYLES: Record<VisitRequestStatus, string> = {
   CANCELLED: "bg-orange-100 text-orange-800",
 };
 
-const badgeClasses = "inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap";
+const badgeClasses = "inline-flex rounded-full px-2.5 py-1 text-[0.6875rem] font-medium whitespace-nowrap";
 
 export function InquiryStatusBadge({ status }: { status: InquiryStatus }) {
   return <span className={`${badgeClasses} ${INQUIRY_STYLES[status]}`}>{INQUIRY_STATUS_LABELS[status]}</span>;

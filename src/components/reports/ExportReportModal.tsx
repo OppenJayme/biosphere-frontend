@@ -176,7 +176,7 @@ export function ExportReportModal({
             </span>
             <p className="mt-3 text-sm font-semibold text-zinc-900">Report downloaded</p>
             <p className="mt-1 break-all text-xs text-zinc-600">{status.fileName}</p>
-            <p className="mt-2 text-[11px] text-zinc-500">
+            <p className="mt-2 text-[0.6875rem] text-zinc-500">
               Edits to this file never change BioSphere records. Generate it again for current data.
             </p>
           </div>
