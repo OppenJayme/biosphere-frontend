@@ -73,7 +73,7 @@ export function AccountMenu({ profile }: { profile: { fullName: string; role: st
           {profile ? initialsFor(profile.fullName) : "?"}
         </span>
         <span className="hidden flex-col items-start leading-tight sm:flex">
-          <span className="text-[11px] text-zinc-500">
+          <span className="text-[0.6875rem] text-zinc-500">
             {profile ? profile.role.charAt(0) + profile.role.slice(1).toLowerCase() : "Signed in"}
           </span>
           <span className="text-sm font-semibold text-forest-900">

@@ -370,14 +370,14 @@ function DeliveryBadge({ result }: { result: string | null }) {
   const status = deliveryStatus(result);
   if (status === "sent") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-forest-100 px-2 py-0.5 text-[10px] font-semibold text-forest-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-forest-100 px-2 py-0.5 text-[0.625rem] font-semibold text-forest-700">
         <CheckIcon className="h-3 w-3" />
         Sent
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[0.625rem] font-semibold text-red-700">
       <AlertTriangleIcon className="h-3 w-3" />
       {status === "not-sent" ? "Not sent" : "Email failed"}
     </span>
@@ -404,7 +404,7 @@ function EmailEntryBody({ entry }: { entry: CommunicationEntry }) {
         </p>
       )}
       <details>
-        <summary className="cursor-pointer text-[11px] font-medium text-forest-700 hover:underline">
+        <summary className="cursor-pointer text-[0.6875rem] font-medium text-forest-700 hover:underline">
           Show email
         </summary>
         <p className="mt-1 max-h-60 overflow-y-auto whitespace-pre-line break-words rounded-md bg-sage-50 px-2 py-1.5">
@@ -468,13 +468,13 @@ function ReplyCheck({ status }: { status: MailboxSyncStatus | null }) {
   return (
     <div className="mt-2 rounded-lg bg-sage-50 px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="min-w-0 flex-1 text-[11px] text-zinc-600">{summary}</p>
+        <p className="min-w-0 flex-1 text-[0.6875rem] text-zinc-600">{summary}</p>
         {active && (
           <form action={formAction}>
             <button
               type="submit"
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-md border border-forest-700/40 bg-white px-2.5 py-1 text-[11px] font-semibold text-forest-800 hover:bg-forest-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-md border border-forest-700/40 bg-white px-2.5 py-1 text-[0.6875rem] font-semibold text-forest-800 hover:bg-forest-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 disabled:opacity-60"
             >
               <RefreshIcon className={`h-3.5 w-3.5 ${pending ? "animate-spin motion-reduce:animate-none" : ""}`} />
               {pending ? "Checking…" : "Check for replies"}
@@ -484,7 +484,7 @@ function ReplyCheck({ status }: { status: MailboxSyncStatus | null }) {
       </div>
       <p
         aria-live="polite"
-        className={`text-[11px] ${state.ok === false ? "mt-1 text-red-700" : state.message ? "mt-1 text-forest-800" : ""}`}
+        className={`text-[0.6875rem] ${state.ok === false ? "mt-1 text-red-700" : state.message ? "mt-1 text-forest-800" : ""}`}
       >
         {pending ? "" : state.message}
       </p>
@@ -523,7 +523,7 @@ export function HistoryTimeline({
         <li className="relative">
           <span aria-hidden className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-zinc-400" />
           <p className="text-xs font-semibold text-zinc-800">Submitted through the public website</p>
-          <p className="text-[11px] text-zinc-500">{formatTimestamp(submittedAt)}</p>
+          <p className="text-[0.6875rem] text-zinc-500">{formatTimestamp(submittedAt)}</p>
         </li>
         {entries?.map((entry) => (
           <li key={entry.id} className="relative">
@@ -544,7 +544,7 @@ export function HistoryTimeline({
                 {readableHistoryMessage(entry.message, statusLabels)}
               </p>
             )}
-            <p className="mt-0.5 text-[11px] text-zinc-500">
+            <p className="mt-0.5 text-[0.6875rem] text-zinc-500">
               {isInboundReply(entry)
                 ? `From the visitor · received ${formatTimestamp(entry.sentAt ?? entry.createdAt)}`
                 : `${entry.recordedBy !== null && entry.recordedBy === currentAccountId ? "You" : "A curator"} · ${formatTimestamp(entry.createdAt)}`}

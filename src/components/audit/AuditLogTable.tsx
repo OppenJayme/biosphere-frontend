@@ -113,7 +113,7 @@ export function AuditLogTable({
                       {describeAuditEntry(log, labelFor(recordLabels, log))}
                       {badge && (
                         <span
-                          className={`ml-2 inline-block rounded-full px-2 py-0.5 align-middle text-[11px] font-medium whitespace-nowrap ${badge.className}`}
+                          className={`ml-2 inline-block rounded-full px-2 py-0.5 align-middle text-[0.6875rem] font-medium whitespace-nowrap ${badge.className}`}
                         >
                           {badge.label}
                         </span>

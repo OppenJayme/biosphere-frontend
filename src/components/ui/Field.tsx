@@ -49,6 +49,6 @@ export function Field({
 
 export function FieldGroupLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-brand">{children}</p>
+    <p className="font-mono text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-brand">{children}</p>
   );
 }

@@ -242,7 +242,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
         {badge && (
           <span
             aria-hidden="true"
-            className="absolute -right-1.5 -top-1 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] font-semibold leading-4 text-white ring-2 ring-white"
+            className="absolute -right-1.5 -top-1 min-w-4 rounded-full bg-red-600 px-1 text-center text-[0.625rem] font-semibold leading-4 text-white ring-2 ring-white"
           >
             {badge}
           </span>

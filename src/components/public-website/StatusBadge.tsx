@@ -20,7 +20,7 @@ export const VISIT_STYLES: Record<VisitRequestStatus, string> = {
   CANCELLED: "bg-orange-100 text-orange-800",
 };
 
-const badgeClasses = "inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap";
+const badgeClasses = "inline-flex rounded-full px-2.5 py-1 text-[0.6875rem] font-medium whitespace-nowrap";
 
 export function InquiryStatusBadge({ status }: { status: InquiryStatus }) {
   return <span className={`${badgeClasses} ${INQUIRY_STYLES[status]}`}>{INQUIRY_STATUS_LABELS[status]}</span>;

@@ -7,6 +7,7 @@ import {
 } from "@/features/specimens/import-types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { isCrossSiteRequest } from "@/lib/same-origin";
 
 export const runtime = "nodejs";
 
@@ -30,11 +31,7 @@ function backendMessage(body: unknown) {
 }
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (
-    request.headers.get("sec-fetch-site") === "cross-site" ||
-    (origin !== null && origin !== new URL(request.url).origin)
-  ) {
+  if (isCrossSiteRequest(request)) {
     return json({ message: "Cross-site requests are not allowed." }, 403);
   }
   if (!(await verifySession())) return json({ message: "Your session expired." }, 401);
