@@ -3,6 +3,8 @@
  * so the mappings can be unit tested; server actions pass the ApiError (or null) in.
  */
 
+import { readableServerMessage } from "./schedule";
+
 export type ActionFailure = { status: number; body: unknown } | null;
 
 export type CuratorOperation =
@@ -52,6 +54,13 @@ const FALLBACK: Record<CuratorOperation, string> = {
 
 const EMAIL_OPERATIONS: CuratorOperation[] = ["inquiry-reply", "visit-message"];
 
+type ScheduleOperation = "approve-schedule" | "referral";
+const SCHEDULE_OPERATIONS: CuratorOperation[] = ["approve-schedule", "referral"];
+const SCHEDULE_CONFLICT_HINT: Record<ScheduleOperation, string> = {
+  "approve-schedule": "Nothing was approved. Choose another preferred option, or ask the visitor for a new time.",
+  referral: "No visit request was created. Change that option to a free time and try again.",
+};
+
 /** The backend's own 400 explanation, when it is a single readable sentence. */
 function backendDetail(body: unknown): string | undefined {
   if (!body || typeof body !== "object" || !("message" in body)) return undefined;
@@ -68,12 +77,22 @@ export function curatorActionError(failure: ActionFailure, operation: CuratorOpe
     if (failure.status === 400) {
       const detail = backendDetail(failure.body);
       // Referral validation messages name the exact field (e.g. a past schedule date); show them.
-      return operation === "referral" && detail ? `${BAD_REQUEST[operation]} (${detail})` : BAD_REQUEST[operation];
+      return operation === "referral" && detail
+        ? `${BAD_REQUEST[operation]} (${readableServerMessage(detail)})`
+        : BAD_REQUEST[operation];
     }
     if (failure.status === 401) return "Your session expired. Sign in and try again.";
     if (failure.status === 403) return "Only curators can manage inquiries and visit requests.";
     if (failure.status === 404) return `This ${record} no longer exists. Reload the list.`;
-    if (failure.status === 409) return `Another curator changed this ${record} at the same time. Reload and try again.`;
+    if (failure.status === 409) {
+      // Approving or referring a time that overlaps an approved visit is a 409 too (backend spec
+      // 0001 AC-3, AC-5). That message names the clash, so show it instead of the generic one.
+      const detail = backendDetail(failure.body);
+      if (SCHEDULE_OPERATIONS.includes(operation) && detail && /overlap/i.test(detail)) {
+        return `${readableServerMessage(detail)} ${SCHEDULE_CONFLICT_HINT[operation as ScheduleOperation]}`;
+      }
+      return `Another curator changed this ${record} at the same time. Reload and try again.`;
+    }
     if (failure.status === 429) return "Too many requests in a short time. Wait a minute and try again.";
   }
 

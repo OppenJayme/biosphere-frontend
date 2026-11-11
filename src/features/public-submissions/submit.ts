@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { env } from "@/lib/env";
+import { readableServerMessage } from "./schedule";
 
 const receiptSchema = z.object({
   id: z.uuid(),
@@ -25,18 +26,33 @@ export type SubmissionResult =
 function validationDetails(body: unknown): string[] {
   if (!body || typeof body !== "object" || !("message" in body)) return [];
   const { message } = body as { message: unknown };
-  if (typeof message === "string") return [message];
-  if (Array.isArray(message)) return message.filter((item): item is string => typeof item === "string");
+  if (typeof message === "string") return [readableServerMessage(message)];
+  if (Array.isArray(message)) {
+    return message.filter((item): item is string => typeof item === "string").map(readableServerMessage);
+  }
   return [];
 }
 
-/** Only validation/rate-limit rejection is definitive; other failures may follow a stored request. */
+/**
+ * Only validation, overlap, and rate limit rejections are definitive; other failures may follow a
+ * stored request.
+ */
 export function submissionFailure(status: number | null, body: unknown): SubmissionResult {
   if (status === 400) {
     return {
       ok: false,
       outcome: "rejected",
       message: "Some details were not accepted. Check the form and try again.",
+      details: validationDetails(body),
+    };
+  }
+  // 409: a preferred time overlaps a visit a curator already approved (backend spec 0001 AC-3).
+  // Nothing was stored, so the visitor can pick another time and send again.
+  if (status === 409) {
+    return {
+      ok: false,
+      outcome: "rejected",
+      message: "One of your preferred times is already booked. Choose another time, then submit again.",
       details: validationDetails(body),
     };
   }

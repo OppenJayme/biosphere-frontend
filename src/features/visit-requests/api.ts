@@ -4,6 +4,7 @@ import "server-only";
 import { apiFetch } from "@/lib/api-client";
 import { communicationEntrySchema, communicationHistorySchema } from "../public-submissions/history";
 import { parseResponse as parse } from "../public-submissions/parse";
+import { visitCalendarSchema, type VisitCalendarEvent } from "./calendar";
 import {
   campusEntrySummarySchema,
   visitRequestListSchema,
@@ -30,6 +31,19 @@ export async function listVisitRequests(query: VisitRequestListQuery = {}): Prom
     cache: "no-store",
   });
   return parse(visitRequestListSchema, response, "visit request list");
+}
+
+/**
+ * Approved, submitted for campus entry, and completed visits whose approved date falls in
+ * from..to (YYYY-MM-DD, inclusive, at most 93 days apart). Backend spec 0001 AC-7.
+ */
+export async function getVisitCalendar(from: string, to: string): Promise<VisitCalendarEvent[]> {
+  const params = new URLSearchParams({ from, to });
+  const response = await apiFetch<unknown>(`/visit-requests/calendar?${params}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  return parse(visitCalendarSchema, response, "visit calendar");
 }
 
 export async function getVisitRequest(id: string) {
