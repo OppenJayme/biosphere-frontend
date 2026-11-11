@@ -148,7 +148,7 @@ export function BackupHistoryWorkspace({
                         <td className="whitespace-nowrap py-3 pr-3 text-zinc-600">{formatTimestamp(entry.startedAt)}</td>
                         <td className="py-3 pr-3 font-medium text-zinc-800">{codeLabel(entry.backupType)}</td>
                         <td className="py-3 pr-3">
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_STYLES[entry.status]}`}>
+                          <span className={`rounded-full px-2.5 py-1 text-[0.6875rem] font-medium ${STATUS_STYLES[entry.status]}`}>
                             {codeLabel(entry.status)}
                           </span>
                         </td>

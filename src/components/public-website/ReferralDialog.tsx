@@ -197,7 +197,7 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                 return (
                   <div key={rowId}>
                     <div className="grid grid-cols-[1fr_6.5rem_6.5rem_auto] items-end gap-2">
-                      <label className="text-[11px] text-zinc-500">
+                      <label className="text-[0.6875rem] text-zinc-500">
                         Option {index + 1} date
                         <input
                           name="scheduleDate"
@@ -208,7 +208,7 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                           {...invalid}
                         />
                       </label>
-                      <label className="text-[11px] text-zinc-500">
+                      <label className="text-[0.6875rem] text-zinc-500">
                         Start
                         <input
                           name="scheduleStart"
@@ -218,7 +218,7 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                           {...invalid}
                         />
                       </label>
-                      <label className="text-[11px] text-zinc-500">
+                      <label className="text-[0.6875rem] text-zinc-500">
                         End
                         <input
                           name="scheduleEnd"

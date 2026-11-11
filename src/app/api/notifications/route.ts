@@ -4,6 +4,7 @@ import {
 } from "@/features/notifications/api";
 import { notificationStateRequestSchema } from "@/features/notifications/types";
 import { ApiError } from "@/lib/api-client";
+import { isCrossSiteRequest } from "@/lib/same-origin";
 
 export const runtime = "nodejs";
 
@@ -15,21 +16,8 @@ function json(body: unknown, status: number) {
 }
 
 export async function PATCH(request: Request) {
-  const origin = request.headers.get("origin");
-  if (request.headers.get("sec-fetch-site") === "cross-site") {
+  if (isCrossSiteRequest(request)) {
     return json({ message: "Cross-site requests are not allowed." }, 403);
-  }
-  if (origin) {
-    try {
-      if (
-        new URL(origin).host !==
-        (request.headers.get("host") ?? new URL(request.url).host)
-      ) {
-        return json({ message: "Cross-site requests are not allowed." }, 403);
-      }
-    } catch {
-      return json({ message: "Invalid request origin." }, 403);
-    }
   }
   if (
     !(request.headers.get("content-type") ?? "")

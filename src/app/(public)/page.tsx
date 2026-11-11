@@ -219,7 +219,7 @@ function CollectionTile({
           className={`shrink-0 rounded-full border-2 border-white/90 ${featured ? "h-16 w-16" : "h-12 w-12"}`}
         />
         <div className="min-w-0 flex-1 text-white">
-          <p className="font-mono text-[11px] tracking-wide text-white/70">{collection.taxon}</p>
+          <p className="font-mono text-[0.6875rem] tracking-wide text-white/70">{collection.taxon}</p>
           <h3
             className={`mt-1 font-display font-semibold tracking-tight ${
               featured ? "text-3xl sm:text-4xl" : "text-2xl"

@@ -56,7 +56,7 @@ export function AvailableReportsList({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold text-zinc-900">{report.title}</span>
                 <span className="mt-0.5 block text-xs text-zinc-500">{report.description}</span>
-                <span className="mt-2 block text-[11px] font-medium text-zinc-500">
+                <span className="mt-2 block text-[0.6875rem] font-medium text-zinc-500">
                   {report.formats.map((format) => FORMAT_NAMES[format]).join(" · ")}
                 </span>
               </span>

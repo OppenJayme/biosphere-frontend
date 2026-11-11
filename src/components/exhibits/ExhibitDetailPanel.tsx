@@ -98,7 +98,7 @@ function Carousel({ images, alt }: { images: { mediaUrl: string; caption: string
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
-          <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white">
+          <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-0.5 text-[0.6875rem] font-medium text-white">
             {index + 1}/{images.length}
           </span>
         </>
@@ -321,7 +321,7 @@ function ArSwitch({
           }`}
         />
       </button>
-      <span className="text-[11px] font-normal text-zinc-500">
+      <span className="text-[0.6875rem] font-normal text-zinc-500">
         {!exhibit.arSelected
           ? "Mark for AR first"
           : exhibit.arAssetCount === 0
@@ -532,7 +532,7 @@ export function ExhibitDetailPanel({
             <button
               type="button"
               onClick={() => setReplacingUrl(true)}
-              className="mt-0.5 block w-full text-right text-[11px] font-semibold text-forest-700 underline hover:text-forest-800"
+              className="mt-0.5 block w-full text-right text-[0.6875rem] font-semibold text-forest-700 underline hover:text-forest-800"
             >
               Replace URL
             </button>
@@ -544,7 +544,7 @@ export function ExhibitDetailPanel({
           </div>
         )}
         <InfoRow icon={PencilIcon} label="Publish Status">
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLES[exhibit.status]}`}>
+          <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${STATUS_STYLES[exhibit.status]}`}>
             {EXHIBIT_STATUS_LABELS[exhibit.status]}
           </span>
         </InfoRow>
@@ -560,10 +560,10 @@ export function ExhibitDetailPanel({
         <InfoRow icon={SparkleIcon} label="AR Selection">
           {exhibit.arSelected ? (
             <>
-              <span className="rounded-full bg-forest-100 px-2 py-0.5 text-[11px] font-medium text-forest-700">
+              <span className="rounded-full bg-forest-100 px-2 py-0.5 text-[0.6875rem] font-medium text-forest-700">
                 Marked for AR
               </span>
-              <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
+              <span className="mt-0.5 block text-[0.6875rem] font-normal text-zinc-500">
                 Since {formatExhibitDate(exhibit.arSelectedAt)}
               </span>
             </>
@@ -571,7 +571,7 @@ export function ExhibitDetailPanel({
             <span className="font-normal text-zinc-500">Not selected</span>
           )}
           {!editingArSelection && !confirmWithdraw && (
-            <span className="mt-0.5 flex justify-end gap-3 text-[11px]">
+            <span className="mt-0.5 flex justify-end gap-3 text-[0.6875rem]">
               <button
                 type="button"
                 onClick={() => setEditingArSelection(true)}
@@ -732,7 +732,7 @@ export function ExhibitDetailPanel({
             {qrBusy === "qr-png" ? "Preparing…" : "Download QR"}
           </button>
         </div>
-        <p className="text-center text-[11px] text-zinc-500">
+        <p className="text-center text-[0.6875rem] text-zinc-500">
           Also as{" "}
           <button
             type="button"

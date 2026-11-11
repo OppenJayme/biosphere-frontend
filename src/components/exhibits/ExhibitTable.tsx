@@ -63,7 +63,7 @@ export function ExhibitTable({
                 </td>
                 <td className="py-2.5 pr-3">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${STATUS_STYLES[exhibit.status]}`}
+                    className={`rounded-full px-2.5 py-1 text-[0.6875rem] font-medium whitespace-nowrap ${STATUS_STYLES[exhibit.status]}`}
                   >
                     {EXHIBIT_STATUS_LABELS[exhibit.status]}
                   </span>

@@ -47,9 +47,9 @@ type Tab = "Public Content" | "Images";
 
 function ShowBadge({ value }: { value: string }) {
   return value.trim() ? (
-    <span className="rounded-full bg-forest-100 px-2 py-0.5 text-[11px] font-medium text-forest-700">Will show</span>
+    <span className="rounded-full bg-forest-100 px-2 py-0.5 text-[0.6875rem] font-medium text-forest-700">Will show</span>
   ) : (
-    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-500">Hidden</span>
+    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500">Hidden</span>
   );
 }
 
@@ -269,7 +269,7 @@ function MediaDetailsEditor({
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] text-zinc-500">Lower order numbers show first, after the cover photo.</p>
+        <p className="text-[0.6875rem] text-zinc-500">Lower order numbers show first, after the cover photo.</p>
         <span className="flex shrink-0 gap-2 text-xs">
           <button
             type="button"
@@ -431,10 +431,10 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-zinc-800">{mediaName(item)}</span>
-                    <span className="block text-[11px] text-zinc-400">Order {item.displayOrder}</span>
+                    <span className="block text-[0.6875rem] text-zinc-400">Order {item.displayOrder}</span>
                   </span>
                   {item.isCover ? (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold-100 px-2.5 py-1 text-[11px] font-medium text-gold-700">
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold-100 px-2.5 py-1 text-[0.6875rem] font-medium text-gold-700">
                       <StarIcon className="h-3 w-3" />
                       Cover photo
                     </span>
@@ -443,7 +443,7 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
                       type="button"
                       disabled={saving}
                       onClick={() => saveMedia(item.id, { isCover: true })}
-                      className="flex shrink-0 items-center gap-1 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-zinc-600 hover:bg-sage-100 disabled:opacity-50"
+                      className="flex shrink-0 items-center gap-1 rounded-full border border-black/10 px-2.5 py-1 text-[0.6875rem] font-medium text-zinc-600 hover:bg-sage-100 disabled:opacity-50"
                     >
                       <StarIcon className="h-3 w-3" />
                       Make cover
@@ -461,7 +461,7 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   {confirmId === item.id ? (
-                    <span className="flex shrink-0 items-center gap-2 text-[11px]">
+                    <span className="flex shrink-0 items-center gap-2 text-[0.6875rem]">
                       <button
                         type="button"
                         disabled={removing}
@@ -583,7 +583,7 @@ export function CreateExhibitModal({
                     <p className="truncate text-xs italic text-zinc-500">{exhibit.specimen.scientificName}</p>
                   )}
                 </div>
-                <span className="flex shrink-0 items-center gap-1 text-[11px] text-zinc-400">
+                <span className="flex shrink-0 items-center gap-1 text-[0.6875rem] text-zinc-400">
                   <LockIcon className="h-3 w-3" />
                   {exhibit.specimen?.accessionNumber ?? "Cannot be changed"}
                 </span>

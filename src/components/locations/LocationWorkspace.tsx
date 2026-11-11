@@ -180,7 +180,7 @@ export function LocationWorkspace({
                     >
                       <span className="truncate">{unit.label}</span>
                       <StorageLifecycleBadge archived={Boolean(unit.archivedAt)} />
-                      <span className="shrink-0 text-[10px] text-zinc-400">{unit.unitType}</span>
+                      <span className="shrink-0 text-[0.625rem] text-zinc-400">{unit.unitType}</span>
                     </button>
                   </li>
                 ))}
@@ -207,7 +207,7 @@ export function LocationWorkspace({
                               }`}
                             >
                               <span className="truncate">{unit.label}</span>
-                              <span className="truncate text-[11px] font-normal text-zinc-500">
+                              <span className="truncate text-[0.6875rem] font-normal text-zinc-500">
                                 {storagePath(units, unit.id).slice(0, -1).map((parent) => parent.label).join(" › ") || "Top level"}
                               </span>
                             </button>

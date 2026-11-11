@@ -169,7 +169,7 @@ export function ReportOptionsPanel({
               </Field>
             </div>
           )}
-          <p className="flex gap-1.5 text-[11px] leading-snug text-zinc-500">
+          <p className="flex gap-1.5 text-[0.6875rem] leading-snug text-zinc-500">
             <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
             <span>Period covers: {definition.periodAppliesTo} Dates follow Philippine time.</span>
           </p>
@@ -221,7 +221,7 @@ export function ReportOptionsPanel({
               </select>
             </Field>
             {storageError && (
-              <p className="text-[11px] text-amber-700">Storage locations could not be loaded, so this filter is unavailable.</p>
+              <p className="text-[0.6875rem] text-amber-700">Storage locations could not be loaded, so this filter is unavailable.</p>
             )}
             {form.storageUnitId && (
               <label className="flex items-center gap-2 text-xs text-zinc-700">
@@ -300,7 +300,7 @@ export function ReportOptionsPanel({
               placeholder="Printed in the report's Curator Remarks section."
               className={`${inputClasses} resize-y`}
             />
-            <span className="mt-1 block text-right text-[11px] text-zinc-400">
+            <span className="mt-1 block text-right text-[0.6875rem] text-zinc-400">
               {form.remarks.length.toLocaleString()} / 5,000
             </span>
           </Field>

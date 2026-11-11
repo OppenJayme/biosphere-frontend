@@ -209,7 +209,7 @@ export function SpecimenImportWorkspace() {
           </button>
           <PendingOverlay pending={isPreviewing} label="Validating import rows…" />
         </form>
-        <p className="mt-2 text-[11px] text-zinc-400">
+        <p className="mt-2 text-[0.6875rem] text-zinc-400">
           Maximum upload: {(MAX_SPECIMEN_IMPORT_FILE_BYTES / 1024 / 1024).toFixed(0)} MB. The file itself is not retained by this page.
         </p>
       </section>

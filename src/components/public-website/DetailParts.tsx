@@ -367,14 +367,14 @@ function DeliveryBadge({ result }: { result: string | null }) {
   const status = deliveryStatus(result);
   if (status === "sent") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-forest-100 px-2 py-0.5 text-[10px] font-semibold text-forest-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-forest-100 px-2 py-0.5 text-[0.625rem] font-semibold text-forest-700">
         <CheckIcon className="h-3 w-3" />
         Sent
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[0.625rem] font-semibold text-red-700">
       <AlertTriangleIcon className="h-3 w-3" />
       {status === "not-sent" ? "Not sent" : "Email failed"}
     </span>
@@ -401,7 +401,7 @@ function EmailEntryBody({ entry }: { entry: CommunicationEntry }) {
         </p>
       )}
       <details>
-        <summary className="cursor-pointer text-[11px] font-medium text-forest-700 hover:underline">
+        <summary className="cursor-pointer text-[0.6875rem] font-medium text-forest-700 hover:underline">
           Show email
         </summary>
         <p className="mt-1 max-h-60 overflow-y-auto whitespace-pre-line break-words rounded-md bg-sage-50 px-2 py-1.5">
@@ -439,7 +439,7 @@ export function HistoryTimeline({
         <li className="relative">
           <span aria-hidden className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-zinc-400" />
           <p className="text-xs font-semibold text-zinc-800">Submitted through the public website</p>
-          <p className="text-[11px] text-zinc-500">{formatTimestamp(submittedAt)}</p>
+          <p className="text-[0.6875rem] text-zinc-500">{formatTimestamp(submittedAt)}</p>
         </li>
         {entries?.map((entry) => (
           <li key={entry.id} className="relative">
@@ -460,7 +460,7 @@ export function HistoryTimeline({
                 {readableHistoryMessage(entry.message, statusLabels)}
               </p>
             )}
-            <p className="mt-0.5 text-[11px] text-zinc-500">
+            <p className="mt-0.5 text-[0.6875rem] text-zinc-500">
               {entry.recordedBy === currentAccountId ? "You" : "A curator"} · {formatTimestamp(entry.createdAt)}
             </p>
           </li>
