@@ -87,10 +87,10 @@ function SidebarContent({
         <Link href="/dashboard" onClick={onNavigate} className={`flex items-center gap-3 ${collapsed ? "lg:justify-center" : ""}`}>
           <LogoMark className="h-8 w-8 shrink-0 text-forest-700" />
           <span className={`flex flex-col leading-tight ${collapsed ? "lg:hidden" : ""}`}>
-            <span className="text-[15px] font-semibold whitespace-nowrap text-forest-900">
+            <span className="text-[0.9375rem] font-semibold whitespace-nowrap text-forest-900">
               BioSphere Collections
             </span>
-            <span className="text-[11px] whitespace-nowrap text-zinc-500">
+            <span className="text-[0.6875rem] whitespace-nowrap text-zinc-500">
               Curator workspace
             </span>
           </span>
@@ -143,7 +143,7 @@ function SidebarContent({
         <LogoMark className="h-8 w-8 shrink-0" />
         <span className={`flex flex-col leading-tight ${collapsed ? "lg:hidden" : ""}`}>
           <span className="text-xs font-semibold whitespace-nowrap text-forest-900">USC Biological Museum</span>
-          <span className="text-[11px] text-zinc-500">v1.0.0</span>
+          <span className="text-[0.6875rem] text-zinc-500">v1.0.0</span>
         </span>
       </div>
     </>

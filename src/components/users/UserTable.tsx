@@ -63,7 +63,7 @@ export function UserTable({
                 </td>
                 <td className="py-2.5 pr-3 whitespace-nowrap text-zinc-600">{user.email ?? "—"}</td>
                 <td className="py-2.5 pr-3">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${STATUS_STYLES[user.status]}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-[0.6875rem] font-medium whitespace-nowrap ${STATUS_STYLES[user.status]}`}>
                     {user.status}
                   </span>
                 </td>

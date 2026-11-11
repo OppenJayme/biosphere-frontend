@@ -64,7 +64,7 @@ function RecentActivity({ accountId }: { accountId: string }) {
               <div className="min-w-0">
                 {/* The sentence already says when an action failed or was denied. */}
                 <p className="text-xs text-zinc-800">{entry.description}</p>
-                <p className="text-[11px] text-zinc-500">{entry.timestamp}</p>
+                <p className="text-[0.6875rem] text-zinc-500">{entry.timestamp}</p>
               </div>
             </li>
           ))}
@@ -107,7 +107,7 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
             Curator
           </InfoRow>
           <InfoRow icon={CheckIcon} label="Status">
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLES[user.status]}`}>{user.status}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${STATUS_STYLES[user.status]}`}>{user.status}</span>
           </InfoRow>
           <InfoRow icon={MailIcon} label="Email">
             {user.email ?? "—"}
@@ -122,7 +122,7 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
 
         {/* The museum decided on 2026-11-07 that curators do not deactivate each other
             (REQ-4.1-08); an account is turned off through a Developer handover (REQ-4.1-09). */}
-        <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[11px] leading-relaxed text-zinc-600">
+        <p className="mt-3 flex gap-1.5 rounded-lg bg-sage-50 p-2.5 text-[0.6875rem] leading-relaxed text-zinc-600">
           <InfoIcon className="mt-px h-3.5 w-3.5 shrink-0" />
           Curators cannot turn off curator accounts. When a curator leaves, the system developer hands the
           account over to their successor.

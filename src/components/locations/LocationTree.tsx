@@ -44,7 +44,7 @@ function TreeNode({
             {node.label}
           </span>
           <StorageLifecycleBadge archived={Boolean(node.archivedAt)} />
-          <span className="ml-auto shrink-0 rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
+          <span className="ml-auto shrink-0 rounded-md bg-zinc-100 px-2 py-0.5 text-[0.625rem] font-medium text-zinc-500">
             {node.unitType}
           </span>
         </button>
