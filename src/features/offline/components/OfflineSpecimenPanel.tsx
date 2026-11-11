@@ -130,7 +130,7 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
               </button>
             </h2>
             <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+              className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${
                 online ? "bg-forest-100 text-forest-800" : "bg-zinc-200 text-zinc-700"
               }`}
             >
@@ -202,7 +202,7 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
                         {draft.draft.specimenCategory ?? "Category not recorded"}
                       </p>
                     </div>
-                    <span className={`ml-auto shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${STATE_STYLES[draft.syncState]}`}>
+                    <span className={`ml-auto shrink-0 rounded-full px-2 py-1 text-[0.625rem] font-semibold ${STATE_STYLES[draft.syncState]}`}>
                       {STATE_LABELS[draft.syncState]}
                     </span>
                   </div>
@@ -333,7 +333,7 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
                             .join(" · ") || "No names recorded"}
                         </p>
                       </div>
-                      <span className="ml-auto shrink-0 rounded-full bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-600">
+                      <span className="ml-auto shrink-0 rounded-full bg-zinc-100 px-2 py-1 text-[0.625rem] font-semibold text-zinc-600">
                         {specimen.status}
                       </span>
                     </div>

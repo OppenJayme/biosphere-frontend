@@ -104,7 +104,7 @@ export function ReportHistoryTable({
                     <td className="whitespace-nowrap py-2.5 pr-3 text-zinc-500">{formatReportTimestamp(item.generatedAt)}</td>
                     <td className="py-2.5 pr-3">
                       {item.format ? (
-                        <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium ${FORMAT_STYLES[item.format]}`}>
+                        <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.6875rem] font-medium ${FORMAT_STYLES[item.format]}`}>
                           {FORMAT_NAMES[item.format]}
                         </span>
                       ) : (
@@ -121,12 +121,12 @@ export function ReportHistoryTable({
                     </td>
                     <td className="py-2.5">
                       {item.result === "SUCCESS" ? (
-                        <span className="whitespace-nowrap rounded-full bg-forest-100 px-2.5 py-1 text-[11px] font-semibold text-forest-700">
+                        <span className="whitespace-nowrap rounded-full bg-forest-100 px-2.5 py-1 text-[0.6875rem] font-semibold text-forest-700">
                           Generated
                         </span>
                       ) : (
                         <div className="max-w-56">
-                          <span className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700">
+                          <span className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-[0.6875rem] font-semibold text-red-700">
                             {item.result === "DENIED" ? "Denied" : "Failed"}
                           </span>
                           {item.error && <p className="mt-1 text-xs text-red-700">{item.error}</p>}

@@ -102,7 +102,7 @@ function ApproveScheduleForm({ request, action }: { request: VisitRequest; actio
               <span>
                 <span className="block font-semibold text-zinc-900">Option {schedule.preferenceOrder}</span>
                 <span className="text-zinc-600">{formatSchedule(schedule)}</span>
-                {past && <span className="block text-[11px] text-zinc-500">This date has passed.</span>}
+                {past && <span className="block text-[0.6875rem] text-zinc-500">This date has passed.</span>}
               </span>
             </label>
           );
@@ -195,7 +195,7 @@ function CampusEntryCard({ summary }: { summary: CampusEntrySummary | null }) {
             {copied === "copied" ? <CheckIcon className="h-4 w-4" /> : <ClipboardIcon className="h-4 w-4" />}
             {copied === "copied" ? "Copied" : "Copy summary"}
           </button>
-          <p aria-live="polite" className="text-center text-[11px] text-zinc-500">
+          <p aria-live="polite" className="text-center text-[0.6875rem] text-zinc-500">
             {copied === "failed" ? "Copy was blocked by the browser. Select the text above and copy it instead." : ""}
           </p>
         </>

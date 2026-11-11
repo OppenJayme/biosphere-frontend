@@ -40,7 +40,7 @@ export function PublicFooter() {
         </div>
 
         <div className="lg:col-span-2">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Explore</p>
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ink-muted">Explore</p>
           <ul className="mt-4 space-y-2.5 text-sm">
             {EXPLORE_LINKS.map((link) => (
               <li key={link.href}>
@@ -53,7 +53,7 @@ export function PublicFooter() {
         </div>
 
         <address className="not-italic lg:col-span-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Find us</p>
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ink-muted">Find us</p>
           <p className="mt-4 text-sm leading-relaxed text-ink">
             Josef Baumgartner Building,{" "}
             <strong className="font-semibold">USC Talamban Campus</strong>, Cebu City
@@ -71,8 +71,8 @@ export function PublicFooter() {
         </address>
 
         <div className="lg:col-span-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">Hours</p>
-          <dl className="mt-4 space-y-2 font-mono text-[13px]">
+          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ink-muted">Hours</p>
+          <dl className="mt-4 space-y-2 font-mono text-[0.8125rem]">
             {HOURS.map((row) => (
               <div key={row.days}>
                 <dt className="text-ink-muted">{row.days}</dt>

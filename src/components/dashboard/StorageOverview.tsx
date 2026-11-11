@@ -14,7 +14,7 @@ export function StorageOverview({ items }: { items: StorageOverviewItem[] }) {
           <li key={item.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-zinc-900">{item.location}</p>
-              <p className="truncate text-[11px] text-zinc-500">
+              <p className="truncate text-[0.6875rem] text-zinc-500">
                 {item.unitType} · {item.storageType}
               </p>
             </div>

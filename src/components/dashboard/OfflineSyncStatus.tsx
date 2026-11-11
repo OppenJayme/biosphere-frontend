@@ -45,7 +45,7 @@ export function OfflineSyncStatus({ ownerId }: { ownerId: string }) {
         <ul className="space-y-1.5">
           {SYNC_STATES.map((state) => (
             <li key={state} className="flex items-center justify-between gap-2">
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATE_STYLES[state]}`}>
+              <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${STATE_STYLES[state]}`}>
                 {STATE_LABELS[state]}
               </span>
               <span className="text-xs font-semibold text-zinc-700">{counts.get(state) ?? 0}</span>

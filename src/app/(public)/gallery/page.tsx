@@ -92,7 +92,7 @@ export default function GalleryPage() {
                         <span className="block font-display text-lg font-semibold text-ink group-hover:text-brand">
                           {collection.name}
                         </span>
-                        <span className="block font-mono text-[11px] text-ink-muted">
+                        <span className="block font-mono text-[0.6875rem] text-ink-muted">
                           {collection.taxon}
                         </span>
                       </span>

@@ -93,6 +93,13 @@
   cursor: pointer;
 }
 
+/* Base text size. The museum asked for larger text (11 Nov 2026). Tailwind sizes
+   and spacing are in rem, so they all scale from this one value. A percentage
+   keeps any larger default a visitor has set in their browser. */
+html {
+  font-size: 112.5%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

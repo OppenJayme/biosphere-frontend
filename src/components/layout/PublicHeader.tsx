@@ -29,17 +29,17 @@ export function PublicHeader() {
         <Link href="/" className="group flex items-center gap-3" onClick={() => setMobileOpen(false)}>
           <LogoMark className="h-9 w-9 transition-transform duration-500 group-hover:rotate-[-8deg]" />
           <span className="flex flex-col leading-none">
-            <span className="font-display text-[17px] font-semibold tracking-tight text-ink">
+            <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
               USC Biological Museum
             </span>
-            <span className="mt-1 font-mono text-[10.5px] tracking-wide text-ink-muted">
+            <span className="mt-1 font-mono text-[0.65625rem] tracking-wide text-ink-muted">
               University of San Carlos
             </span>
           </span>
         </Link>
 
         <nav aria-label="Primary" className="hidden md:block">
-          <ul className="flex items-center gap-1 text-[15px]">
+          <ul className="flex items-center gap-1 text-[0.9375rem]">
             {NAV_LINKS.map((link) => {
               const active = isActive(link.href);
               return (
