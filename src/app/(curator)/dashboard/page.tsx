@@ -10,7 +10,13 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentSpecimensTable } from "@/components/dashboard/RecentSpecimensTable";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { OfflineSyncStatus } from "@/components/dashboard/OfflineSyncStatus";
+import { UpcomingVisits } from "@/components/dashboard/UpcomingVisits";
+import { ArrowRightIcon } from "@/components/icons";
 import { getDashboardData } from "@/features/dashboard/api";
+import { publicWebsiteHref } from "@/features/public-submissions/query";
+import { museumToday } from "@/features/public-submissions/schedule";
+import { getVisitCalendar } from "@/features/visit-requests/api";
+import { UPCOMING_VISIT_DAYS, addDays } from "@/features/visit-requests/calendar";
 import { verifySession } from "@/lib/session";
 import { ApiError } from "@/lib/api-client";
 import { PageHeader, PAGE_ACTION_PRIMARY } from "@/components/curator/PageHeader";
@@ -27,6 +33,10 @@ export default async function DashboardPage() {
   const user = await verifySession();
   if (!user) redirect("/login?from=/dashboard");
 
+  const today = museumToday();
+  // Started before the main dashboard request so both load in parallel.
+  const upcomingVisits = loadUpcomingVisits(today);
+
   let data;
   try {
     data = await getDashboardData();
@@ -36,6 +46,7 @@ export default async function DashboardPage() {
     }
     throw error;
   }
+  const upcoming = await upcomingVisits;
 
   return (
     <div className="space-y-5">
@@ -61,9 +72,31 @@ export default async function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title="Quick actions">
-          <QuickActions />
-        </Panel>
+        <div className="min-w-0 space-y-4">
+          <Panel title="Quick actions">
+            <QuickActions />
+          </Panel>
+
+          <Panel
+            title="Upcoming visits"
+            info="Approved visit requests from today through the next 13 days. Choose one to open it on the Visit Requests calendar."
+            action={
+              <Link
+                href={publicWebsiteHref({ tab: "visits", view: "calendar" })}
+                className="flex shrink-0 items-center gap-1 text-xs font-medium text-forest-700 hover:text-forest-800"
+              >
+                Open calendar
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </Link>
+            }
+          >
+            {upcoming ? (
+              <UpcomingVisits events={upcoming} today={today} />
+            ) : (
+              <SectionError message="Upcoming visits could not be loaded. Refresh the page to try again." />
+            )}
+          </Panel>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -153,6 +186,16 @@ export default async function DashboardPage() {
       </Panel>
     </div>
   );
+}
+
+/** Approved visits from today through the next 13 days, or null when they could not be loaded. */
+async function loadUpcomingVisits(today: string) {
+  try {
+    return await getVisitCalendar(today, addDays(today, UPCOMING_VISIT_DAYS - 1));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) redirect("/login?from=/dashboard");
+    return null;
+  }
 }
 
 function SectionError({ message }: { message: string }) {

@@ -16,7 +16,9 @@ import {
   MAX_VISITOR_COUNT,
   normalizeTime,
   validateSchedules,
+  type MuseumClock,
   type ScheduleInput,
+  type ScheduleRules,
 } from "../public-submissions/schedule";
 
 export const visitorCountField = z.coerce
@@ -136,7 +138,11 @@ function readVehicles(formData: FormData) {
   };
 }
 
-export function readVisitRequestForm(formData: FormData, today?: string): VisitFormResult {
+export function readVisitRequestForm(
+  formData: FormData,
+  clock?: MuseumClock | string,
+  rules?: ScheduleRules,
+): VisitFormResult {
   const fields = visitFieldsSchema.safeParse({
     name: stringValue(formData, "name"),
     email: stringValue(formData, "email"),
@@ -154,7 +160,7 @@ export function readVisitRequestForm(formData: FormData, today?: string): VisitF
   const vehicleCheck = bringingVehicle ? readVehicles(formData) : { vehicles: [], rowErrors: [], valid: true };
 
   const schedules = readScheduleRows(formData);
-  const scheduleCheck = validateSchedules(schedules, today);
+  const scheduleCheck = validateSchedules(schedules, clock, rules);
   const { visitors, error: visitorError } = readVisitors(formData);
 
   const errors: FieldErrors<VisitFormField> = {};

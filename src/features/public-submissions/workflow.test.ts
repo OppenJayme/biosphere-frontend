@@ -54,6 +54,8 @@ describe("curator page query", () => {
       status: "",
       search: "",
       ...noDates,
+      view: "list",
+      month: "",
     });
     expect(parsePublicWebsiteQuery({ status: "CLOSED", search: ` ${"a".repeat(150)} ` })).toEqual({
       tab: "inquiries",
@@ -105,6 +107,23 @@ describe("curator page query", () => {
     );
     expect(publicWebsiteHref({ tab: "inquiries" })).toBe("/public-website");
   });
+
+  it("keeps the visit requests view and calendar month in the URL", () => {
+    const id = "5589315f-81fb-49a7-8b1c-df177703e1de";
+    const calendar = parsePublicWebsiteQuery({ tab: "visits", view: "calendar", month: "2026-12" });
+    expect(calendar).toMatchObject({ view: "calendar", month: "2026-12" });
+    expect(publicWebsiteHref(calendar, { selected: id })).toBe(
+      `/public-website?tab=visits&view=calendar&month=2026-12&selected=${id}`,
+    );
+    // A bad month falls back to the current one; a month without the calendar view is dropped.
+    expect(parsePublicWebsiteQuery({ tab: "visits", view: "calendar", month: "2026-13" })).toMatchObject({ month: "" });
+    expect(parsePublicWebsiteQuery({ tab: "visits", month: "2026-12" })).toMatchObject({ view: "list", month: "" });
+    expect(parsePublicWebsiteQuery({ tab: "visits", view: "grid" })).toMatchObject({ view: "list" });
+    // List is the default, so it is not written; inquiries never carry a view.
+    expect(publicWebsiteHref({ tab: "visits", view: "list", month: "2026-12" })).toBe("/public-website?tab=visits");
+    expect(parsePublicWebsiteQuery({ view: "calendar" })).not.toHaveProperty("view");
+    expect(publicWebsiteHref({ tab: "inquiries", view: "calendar" })).toBe("/public-website");
+  });
 });
 
 describe("curatorActionError", () => {
@@ -113,6 +132,31 @@ describe("curatorActionError", () => {
     expect(curatorActionError({ status: 409, body: {} }, "approve-schedule")).toMatch(/at the same time/);
     expect(curatorActionError({ status: 403, body: {} }, "inquiry-note")).toMatch(/Only curators/);
     expect(curatorActionError(null, "referral")).toMatch(/Check your connection/);
+  });
+
+  it("shows the overlap reason for a 409 on approval or referral, not a concurrent edit", () => {
+    const approval = curatorActionError(
+      {
+        status: 409,
+        body: { message: "Preferred option 1 overlaps visit AAAAAAAA, already approved for 2030-10-15 08:00-09:30." },
+      },
+      "approve-schedule",
+    );
+    expect(approval).toMatch(/^Preferred option 1 overlaps visit AAAAAAAA/);
+    expect(approval).toMatch(/Nothing was approved/);
+    expect(approval).not.toMatch(/at the same time/);
+
+    const referral = curatorActionError(
+      { status: 409, body: { message: "preferredSchedules[0] (2030-10-15 08:00-09:00) overlaps a visit that is already booked. Choose another time." } },
+      "referral",
+    );
+    expect(referral).toMatch(/^Option 1 \(2030-10-15 08:00-09:00\) overlaps/);
+    expect(referral).toMatch(/No visit request was created/);
+
+    // A 409 without an overlap message is still a concurrent change.
+    expect(curatorActionError({ status: 409, body: { message: "Conflict" } }, "referral")).toMatch(/at the same time/);
+    // Other operations never borrow the overlap wording.
+    expect(curatorActionError({ status: 409, body: { message: "overlaps" } }, "visit-status")).toMatch(/at the same time/);
   });
 
   it("includes the backend's reason for rejected referrals", () => {

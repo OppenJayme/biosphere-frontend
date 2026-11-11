@@ -10,6 +10,7 @@ import type { CampusEntrySummary, VisitRequest } from "@/features/visit-requests
 import { InquiryDetail } from "./InquiryDetail";
 import { PublicWebsiteToolbar } from "./PublicWebsiteToolbar";
 import { SubmissionTable, type SubmissionRows } from "./SubmissionTable";
+import { VisitCalendar, type VisitCalendarData } from "./VisitCalendar";
 import { VisitRequestDetail } from "./VisitRequestDetail";
 
 export type SubmissionSelection =
@@ -35,6 +36,7 @@ export function PublicWebsiteWorkspace({
   query,
   rows,
   listError,
+  calendar,
   selection,
   selectionError,
   statusCounts,
@@ -43,6 +45,8 @@ export function PublicWebsiteWorkspace({
   query: PublicWebsiteQuery;
   rows: SubmissionRows | null;
   listError?: string;
+  /** Present only in the Visit Requests calendar view. */
+  calendar: VisitCalendarData | null;
   selection: SubmissionSelection | null;
   selectionError?: string;
   statusCounts: Record<string, number> | null;
@@ -72,7 +76,10 @@ export function PublicWebsiteWorkspace({
     submittedTo: query.submittedTo,
     visitDateFrom: query.visitDateFrom,
     visitDateTo: query.visitDateTo,
+    ...(query.tab === "visits" && { view: query.view, month: query.month }),
   };
+  // Visit Requests in Calendar view (the page only loads calendar data for that view).
+  const calendarQuery = query.tab === "visits" && query.view === "calendar" ? query : null;
   const hrefFor = (id: string) => publicWebsiteHref(query, { selected: id });
   const recordLabel = query.tab === "inquiries" ? "inquiries" : "visit requests";
   const managementTitle = query.tab === "inquiries" ? "General Inquiry Management" : "Visit Request Management";
@@ -99,10 +106,17 @@ export function PublicWebsiteWorkspace({
       <div className="space-y-6">
         <section
           id="submission-list"
-          aria-label={`${recordLabel} list`}
+          aria-label={calendarQuery ? "Visit calendar" : `${recordLabel} list`}
           className="min-w-0 scroll-mt-20 space-y-4 rounded-xl border border-black/10 bg-white p-5"
         >
-          {listError ? (
+          {calendarQuery && calendar ? (
+            <VisitCalendar
+              data={calendar}
+              query={calendarQuery}
+              selectedId={selection?.record.id ?? null}
+              onSelectedEventActivate={showManagement}
+            />
+          ) : listError ? (
             <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
               <p className="font-semibold">Unable to load {recordLabel}</p>
               <p className="mt-1">{listError}</p>
@@ -128,7 +142,7 @@ export function PublicWebsiteWorkspace({
             </p>
           )}
 
-          {!listError && total > 0 && (
+          {!calendarQuery && !listError && total > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4 text-xs text-zinc-500">
               <p aria-live="polite">
                 Showing {start + 1} to {Math.min(start + pageSize, total)} of {total} {recordLabel}
@@ -216,7 +230,13 @@ export function PublicWebsiteWorkspace({
               currentAccountId={currentAccountId}
             />
           ) : (
-            <EmptyDetail message={`Select one of the ${recordLabel} to see its details here.`} />
+            <EmptyDetail
+              message={
+                calendarQuery
+                  ? "Choose a visit on the calendar to see its details here."
+                  : `Select one of the ${recordLabel} to see its details here.`
+              }
+            />
           )}
         </section>
       </div>
