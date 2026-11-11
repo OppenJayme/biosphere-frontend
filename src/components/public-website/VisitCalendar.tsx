@@ -140,7 +140,7 @@ export function VisitCalendar({
         </nav>
       </div>
 
-      <ul aria-label="Calendar legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-zinc-600">
+      <ul aria-label="Calendar legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.6875rem] text-zinc-600">
         {SCHEDULED_VISIT_STATUSES.map((status) => (
           <li key={status} className="flex items-center gap-1.5">
             <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${VISIT_STYLES[status]}`} />
@@ -190,7 +190,7 @@ export function VisitCalendar({
                 <th
                   key={day.short}
                   scope="col"
-                  className="border-b border-black/10 px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-500"
+                  className="border-b border-black/10 px-2 py-2 text-left text-[0.6875rem] font-semibold uppercase tracking-wide text-zinc-500"
                 >
                   <abbr title={day.long} className="no-underline">
                     {day.short}
@@ -229,7 +229,7 @@ export function VisitCalendar({
                           {isToday && <span className="sr-only">, today</span>}
                         </time>
                         {closed && inMonth && dayOfWeek(date) === 0 && (
-                          <span className="text-[10px] font-medium text-zinc-500">Closed</span>
+                          <span className="text-[0.625rem] font-medium text-zinc-500">Closed</span>
                         )}
                       </div>
                       {dayEvents.length > 0 && (
@@ -247,7 +247,7 @@ export function VisitCalendar({
                                   onClick={selected ? onSelectedEventActivate : undefined}
                                   aria-current={selected ? "true" : undefined}
                                   title={`${event.organization}, ${VISIT_REQUEST_STATUS_LABELS[event.status]}`}
-                                  className={`block rounded-md px-1.5 py-1 text-[11px] leading-snug hover:ring-1 hover:ring-black/20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-forest-700 ${
+                                  className={`block rounded-md px-1.5 py-1 text-[0.6875rem] leading-snug hover:ring-1 hover:ring-black/20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-forest-700 ${
                                     VISIT_STYLES[event.status]
                                   } ${selected ? "ring-2 ring-forest-700" : ""}`}
                                 >
