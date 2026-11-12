@@ -187,6 +187,37 @@ provider expiry, deployed database or independent acceptance test. DEF-019 stays
 open and its shared-backend pilot remains disabled. Do not replace the parent
 fixture with shared application ports or remove the original read-only adapter.
 
+#### Recovery-wait harness repair — 2026-11-12
+
+On backend `4eabc11` and frontend `77642f4`, the unchanged owned recovery test
+failed: one write committed, but `firstClosed` was false and the adapter refused
+the premature retry. Inspection of the pinned Playwright build and a separate
+network-blocked browser probe confirmed that `waitForFunction(async () => false)`
+resolves false immediately rather than polling; a synchronous false predicate
+correctly times out. This explains why the harness did not enforce its waits,
+not the historical DEF-019 shared-target incident.
+
+The harness now explicitly reads and polls the owned adapter state, returning
+only when the requested flag is strictly true. Each state fetch has a two-second
+deadline and each polling phase a ten-second budget; timeout stops the test with
+synthetic state diagnostics. Neither wait forces socket closure or changes the
+adapter's `firstClosed` requirement, exact-payload restriction or two-forward cap.
+
+After polling was repaired, the next run confirmed commitment, tab closure and
+successful same-ID retry, but failed waiting for visible Synchronized text:
+the redesigned online panel auto-collapses when no drafts remain. The harness
+now waits for the receipt to attach, opens the collapsed panel via its accessible
+toggle, and retains the original receipt/cache visibility assertions.
+
+Two consecutive full `npm run test:offline:recovery` runs pass (22.2s and 20.8s),
+each with a fresh disposable fixture, including independent
+parent SQL assertions for exactly one specimen, receipt and successful audit,
+the original IDs, retained fields, Uncataloged status and public display off.
+Syntax, targeted ESLint and diff checks pass. Only the harness is changed;
+no application code, backend adapter, credentials, shared records or deployment
+is involved. This repair is separate from the containment-panel fix in #145.
+DEF-019 remains open and its shared-target diagnostic stays disabled.
+
 ### Duplicate-warning component regression
 
 From the frontend root, run `npm run test:duplicates:browser` after the existing

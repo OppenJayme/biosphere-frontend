@@ -1,5 +1,25 @@
 /** Serialized into the fresh browser's run-code call; no imported helpers or app session. */
 export async function checkRecovery(page, { origin, bundle }) {
+  // The pinned Playwright build treats an async waitForFunction predicate's
+  // Promise as truthy, even when it resolves false. Poll the observed state.
+  async function waitForFixtureState(target, field) {
+    const deadline = Date.now() + 10000;
+    let observed;
+    while (Date.now() < deadline) {
+      observed = await target.evaluate(async () => {
+        const response = await fetch("/fixture/state", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(2000),
+        });
+        if (!response.ok) throw new Error("Owned fixture state read failed");
+        return response.json();
+      });
+      if (observed[field] === true) return observed;
+      await target.waitForTimeout(100);
+    }
+    throw new Error("Owned fixture did not reach " + field + ": " + JSON.stringify(observed));
+  }
+
   const context = page.context();
   if ((await context.cookies()).length || context.serviceWorkers().length) {
     throw new Error("Recovery context was not empty");
@@ -42,8 +62,7 @@ export async function checkRecovery(page, { origin, bundle }) {
     await context.setOffline(false);
     // Use the real hook's stable-connection queue, not a fixture call to its sync functions.
     await target.getByText("Synchronizing", { exact: true }).waitFor();
-    await target.waitForFunction(async () => (await (await fetch("/fixture/state")).json()).committed);
-    const accepted = await target.evaluate(async () => (await fetch("/fixture/state")).json());
+    const accepted = await waitForFixtureState(target, "committed");
     if (accepted.forwarded !== 1 || accepted.firstClosed || accepted.holdExpired) {
       throw new Error("First commit was not held before tab closure");
     }
@@ -51,7 +70,7 @@ export async function checkRecovery(page, { origin, bundle }) {
     await target.close();
     target = await context.newPage();
     await target.goto(origin);
-    await target.waitForFunction(async () => (await (await fetch("/fixture/state")).json()).firstClosed);
+    await waitForFixtureState(target, "firstClosed");
     await context.setOffline(true);
     await target.addScriptTag({ path: bundle });
     await target.getByText("Sync Failed", { exact: true }).waitFor();
@@ -75,6 +94,13 @@ export async function checkRecovery(page, { origin, bundle }) {
     await target.getByRole("button", { name: "Cancel", exact: true }).click();
     await context.setOffline(false);
     try {
+      // A completed online queue auto-collapses. Reveal the attached receipt
+      // through the real UI before retaining the original visibility check.
+      await target.getByText("Synchronized", { exact: true }).waitFor({ state: "attached", timeout: 8000 });
+      const workspaceToggle = target.getByRole("button", { name: "Offline specimen workspace", exact: true });
+      if (await workspaceToggle.getAttribute("aria-expanded") === "false") {
+        await workspaceToggle.click();
+      }
       await target.getByText("Synchronized", { exact: true }).waitFor({ timeout: 8000 });
     } catch {
       const state = await target.evaluate(async () => (await fetch("/fixture/state")).json());
