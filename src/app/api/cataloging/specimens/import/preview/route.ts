@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
   const file = formData.get("file");
   if (!(file instanceof File)) {
-    return json({ message: "Choose a non-empty CSV or XLSX file to preview." }, 400);
+    return json({ message: "Choose a non-empty Excel (.xlsx) file to preview." }, 400);
   }
   const fileError = validateImportFileMetadata(file);
   if (fileError) return json({ message: fileError }, 400);

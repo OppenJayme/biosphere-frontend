@@ -8,12 +8,18 @@
 import { useActionState, useId } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
-import { handOverCuratorAction, onboardCuratorAction, updateCuratorStatusAction } from "@/features/developer/actions";
+import {
+  handOverCuratorAction,
+  onboardCuratorAction,
+  resendCuratorInviteAction,
+  updateCuratorStatusAction,
+} from "@/features/developer/actions";
 import {
   AUTHORIZATION_REASON_MAX_LENGTH,
   type CuratorHandoverFormState,
   type CuratorStatusFormState,
   type OnboardFormState,
+  type ResendInviteFormState,
 } from "@/features/developer/form";
 import type { CuratorAccount } from "@/features/developer/types";
 
@@ -115,6 +121,33 @@ function StatusBadge({ curator }: { curator: CuratorAccount }) {
     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200">
       Inactive
     </span>
+  );
+}
+
+/** Emails a new password-setup link while the invitation is still pending. */
+function ResendInviteControl({ curator }: { curator: CuratorAccount }) {
+  const [state, formAction, pending] = useActionState<ResendInviteFormState, FormData>(
+    resendCuratorInviteAction.bind(null, curator.id),
+    {},
+  );
+
+  return (
+    <form action={formAction} className="mb-2">
+      <button
+        type="submit"
+        disabled={pending}
+        className="text-xs font-semibold text-forest-800 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Resend invitation
+      </button>
+      <PendingOverlay pending={pending} label="Sending invitation…" />
+      <FormMessage message={state.message} />
+      {state.success && (
+        <p role="status" className="mt-1 max-w-sm text-xs font-medium text-emerald-700">
+          {state.success}
+        </p>
+      )}
+    </form>
   );
 }
 
@@ -309,6 +342,7 @@ export function CuratorAccountAdmin({ curators }: { curators: CuratorAccount[] |
                   </td>
                   <td className="px-4 py-3 text-zinc-600">{isoDate(curator.createdAt)}</td>
                   <td className="px-4 py-3">
+                    {curator.status === "ACTIVE" && !curator.inviteAccepted && <ResendInviteControl curator={curator} />}
                     <CuratorStatusControl curator={curator} />
                   </td>
                 </tr>

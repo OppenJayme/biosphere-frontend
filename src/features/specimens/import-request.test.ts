@@ -25,7 +25,7 @@ describe("reviewed import client transport", () => {
   });
 
   it("preserves a resolved backend rejection rather than replacing it with transport wording", async () => {
-    const rejected = { ok: false as const, message: "This preview expired or is no longer available. Upload the CSV again." };
+    const rejected = { ok: false as const, message: "This preview expired or is no longer available. Upload the file again." };
     vi.mocked(commitSpecimenImportAction).mockResolvedValueOnce(rejected);
 
     expect(await requestSpecimenImportCommit(reviewed)).toEqual(rejected);
@@ -40,6 +40,8 @@ describe("reviewed import client transport", () => {
         results: [{ rowNumber: 4, success: false, errors: ["The selected collection is unavailable."] }],
         createdCount: 1,
         failedCount: 1,
+        lotsCreated: 0,
+        lotsSkipped: 0,
       },
     };
     vi.mocked(commitSpecimenImportAction).mockResolvedValueOnce(partial);
@@ -59,6 +61,8 @@ describe("reviewed import client transport", () => {
         results: [],
         createdCount: 0,
         failedCount: 0,
+        lotsCreated: 0,
+        lotsSkipped: 0,
       },
     };
     vi.mocked(commitSpecimenImportAction)

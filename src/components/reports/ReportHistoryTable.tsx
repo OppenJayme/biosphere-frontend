@@ -5,20 +5,21 @@ import { ClipboardIcon } from "@/components/icons";
 import { TablePagination } from "@/components/ui/TablePagination";
 import { describeReportParameters, formatReportTimestamp } from "@/features/reports/history";
 import { DEFAULT_REPORT_HISTORY_PAGE_SIZE, reportHistoryHref } from "@/features/reports/query";
-import type {
-  ReportDefinition,
-  ReportFormat,
-  ReportHistoryPage,
-  ReportHistoryPageSize,
-  ReportHistoryQuery,
+import {
+  REPORT_FORMAT_LABELS,
+  type RecordedReportFormat,
+  type ReportDefinition,
+  type ReportHistoryPage,
+  type ReportHistoryPageSize,
+  type ReportHistoryQuery,
 } from "@/features/reports/types";
 
-const FORMAT_STYLES: Record<ReportFormat, string> = {
+const FORMAT_STYLES: Record<RecordedReportFormat, string> = {
+  XLSX: "bg-forest-100 text-forest-700",
   PDF: "bg-red-100 text-red-600",
   DOCX: "bg-sky-100 text-sky-700",
-  CSV: "bg-forest-100 text-forest-700",
+  CSV: "bg-amber-100 text-amber-700",
 };
-const FORMAT_NAMES: Record<ReportFormat, string> = { PDF: "PDF", DOCX: "Word", CSV: "CSV" };
 
 const selectClasses =
   "rounded-lg border border-black/15 bg-white px-2.5 py-1.5 text-xs text-zinc-700 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700";
@@ -105,7 +106,7 @@ export function ReportHistoryTable({
                     <td className="py-2.5 pr-3">
                       {item.format ? (
                         <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[0.6875rem] font-medium ${FORMAT_STYLES[item.format]}`}>
-                          {FORMAT_NAMES[item.format]}
+                          {REPORT_FORMAT_LABELS[item.format]}
                         </span>
                       ) : (
                         <span className="text-zinc-400">—</span>

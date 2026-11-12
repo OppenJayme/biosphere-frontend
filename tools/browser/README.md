@@ -141,6 +141,26 @@ open; its disabled shared-backend pilot must stay disabled. A later interruption
 slice needs an explicitly agreed write-capable owned adapter, not removal of
 these protections against shared servers.
 
+#### Collapsed-panel harness repair — 2026-11-12
+
+On backend `4eabc11` and frontend `77642f4`, the unchanged preflight passed its
+two direct adapter-denial tests but failed its real-panel browser case. The
+online workspace now defaults to collapsed when no drafts are pending; the
+harness waited for the hidden empty-queue text without opening the panel.
+The repaired harness opens the workspace through its accessible toggle only
+when `aria-expanded` is false, then retains the existing queue/modal checks.
+
+The same `npm run test:offline:containment` command from the owned sibling
+backend now passes **3/3**. The permanent write denial, credential/origin/target
+checks, browser default-deny routes, independent canary samples and zero SQL
+specimen/receipt/audit assertions are unchanged. Only synthetic identities and
+fresh owned services were used; no application environment files or login state
+were copied. The browser and owned database were cleaned up.
+
+This repairs the stale harness, not DEF-019's historical shared-target leak.
+DEF-019 remains open and that diagnostic stays disabled. No accepted-write,
+lost-response recovery, real authentication or PWA check was performed here.
+
 ### Owned offline lost-response recovery
 
 After the approved containment preflight, run `npm run test:offline:recovery`
@@ -186,6 +206,37 @@ tab-close/accepted-write recovery, not a browser/OS crash, real Next/PWA auth,
 provider expiry, deployed database or independent acceptance test. DEF-019 stays
 open and its shared-backend pilot remains disabled. Do not replace the parent
 fixture with shared application ports or remove the original read-only adapter.
+
+#### Recovery-wait harness repair — 2026-11-12
+
+On backend `4eabc11` and frontend `77642f4`, the unchanged owned recovery test
+failed: one write committed, but `firstClosed` was false and the adapter refused
+the premature retry. Inspection of the pinned Playwright build and a separate
+network-blocked browser probe confirmed that `waitForFunction(async () => false)`
+resolves false immediately rather than polling; a synchronous false predicate
+correctly times out. This explains why the harness did not enforce its waits,
+not the historical DEF-019 shared-target incident.
+
+The harness now explicitly reads and polls the owned adapter state, returning
+only when the requested flag is strictly true. Each state fetch has a two-second
+deadline and each polling phase a ten-second budget; timeout stops the test with
+synthetic state diagnostics. Neither wait forces socket closure or changes the
+adapter's `firstClosed` requirement, exact-payload restriction or two-forward cap.
+
+After polling was repaired, the next run confirmed commitment, tab closure and
+successful same-ID retry, but failed waiting for visible Synchronized text:
+the redesigned online panel auto-collapses when no drafts remain. The harness
+now waits for the receipt to attach, opens the collapsed panel via its accessible
+toggle, and retains the original receipt/cache visibility assertions.
+
+Two consecutive full `npm run test:offline:recovery` runs pass (22.2s and 20.8s),
+each with a fresh disposable fixture, including independent
+parent SQL assertions for exactly one specimen, receipt and successful audit,
+the original IDs, retained fields, Uncataloged status and public display off.
+Syntax, targeted ESLint and diff checks pass. Only the harness is changed;
+no application code, backend adapter, credentials, shared records or deployment
+is involved. This repair is separate from the containment-panel fix in #145.
+DEF-019 remains open and its shared-target diagnostic stays disabled.
 
 ### Duplicate-warning component regression
 
