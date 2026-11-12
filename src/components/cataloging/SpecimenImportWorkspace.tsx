@@ -310,7 +310,7 @@ export function SpecimenImportWorkspace() {
                     <td className="max-w-[360px] px-3 py-3 align-top">
                       {row.errors.length > 0 && <ul className="list-disc space-y-1 pl-4 text-xs text-red-700">{row.errors.map((error, index) => <li key={`${row.rowNumber}-error-${index}`}>{error}</li>)}</ul>}
                       {row.duplicateWarnings.length > 0 && <ul className="list-disc space-y-1 pl-4 text-xs text-amber-800">{row.duplicateWarnings.map((warning, index) => <li key={`${row.rowNumber}-warning-${index}`}>{warning}</li>)}</ul>}
-                      {row.fieldWarnings.length > 0 && (
+                      {row.valid && row.fieldWarnings.length > 0 && (
                         <div className="mt-1 text-xs text-amber-800">
                           <p className="font-medium">Will be imported with these left blank:</p>
                           <ul className="mt-0.5 list-disc space-y-1 pl-4">{row.fieldWarnings.map((warning, index) => <li key={`${row.rowNumber}-field-${index}`}>{warning}</li>)}</ul>
