@@ -6,7 +6,19 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, PlusIcon, CloseIcon } from "@/components/icons";
 import { FormAlert, PrivacyConsent, SubmissionSuccess, focusFirstInvalid } from "@/components/public-forms/FormParts";
 import type { FieldErrors } from "@/features/public-submissions/form-fields";
-import { MAX_PREFERRED_SCHEDULES, MAX_VISITOR_COUNT, museumToday } from "@/features/public-submissions/schedule";
+import {
+  MAX_PREFERRED_SCHEDULES,
+  MAX_VISITOR_COUNT,
+  MUSEUM_OPENING_HOURS,
+  museumClock,
+  museumToday,
+  normalizeTime,
+  openingWindowsFor,
+  summarizeOpeningHours,
+  validateSchedules,
+  type ScheduleInput,
+  type ScheduleRules,
+} from "@/features/public-submissions/schedule";
 import {
   postPublicSubmission,
   type SubmissionReceipt,
@@ -18,11 +30,35 @@ import {
   type VehicleField,
   type VisitFormField,
 } from "@/features/visit-requests/form";
+import { ScheduleDayHint } from "./ScheduleDayHint";
+import { useVisitAvailability } from "./useVisitAvailability";
 
 let rowIdCounter = 0;
 function nextRowId() {
   rowIdCounter += 1;
   return rowIdCounter;
+}
+
+/** Schedule rows are controlled so each can show its day's hours and booked times as it is filled. */
+type ScheduleRow = { id: number } & ScheduleInput;
+function newScheduleRow(): ScheduleRow {
+  return { id: nextRowId(), date: "", startTime: "", endTime: "" };
+}
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The hours, closed day, passed time, and booked time problems for one finished row, shown while
+ * the visitor is still filling it in. Missing fields wait for Submit, so a half typed row is not
+ * flagged.
+ */
+function liveScheduleError(row: ScheduleRow, rules: ScheduleRules) {
+  const schedule = { date: row.date, startTime: normalizeTime(row.startTime), endTime: normalizeTime(row.endTime) };
+  if (!DATE_PATTERN.test(schedule.date)) return undefined;
+  const closed = openingWindowsFor(schedule.date, rules.openingHours ?? MUSEUM_OPENING_HOURS).length === 0;
+  // A closed day is already explained by the day hint under the row.
+  if (closed || !schedule.startTime || !schedule.endTime) return undefined;
+  return validateSchedules([schedule], museumClock(), rules).rowErrors[0];
 }
 
 const segmentClasses =
@@ -37,7 +73,13 @@ export function RequestVisitForm({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [today] = useState(museumToday);
-  const [scheduleRows, setScheduleRows] = useState<number[]>(() => [nextRowId()]);
+  const { availability, status: availabilityStatus, ensureDate, reload: reloadAvailability } = useVisitAvailability(today);
+  // Hours come from the availability response once it loads; the shared copy covers the moment before.
+  const scheduleRules: ScheduleRules = {
+    openingHours: availability?.openingHours,
+    booked: availability?.booked,
+  };
+  const [scheduleRows, setScheduleRows] = useState<ScheduleRow[]>(() => [newScheduleRow()]);
   const [visitorRows, setVisitorRows] = useState<number[]>(() => [nextRowId()]);
   const [bringingVehicle, setBringingVehicle] = useState(false);
   const [vehicleRows, setVehicleRows] = useState<number[]>(() => [nextRowId()]);
@@ -59,7 +101,7 @@ export function RequestVisitForm({
         onDone={onSubmitted}
         onAnother={() => {
           setReceipt(null);
-          setScheduleRows([nextRowId()]);
+          setScheduleRows([newScheduleRow()]);
           setVisitorRows([nextRowId()]);
           setBringingVehicle(false);
           setVehicleRows([nextRowId()]);
@@ -91,7 +133,8 @@ export function RequestVisitForm({
     event.preventDefault();
     if (submitting || retryBlocked) return;
 
-    const parsed = readVisitRequestForm(new FormData(event.currentTarget), today);
+    // The museum clock is read at submit time, so a form left open still catches a time that has passed.
+    const parsed = readVisitRequestForm(new FormData(event.currentTarget), museumClock(), scheduleRules);
     setFailure(null);
     if (!parsed.success) {
       setErrors(parsed.errors);
@@ -109,8 +152,22 @@ export function RequestVisitForm({
     const result = await postPublicSubmission("/visit-requests", parsed.data);
     setSubmitting(false);
 
-    if (result.ok) setReceipt(result.receipt);
-    else setFailure(result);
+    if (result.ok) {
+      setReceipt(result.receipt);
+    } else {
+      setFailure(result);
+      // A rejected time may have just been booked by someone else; refresh what the rows show.
+      if (result.outcome === "rejected" && /booked|overlap/i.test([result.message, ...result.details].join(" "))) {
+        reloadAvailability();
+      }
+    }
+  }
+
+  function updateScheduleRow(rowId: number, index: number, change: Partial<ScheduleInput>) {
+    setScheduleRows((rows) => rows.map((row) => (row.id === rowId ? { ...row, ...change } : row)));
+    // The row changed, so its message from the last submit no longer applies.
+    setScheduleErrors((current) => current.map((error, position) => (position === index ? undefined : error)));
+    if (change.date && DATE_PATTERN.test(change.date)) ensureDate(change.date);
   }
 
   return (
@@ -212,15 +269,33 @@ export function RequestVisitForm({
             <legend className="contents">
               <FieldGroupLabel>Preferred Schedules</FieldGroupLabel>
             </legend>
-            <p id="visit-schedule-hint" className="text-sm text-ink-muted">
-              List up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
-            </p>
+            <div id="visit-schedule-hint" className="space-y-1 text-sm text-ink-muted">
+              <p>
+                List up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
+              </p>
+              <p>
+                Each option must fit inside the museum&apos;s visiting hours:{" "}
+                {summarizeOpeningHours(availability?.openingHours ?? MUSEUM_OPENING_HOURS)}
+              </p>
+            </div>
 
             <ol className="space-y-3">
-              {scheduleRows.map((rowId, index) => {
-                const rowError = scheduleErrors[index];
+              {scheduleRows.map((row, index) => {
+                const rowId = row.id;
+                const rowError = scheduleErrors[index] ?? liveScheduleError(row, scheduleRules);
                 const errorId = `schedule-${rowId}-error`;
-                const invalid = rowError ? { "aria-invalid": true as const, "aria-describedby": errorId } : {};
+                const dayHintId = `schedule-${rowId}-day`;
+                const showDayHint = DATE_PATTERN.test(row.date) && row.date >= today;
+                const windows = showDayHint
+                  ? openingWindowsFor(row.date, availability?.openingHours ?? MUSEUM_OPENING_HOURS)
+                  : [];
+                const describedBy = [rowError && errorId, showDayHint && !(windows.length === 0 && rowError) && dayHintId].filter(Boolean).join(" ");
+                const invalid = {
+                  ...(rowError && { "aria-invalid": true as const }),
+                  ...(describedBy && { "aria-describedby": describedBy }),
+                };
+                // Native pickers start inside that day's hours; validation still checks the exact window.
+                const timeBounds = windows.length > 0 ? { min: windows[0].start, max: windows.at(-1)?.end } : {};
                 return (
                   <li key={rowId} className="rounded-xl border border-line p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -229,7 +304,7 @@ export function RequestVisitForm({
                         <button
                           type="button"
                           onClick={() => {
-                            setScheduleRows((rows) => rows.filter((id) => id !== rowId));
+                            setScheduleRows((rows) => rows.filter((item) => item.id !== rowId));
                             setScheduleErrors([]);
                           }}
                           aria-label={`Remove option ${index + 1}`}
@@ -247,6 +322,8 @@ export function RequestVisitForm({
                           type="date"
                           min={today}
                           required
+                          value={row.date}
+                          onChange={(event) => updateScheduleRow(rowId, index, { date: event.target.value })}
                           className={fieldClasses}
                           {...invalid}
                         />
@@ -257,7 +334,10 @@ export function RequestVisitForm({
                           name="scheduleStart"
                           type="time"
                           required
+                          value={row.startTime}
+                          onChange={(event) => updateScheduleRow(rowId, index, { startTime: event.target.value })}
                           className={fieldClasses}
+                          {...timeBounds}
                           {...invalid}
                         />
                       </Field>
@@ -267,12 +347,23 @@ export function RequestVisitForm({
                           name="scheduleEnd"
                           type="time"
                           required
+                          value={row.endTime}
+                          onChange={(event) => updateScheduleRow(rowId, index, { endTime: event.target.value })}
                           className={fieldClasses}
+                          {...timeBounds}
                           {...invalid}
                         />
                       </Field>
                     </div>
                     {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
+                    {showDayHint && !(windows.length === 0 && rowError) && (
+                      <ScheduleDayHint
+                        id={dayHintId}
+                        date={row.date}
+                        availability={availability}
+                        status={availabilityStatus}
+                      />
+                    )}
                   </li>
                 );
               })}
@@ -282,7 +373,7 @@ export function RequestVisitForm({
             {scheduleRows.length < MAX_PREFERRED_SCHEDULES && (
               <button
                 type="button"
-                onClick={() => setScheduleRows((rows) => [...rows, nextRowId()])}
+                onClick={() => setScheduleRows((rows) => [...rows, newScheduleRow()])}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
               >
                 <PlusIcon className="h-4 w-4" />

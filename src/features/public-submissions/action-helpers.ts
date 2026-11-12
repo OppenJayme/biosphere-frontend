@@ -39,6 +39,8 @@ export function returnHref(
       submittedTo: returnQuery?.submittedTo,
       visitDateFrom: returnQuery?.visitDateFrom,
       visitDateTo: returnQuery?.visitDateTo,
+      view: returnQuery?.view,
+      month: returnQuery?.month,
     }),
   });
   return publicWebsiteHref(query, { selected: extras.selected, notice: extras.notice, email: extras.email });
