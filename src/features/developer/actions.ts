@@ -12,6 +12,7 @@ import {
   handOverCurator,
   onboardCurator,
   removeArAsset,
+  resendCuratorInvite,
   updateCuratorStatus,
 } from "./api";
 import {
@@ -24,10 +25,11 @@ import {
   type CuratorHandoverFormState,
   type CuratorStatusFormState,
   type OnboardFormState,
+  type ResendInviteFormState,
 } from "./form";
 import { getDeveloperAccess } from "./session";
 
-type DeveloperOperation = "onboard" | "status" | "handover" | "activate" | "deactivate" | "remove";
+type DeveloperOperation = "onboard" | "resend" | "status" | "handover" | "activate" | "deactivate" | "remove";
 
 function backendMessage(error: ApiError) {
   const body = error.body;
@@ -44,6 +46,13 @@ function developerError(error: unknown, operation: DeveloperOperation) {
     }
     if (operation === "handover" && error.status >= 500) {
       return "The handover could not be completed. No account was changed. Try again.";
+    }
+    // Already accepted, inactive, link already opened: the backend says which and what to do.
+    if (operation === "resend" && [404, 409, 429].includes(error.status)) {
+      return backendMessage(error) ?? "This invitation can no longer be resent. Reload the list.";
+    }
+    if (operation === "resend" && error.status >= 500) {
+      return "The invitation email could not be sent. Try again later.";
     }
     // AR rule violations (e.g. the exhibit is no longer deployable) are explained by the backend.
     if (error.status === 400 && operation === "activate") {
@@ -107,6 +116,29 @@ export async function onboardCuratorAction(
     values: { email: "", fullName: "" },
     success: `A password-setup invitation was sent to ${parsed.result.data.email}.`,
   };
+}
+
+/** Emails a new password-setup link while the curator's invitation is still pending (REQ-4.2-02). */
+export async function resendCuratorInviteAction(
+  curatorId: string,
+  _previousState: ResendInviteFormState,
+  _formData: FormData,
+): Promise<ResendInviteFormState> {
+  void _previousState;
+  void _formData;
+  if (!(await requireDeveloper())) return { message: NOT_DEVELOPER };
+
+  const id = z.uuid().safeParse(curatorId);
+  if (!id.success) return { message: "The curator identifier is invalid. Reload and try again." };
+
+  try {
+    await resendCuratorInvite(id.data);
+  } catch (error) {
+    return { message: developerError(error, "resend") };
+  }
+
+  revalidatePath("/developer");
+  return { success: "A new password-setup link was sent. Earlier links no longer work." };
 }
 
 export async function updateCuratorStatusAction(

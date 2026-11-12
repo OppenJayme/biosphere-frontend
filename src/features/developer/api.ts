@@ -39,6 +39,14 @@ export async function onboardCurator(input: OnboardCuratorInput) {
   return parse(curatorAccountSchema, response, "curator onboarding");
 }
 
+/** Emails a new password-setup link while the curator's invitation is still pending. */
+export async function resendCuratorInvite(id: string) {
+  const response = await apiFetch<unknown>(`/developer/curators/${encodeURIComponent(id)}/resend-invitation`, {
+    method: "POST",
+  });
+  return parse(curatorAccountSchema, response, "invitation resend");
+}
+
 export async function updateCuratorStatus(id: string, input: CuratorStatusInput) {
   const response = await apiFetch<unknown>(`/developer/curators/${encodeURIComponent(id)}/status`, {
     method: "PATCH",

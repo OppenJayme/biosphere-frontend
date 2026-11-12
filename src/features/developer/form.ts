@@ -18,6 +18,7 @@ export const AUTHORIZATION_REASON_MAX_LENGTH = 500;
 export type OnboardFormValues = { email: string; fullName: string };
 export type OnboardFormState = { values: OnboardFormValues; message?: string; success?: string };
 export type CuratorStatusFormState = { message?: string };
+export type ResendInviteFormState = { message?: string; success?: string };
 export type CuratorHandoverFormState = { message?: string; success?: string };
 
 function formString(formData: FormData, field: string) {
