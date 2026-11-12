@@ -141,6 +141,26 @@ open; its disabled shared-backend pilot must stay disabled. A later interruption
 slice needs an explicitly agreed write-capable owned adapter, not removal of
 these protections against shared servers.
 
+#### Collapsed-panel harness repair — 2026-11-12
+
+On backend `4eabc11` and frontend `77642f4`, the unchanged preflight passed its
+two direct adapter-denial tests but failed its real-panel browser case. The
+online workspace now defaults to collapsed when no drafts are pending; the
+harness waited for the hidden empty-queue text without opening the panel.
+The repaired harness opens the workspace through its accessible toggle only
+when `aria-expanded` is false, then retains the existing queue/modal checks.
+
+The same `npm run test:offline:containment` command from the owned sibling
+backend now passes **3/3**. The permanent write denial, credential/origin/target
+checks, browser default-deny routes, independent canary samples and zero SQL
+specimen/receipt/audit assertions are unchanged. Only synthetic identities and
+fresh owned services were used; no application environment files or login state
+were copied. The browser and owned database were cleaned up.
+
+This repairs the stale harness, not DEF-019's historical shared-target leak.
+DEF-019 remains open and that diagnostic stays disabled. No accepted-write,
+lost-response recovery, real authentication or PWA check was performed here.
+
 ### Owned offline lost-response recovery
 
 After the approved containment preflight, run `npm run test:offline:recovery`
