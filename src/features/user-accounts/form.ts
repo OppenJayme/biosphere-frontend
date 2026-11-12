@@ -10,6 +10,9 @@ export const FULL_NAME_MAX_LENGTH = 255;
 
 export type InviteCuratorValues = { email: string; fullName: string };
 export type InviteCuratorField = keyof InviteCuratorValues;
+/** Result of resending a pending invitation from the Users page. */
+export type ResendInvitationState = { message?: string; success?: string };
+
 export type InviteCuratorState = {
   values: InviteCuratorValues;
   errors?: Partial<Record<InviteCuratorField, string>>;

@@ -1,4 +1,4 @@
-/** Server-only client for the protected curator account list and invitations. */
+/** Server-only client for the protected curator account list, invitations and invitation resends. */
 
 import "server-only";
 import { apiFetch } from "@/lib/api-client";
@@ -26,6 +26,20 @@ export async function inviteCurator(input: InviteCuratorInput): Promise<UserAcco
 
   if (!result.success) {
     throw new Error("The backend returned an invalid curator invitation response.");
+  }
+
+  return result.data;
+}
+
+/** POST /user-accounts/:id/resend-invitation: emails a new link while the invitation is pending. */
+export async function resendInvitation(accountId: string): Promise<UserAccount> {
+  const response = await apiFetch<unknown>(`/user-accounts/${encodeURIComponent(accountId)}/resend-invitation`, {
+    method: "POST",
+  });
+  const result = userAccountSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid invitation resend response.");
   }
 
   return result.data;

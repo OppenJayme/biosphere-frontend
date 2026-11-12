@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { ClockIcon, CalendarIcon, ShieldIcon, CheckIcon, ArrowRightIcon, MailIcon, InfoIcon } from "@/components/icons";
-import { getUserRecentActivity } from "@/features/user-accounts/actions";
+import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { getUserRecentActivity, resendInvitationAction } from "@/features/user-accounts/actions";
+import type { ResendInvitationState } from "@/features/user-accounts/form";
 import type { AccountUser, RecentActivityResult } from "@/features/user-accounts/types";
 import { STATUS_STYLES } from "./UserTable";
 
@@ -74,6 +76,42 @@ function RecentActivity({ accountId }: { accountId: string }) {
   );
 }
 
+/** Emails a new password-setup link while the invitation is still pending, e.g. after the first one expired. */
+function ResendInvitation({ user }: { user: AccountUser }) {
+  const [state, formAction, pending] = useActionState<ResendInvitationState, FormData>(
+    resendInvitationAction.bind(null, user.id),
+    {},
+  );
+
+  return (
+    <form action={formAction} className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <p className="text-[0.6875rem] leading-relaxed text-amber-950">
+        This curator has not set a password yet. If their link expired or got lost, send a new one. Earlier
+        links stop working.
+      </p>
+      <button
+        type="submit"
+        disabled={pending}
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-forest-700 bg-white px-3 py-1.5 text-xs font-semibold text-forest-800 hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <MailIcon className="h-3.5 w-3.5" />
+        Resend invitation
+      </button>
+      <PendingOverlay pending={pending} label="Sending invitation…" />
+      {state.message && (
+        <p role="alert" className="mt-2 text-xs font-medium text-red-700">
+          {state.message}
+        </p>
+      )}
+      {state.success && (
+        <p role="status" className="mt-2 text-xs font-medium text-emerald-700">
+          {state.success}
+        </p>
+      )}
+    </form>
+  );
+}
+
 export function UserDetailPanel({ user }: { user: AccountUser | null }) {
   if (!user) {
     return (
@@ -119,6 +157,9 @@ export function UserDetailPanel({ user }: { user: AccountUser | null }) {
             {user.createdOnFull}
           </InfoRow>
         </div>
+
+        {/* Keyed so a message about one user never shows on another. */}
+        {user.status === "Pending Invite" && <ResendInvitation key={user.id} user={user} />}
 
         {/* The museum decided on 2026-11-07 that curators do not deactivate each other
             (REQ-4.1-08); an account is turned off through a Developer handover (REQ-4.1-09). */}
