@@ -11,13 +11,17 @@ export const REPORT_TYPES = [
   "QR_AR_EXHIBITS",
   "AUDIT_LOG",
 ] as const;
-export const REPORT_FORMATS = ["PDF", "DOCX", "CSV"] as const;
+/** Reports are generated as Excel workbooks only (museum decision, 2026-11-12). */
+export const REPORT_FORMATS = ["XLSX"] as const;
+/** Formats that can appear in report history, including files generated before 2026-11-12. */
+export const RECORDED_REPORT_FORMATS = ["XLSX", "PDF", "DOCX", "CSV"] as const;
 export const REPORT_PERIODS = ["MONTHLY", "YEARLY", "CUSTOM", "ALL_TIME"] as const;
 export const REPORT_HISTORY_RESULTS = ["SUCCESS", "FAILED"] as const;
 export const REPORT_HISTORY_PAGE_SIZES = [10, 25, 50] as const;
 
 export type ReportType = (typeof REPORT_TYPES)[number];
 export type ReportFormat = (typeof REPORT_FORMATS)[number];
+export type RecordedReportFormat = (typeof RECORDED_REPORT_FORMATS)[number];
 export type ReportPeriod = (typeof REPORT_PERIODS)[number];
 export type ReportHistoryResult = (typeof REPORT_HISTORY_RESULTS)[number];
 export type ReportHistoryPageSize = (typeof REPORT_HISTORY_PAGE_SIZES)[number];
@@ -26,7 +30,11 @@ export const reportDefinitionSchema = z.object({
   type: z.enum(REPORT_TYPES),
   title: z.string().min(1),
   description: z.string(),
-  formats: z.array(z.enum(REPORT_FORMATS)).min(1),
+  // Formats this page cannot generate are dropped; a report left with none is skipped.
+  formats: z
+    .array(z.string())
+    .transform((formats) => formats.filter((format): format is ReportFormat => (REPORT_FORMATS as readonly string[]).includes(format)))
+    .pipe(z.array(z.enum(REPORT_FORMATS)).min(1)),
   periods: z.array(z.enum(REPORT_PERIODS)).min(1),
   filters: z.array(z.string()),
   periodAppliesTo: z.string(),
@@ -50,7 +58,7 @@ export const reportHistoryItemSchema = z.object({
   // An unknown (newer) type still lists by its title.
   type: z.enum(REPORT_TYPES).nullable().catch(null),
   title: z.string().nullable(),
-  format: z.enum(REPORT_FORMATS).nullable(),
+  format: z.enum(RECORDED_REPORT_FORMATS).nullable().catch(null),
   periodLabel: z.string().nullable(),
   filters: z.record(z.string(), z.unknown()),
   rowCount: z.number().int().nonnegative().nullable(),
@@ -82,7 +90,7 @@ export const reportSummarySchema = z.object({
     .object({
       type: z.string(),
       title: z.string().min(1),
-      format: z.enum(REPORT_FORMATS),
+      format: z.enum(RECORDED_REPORT_FORMATS).catch("XLSX"),
       generatedAt: z.string().min(1),
     })
     .nullable(),
@@ -103,9 +111,10 @@ export type ReportHistoryQuery = {
 /** A storage unit offered in the Inventory location filter. */
 export type ReportStorageOption = StoragePathOption;
 
-export const REPORT_FORMAT_LABELS: Record<ReportFormat, string> = {
+export const REPORT_FORMAT_LABELS: Record<RecordedReportFormat, string> = {
+  XLSX: "Excel",
   PDF: "PDF",
-  DOCX: "Word document (.docx)",
+  DOCX: "Word",
   CSV: "CSV",
 };
 

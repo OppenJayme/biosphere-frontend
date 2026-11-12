@@ -13,7 +13,7 @@ import {
 } from "@/features/reports/api";
 import { formatReportTimestamp } from "@/features/reports/history";
 import { parseReportHistoryQuery, reportHistoryHref } from "@/features/reports/query";
-import type { ReportSummary } from "@/features/reports/types";
+import { REPORT_FORMAT_LABELS, type ReportSummary } from "@/features/reports/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { PageHeader } from "@/components/curator/PageHeader";
@@ -59,14 +59,14 @@ function statCards(summary: ReportSummary | null) {
     {
       label: "Last Generated",
       value: validLast ? LAST_DATE.format(validLast) : last ? formatReportTimestamp(last.generatedAt) : "None yet",
-      note: last ? `${validLast ? `${LAST_TIME.format(validLast)} · ` : ""}${last.format}` : "—",
+      note: last ? `${validLast ? `${LAST_TIME.format(validLast)} · ` : ""}${REPORT_FORMAT_LABELS[last.format]}` : "—",
       tone: "neutral",
       icon: "calendar",
     },
     {
       label: "Exports This Month",
       value: summary ? summary.generatedThisMonth.toLocaleString() : "—",
-      note: "PDF · Word · CSV",
+      note: "Excel workbooks",
       tone: summary && summary.generatedThisMonth > 0 ? "positive" : "neutral",
       icon: "export",
     },
