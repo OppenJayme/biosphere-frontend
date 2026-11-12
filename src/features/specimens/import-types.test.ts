@@ -52,7 +52,23 @@ describe("specimen import contracts", () => {
     const parsed = specimenImportPreviewSchema.parse(preview);
     expect(parsed.rows[0].fieldWarnings).toEqual([]);
     expect(parsed.rows[0].archivedInSource).toBe(false);
-    expect(parsed).toMatchObject({ rowsWithFieldWarnings: 0, archivedRows: 0, lotSheet: null });
+    expect(parsed).toMatchObject({
+      rowsWithFieldWarnings: 0,
+      archivedRows: 0,
+      lotSheet: null,
+      restoreNotice: null,
+      lotsToImport: 0,
+      lotsSkipped: 0,
+    });
+    expect(parsed.rows[0]).toMatchObject({ lotsToImport: 0, lotsSkipped: 0 });
+    expect(
+      specimenImportCommitSchema.parse({
+        importBatchId: "22222222-2222-4222-8222-222222222222",
+        results: [{ rowNumber: 1, success: true }],
+        createdCount: 1,
+        failedCount: 0,
+      }),
+    ).toMatchObject({ lotsCreated: 0, lotsSkipped: 0 });
   });
 
   it("keeps rows with blank values selectable and leaves archived backup rows unselected", () => {
@@ -70,6 +86,16 @@ describe("specimen import contracts", () => {
     expect(validImportRowNumbers(parsed)).toEqual([1]);
     expect(parsed.rows[0].fieldWarnings).toHaveLength(1);
     expect(parsed.lotSheet).toEqual({ matched: 2, inactive: 1, unmatched: 0 });
+
+    const backup = specimenImportPreviewSchema.parse({
+      ...preview,
+      rows: [{ ...preview.rows[0], lotsToImport: 1, lotsSkipped: 1 }],
+      restoreNotice: "This re-imports specimens and their lots. It is not a full restore.",
+      lotsToImport: 1,
+      lotsSkipped: 1,
+    });
+    expect(backup.restoreNotice).toContain("not a full restore");
+    expect(backup.rows[0]).toMatchObject({ lotsToImport: 1, lotsSkipped: 1 });
   });
 
   it("rejects malformed commit responses", () => {

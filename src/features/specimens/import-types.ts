@@ -33,6 +33,9 @@ export const specimenImportPreviewRowSchema = z.object({
   fieldWarnings: z.array(z.string()).default([]),
   // Rows that were archived in a backup workbook start unselected.
   archivedInSource: z.boolean().default(false),
+  // Lots that will be created with the record, and lots left out (with a note why).
+  lotsToImport: z.number().int().nonnegative().default(0),
+  lotsSkipped: z.number().int().nonnegative().default(0),
 });
 
 /** Lots read from a backup workbook's Lots sheet. */
@@ -54,6 +57,10 @@ export const specimenImportPreviewSchema = z.object({
   rowsWithFieldWarnings: z.number().int().nonnegative().max(500).default(0),
   archivedRows: z.number().int().nonnegative().max(500).default(0),
   lotSheet: importLotSheetSchema.nullable().default(null),
+  // Set for a backup workbook: a re-import of specimens and lots, not a full restore.
+  restoreNotice: z.string().max(1000).nullable().default(null),
+  lotsToImport: z.number().int().nonnegative().default(0),
+  lotsSkipped: z.number().int().nonnegative().default(0),
 });
 
 export const specimenImportCommitRowSchema = z.object({
@@ -61,6 +68,8 @@ export const specimenImportCommitRowSchema = z.object({
   success: z.boolean(),
   specimen: specimenSummarySchema.optional(),
   errors: z.array(z.string()).optional(),
+  lotsCreated: z.number().int().nonnegative().optional(),
+  lotsSkipped: z.number().int().nonnegative().optional(),
 });
 
 export const specimenImportCommitSchema = z.object({
@@ -68,6 +77,8 @@ export const specimenImportCommitSchema = z.object({
   results: z.array(specimenImportCommitRowSchema).max(500),
   createdCount: z.number().int().nonnegative().max(500),
   failedCount: z.number().int().nonnegative().max(500),
+  lotsCreated: z.number().int().nonnegative().default(0),
+  lotsSkipped: z.number().int().nonnegative().default(0),
 });
 
 export type SpecimenImportPreviewRow = z.infer<typeof specimenImportPreviewRowSchema>;

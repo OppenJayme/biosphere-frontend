@@ -10,9 +10,9 @@ let post: typeof import("./route").POST;
 const preview = {
   previewId: "10000000-0000-4000-8000-000000000001",
   expiresAt: "2026-10-29T14:00:00Z",
-  rows: [{ rowNumber: 1, data: { commonName: "Synthetic import" }, valid: true, errors: [], duplicateWarnings: [], fieldWarnings: [], archivedInSource: false }],
+  rows: [{ rowNumber: 1, data: { commonName: "Synthetic import" }, valid: true, errors: [], duplicateWarnings: [], fieldWarnings: [], archivedInSource: false, lotsToImport: 0, lotsSkipped: 0 }],
   totalRows: 1, validRows: 1, invalidRows: 0, rowsWithWarnings: 0, unmappedColumns: [],
-  rowsWithFieldWarnings: 0, archivedRows: 0, lotSheet: null,
+  rowsWithFieldWarnings: 0, archivedRows: 0, lotSheet: null, restoreNotice: null, lotsToImport: 0, lotsSkipped: 0,
 };
 function request(name = "specimens.xlsx") {
   const body = new FormData();

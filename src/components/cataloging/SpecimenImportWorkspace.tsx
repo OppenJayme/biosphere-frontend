@@ -34,6 +34,10 @@ function rowIdentity(row: SpecimenImportPreviewRow) {
   );
 }
 
+function plural(count: number, noun: string) {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
 function formatExpiry(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.valueOf())
@@ -188,7 +192,8 @@ export function SpecimenImportWorkspace() {
           Each row needs a common name or a scientific name; anything else can be blank. Values that cannot be used are
           left blank with a note, and the record is still imported for you to finish. Format accession numbers as Text
           to keep leading zeros, and enter collection dates as YYYY-MM-DD or Excel dates. A weekly backup workbook from
-          Backup History can be imported as it is; its lots are read from the Lots sheet.
+          Backup History can be re-imported as it is: its specimens and their lots come back as new Uncataloged records.
+          It is not a full restore.
         </p>
         <form onSubmit={handlePreview} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1">
@@ -246,14 +251,31 @@ export function SpecimenImportWorkspace() {
             </div>
           </div>
 
-          {preview.lotSheet && (
+          {preview.restoreNotice && (
+            <div role="note" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+              <p className="font-semibold">Specimen and lot re-import, not a full restore</p>
+              <p className="mt-1">{preview.restoreNotice}</p>
+            </div>
+          )}
+
+          {(preview.lotsToImport > 0 || preview.lotsSkipped > 0 || preview.lotSheet) && (
             <div className="rounded-lg border border-black/10 bg-sage-50 p-3 text-xs text-zinc-700">
-              <p className="font-semibold text-zinc-900">Lots sheet</p>
+              <p className="font-semibold text-zinc-900">Lots</p>
               <p className="mt-1">
-                {preview.lotSheet.matched} active lot{preview.lotSheet.matched === 1 ? "" : "s"} matched to rows
-                {preview.lotSheet.inactive > 0 && `, ${preview.lotSheet.inactive} inactive skipped`}
-                {preview.lotSheet.unmatched > 0 && `, ${preview.lotSheet.unmatched} without a matching specimen row`}.
+                {plural(preview.lotsToImport, "lot")} will be created with the valid rows.
+                {preview.lotsSkipped > 0 && (
+                  <strong className="font-semibold text-amber-800">
+                    {" "}{plural(preview.lotsSkipped, "lot")} will not be created; each row says why. Add {preview.lotsSkipped === 1 ? "it" : "them"} from the specimen&apos;s inventory after importing.
+                  </strong>
+                )}
               </p>
+              {preview.lotSheet && (
+                <p className="mt-1 text-zinc-500">
+                  Lots sheet: {preview.lotSheet.matched} active matched to rows
+                  {preview.lotSheet.inactive > 0 && `, ${preview.lotSheet.inactive} inactive left out`}
+                  {preview.lotSheet.unmatched > 0 && `, ${preview.lotSheet.unmatched} without a matching specimen row`}.
+                </p>
+              )}
             </div>
           )}
 
@@ -293,6 +315,12 @@ export function SpecimenImportWorkspace() {
                     <td className="px-3 py-3 align-top font-medium text-zinc-700">{row.rowNumber}</td>
                     <td className="px-3 py-3 align-top">
                       <p className="font-medium text-zinc-900">{rowIdentity(row)}</p>
+                      {row.valid && (row.lotsToImport > 0 || row.lotsSkipped > 0) && (
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          {plural(row.lotsToImport, "lot")} to import
+                          {row.lotsSkipped > 0 && <span className="font-medium text-amber-800">, {row.lotsSkipped} not imported</span>}
+                        </p>
+                      )}
                       {row.archivedInSource && (
                         <span className="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-600">Archived in backup</span>
                       )}
@@ -355,6 +383,15 @@ export function SpecimenImportWorkspace() {
             <div className="min-w-0 flex-1">
               <h2 className="font-semibold text-zinc-900">Import request completed</h2>
               <p className="mt-1 text-sm text-zinc-700">{commitResult.createdCount} successful, {commitResult.failedCount} failed. Safe retries return the original successful records.</p>
+              <p className="mt-1 text-sm text-zinc-700">
+                {plural(commitResult.lotsCreated, "lot")} created.
+                {commitResult.lotsSkipped > 0 && (
+                  <strong className="font-semibold text-amber-800">
+                    {" "}{plural(commitResult.lotsSkipped, "lot")} not created (rows{" "}
+                    {commitResult.results.filter((row) => row.success && (row.lotsSkipped ?? 0) > 0).map((row) => row.rowNumber).join(", ")}): add {commitResult.lotsSkipped === 1 ? "it" : "them"} from the specimen&apos;s inventory.
+                  </strong>
+                )}
+              </p>
               <p className="mt-1 truncate text-xs text-zinc-500" title={commitResult.importBatchId}>Batch ID: {commitResult.importBatchId}</p>
               {commitResult.failedCount > 0 && (
                 <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-red-700">

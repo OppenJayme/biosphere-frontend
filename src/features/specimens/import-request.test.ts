@@ -40,6 +40,8 @@ describe("reviewed import client transport", () => {
         results: [{ rowNumber: 4, success: false, errors: ["The selected collection is unavailable."] }],
         createdCount: 1,
         failedCount: 1,
+        lotsCreated: 0,
+        lotsSkipped: 0,
       },
     };
     vi.mocked(commitSpecimenImportAction).mockResolvedValueOnce(partial);
@@ -59,6 +61,8 @@ describe("reviewed import client transport", () => {
         results: [],
         createdCount: 0,
         failedCount: 0,
+        lotsCreated: 0,
+        lotsSkipped: 0,
       },
     };
     vi.mocked(commitSpecimenImportAction)
