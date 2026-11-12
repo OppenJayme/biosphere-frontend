@@ -85,6 +85,10 @@ try {
     }
     await page.addScriptTag({ path: ${JSON.stringify(path.join(output, "fixture.js"))} });
     await page.getByRole('heading', { name: 'Offline specimen workspace' }).waitFor();
+    const workspaceToggle = page.getByRole('button', { name: 'Offline specimen workspace', exact:true });
+    if (await workspaceToggle.getAttribute('aria-expanded') === 'false') {
+      await workspaceToggle.click();
+    }
     await page.getByText('No offline drafts on this device.', {exact:true}).waitFor();
     await page.getByRole('button', { name: 'New offline draft', exact:true }).click();
     await page.getByRole('heading', { name:'New offline specimen draft' }).waitFor();
