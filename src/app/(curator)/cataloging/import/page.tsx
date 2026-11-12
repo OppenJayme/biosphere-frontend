@@ -1,4 +1,4 @@
-/** Protected entry point for reviewing and committing specimen CSV/XLSX imports. */
+/** Protected entry point for reviewing and committing specimen Excel imports. */
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -18,7 +18,7 @@ export default async function SpecimenImportPage() {
           <p className="text-sm text-zinc-500">Cataloging</p>
           <h1 className="mt-1 font-serif text-2xl font-semibold text-forest-800">Import specimen drafts</h1>
           <p className="mt-1 max-w-3xl text-sm text-zinc-600">
-            Validate a CSV or XLSX file, review every result and duplicate warning, then explicitly create selected Uncataloged records.
+            Validate an Excel (.xlsx) file, review every result and duplicate warning, then explicitly create selected Uncataloged records.
           </p>
         </div>
         <Link href="/cataloging" className="rounded-lg border border-forest-700 px-4 py-2.5 text-sm font-semibold text-forest-800 hover:bg-forest-50">Back to queue</Link>

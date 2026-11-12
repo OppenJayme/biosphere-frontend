@@ -60,7 +60,9 @@ export function SpecimenImportWorkspace() {
     [preview, selected],
   );
   const validRows = preview?.rows.filter((row) => row.valid) ?? [];
-  const allValidSelected = validRows.length > 0 && validRows.every((row) => selected.has(row.rowNumber));
+  // "Select all" covers the default rows; archived backup rows are picked one by one.
+  const defaultRows = validRows.filter((row) => !row.archivedInSource);
+  const allValidSelected = defaultRows.length > 0 && defaultRows.every((row) => selected.has(row.rowNumber));
 
   function handlePreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,7 +71,7 @@ export function SpecimenImportWorkspace() {
     const file = formData.get("file");
     const fileError = file instanceof File
       ? validateImportFileMetadata(file)
-      : "Choose a non-empty CSV or XLSX file to preview.";
+      : "Choose a non-empty Excel (.xlsx) file to preview.";
     setMessage(null);
     setPreview(null);
     setCommitResult(null);
@@ -136,7 +138,7 @@ export function SpecimenImportWorkspace() {
 
   function toggleAllValid() {
     setCommitResult(null);
-    setSelected(allValidSelected ? new Set() : new Set(validRows.map((row) => row.rowNumber)));
+    setSelected(allValidSelected ? new Set() : new Set(defaultRows.map((row) => row.rowNumber)));
     setWarningsAcknowledged(false);
   }
 
@@ -171,29 +173,30 @@ export function SpecimenImportWorkspace() {
         <h2 className="text-sm font-semibold text-zinc-900">1. Upload and validate</h2>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-zinc-500">
-            CSV or XLSX, up to 5 MB and 500 data rows. Previewing does not save records. Rows without an accession number get the next USC-BM number when imported, and imported records stay Uncataloged until a curator reviews and completes each one.
+            Excel (.xlsx) only, up to 5 MB and 500 specimen rows. Previewing does not save records. Rows without an accession number get the next USC-BM number when imported, and imported records stay Uncataloged until a curator reviews and completes each one.
           </p>
           <a
-            href="/templates/specimen-import-template.csv"
+            href="/templates/specimen-import-template.xlsx"
             download
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-forest-700 hover:text-forest-900"
           >
-            <DownloadIcon className="h-3.5 w-3.5" /> Download CSV template
+            <DownloadIcon className="h-3.5 w-3.5" /> Download Excel template
           </a>
         </div>
         <p className="mt-3 text-xs leading-5 text-zinc-600">
-          For Excel, use one worksheet named <strong>Specimens</strong> with the template headers in its first row.
-          Format accession numbers as Text to preserve leading zeros. Use literal values rather than formulas;
-          enter collection dates as YYYY-MM-DD or date-only Excel cells. Other worksheets are not imported.
-          The template has the minimum columns needed to finish a record; leave a cell blank if you do not have the value yet. Choose the collection in the app after importing.
+          Enter specimens on a worksheet named <strong>Specimens</strong> with the template headers in its first row.
+          Each row needs a common name or a scientific name; anything else can be blank. Values that cannot be used are
+          left blank with a note, and the record is still imported for you to finish. Format accession numbers as Text
+          to keep leading zeros, and enter collection dates as YYYY-MM-DD or Excel dates. A weekly backup workbook from
+          Backup History can be imported as it is; its lots are read from the Lots sheet.
         </p>
         <form onSubmit={handlePreview} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1">
-            <span className="mb-1 block text-xs font-medium text-zinc-600">Specimen CSV or XLSX</span>
+            <span className="mb-1 block text-xs font-medium text-zinc-600">Specimen workbook (.xlsx)</span>
             <input
               name="file"
               type="file"
-              accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               required
               disabled={isPreviewing || isCommitting}
               className={`block w-full rounded-lg border border-black/15 bg-white text-sm text-zinc-700 file:mr-3 file:border-0 file:border-r file:border-black/10 file:bg-sage-50 file:px-3 file:py-2.5 file:font-semibold file:text-forest-800 ${CATALOGING_FILE_FEEDBACK_CLASSES}`}
@@ -226,16 +229,39 @@ export function SpecimenImportWorkspace() {
             <div>
               <h2 className="text-sm font-semibold text-zinc-900">2. Review validated rows</h2>
               <p className="mt-1 text-xs text-zinc-500">
-                Preview expires {formatExpiry(preview.expiresAt)}. Invalid rows cannot be selected.
+                Preview expires {formatExpiry(preview.expiresAt)}. Rows without a name, or with an accession number problem, cannot be selected.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 text-xs font-semibold">
               <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-zinc-700">{preview.totalRows} total</span>
               <span className="rounded-full bg-forest-100 px-3 py-1.5 text-forest-700">{preview.validRows} valid</span>
               <span className="rounded-full bg-red-100 px-3 py-1.5 text-red-700">{preview.invalidRows} invalid</span>
-              <span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-800">{preview.rowsWithWarnings} warned</span>
+              <span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-800">{preview.rowsWithWarnings} possible duplicates</span>
+              {preview.rowsWithFieldWarnings > 0 && (
+                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-800">{preview.rowsWithFieldWarnings} with blank values</span>
+              )}
+              {preview.archivedRows > 0 && (
+                <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-zinc-600">{preview.archivedRows} archived in backup</span>
+              )}
             </div>
           </div>
+
+          {preview.lotSheet && (
+            <div className="rounded-lg border border-black/10 bg-sage-50 p-3 text-xs text-zinc-700">
+              <p className="font-semibold text-zinc-900">Lots sheet</p>
+              <p className="mt-1">
+                {preview.lotSheet.matched} active lot{preview.lotSheet.matched === 1 ? "" : "s"} matched to rows
+                {preview.lotSheet.inactive > 0 && `, ${preview.lotSheet.inactive} inactive skipped`}
+                {preview.lotSheet.unmatched > 0 && `, ${preview.lotSheet.unmatched} without a matching specimen row`}.
+              </p>
+            </div>
+          )}
+
+          {preview.archivedRows > 0 && (
+            <p className="rounded-lg border border-black/10 bg-zinc-50 p-3 text-xs text-zinc-600">
+              Rows archived in the backup are shown but not selected. Select them only if those specimens should come back.
+            </p>
+          )}
 
           {preview.unmappedColumns.length > 0 && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
@@ -249,7 +275,7 @@ export function SpecimenImportWorkspace() {
               <thead className="border-b border-black/10 text-xs text-zinc-500 [&_th]:font-medium">
                 <tr>
                   <th className="px-3 py-3">
-                    <input type="checkbox" aria-label="Select all valid rows" checked={allValidSelected} onChange={toggleAllValid} disabled={validRows.length === 0 || isCommitting} />
+                    <input type="checkbox" aria-label="Select all importable rows" checked={allValidSelected} onChange={toggleAllValid} disabled={defaultRows.length === 0 || isCommitting} />
                   </th>
                   <th className="px-3 py-3">Row</th>
                   <th className="px-3 py-3">Specimen</th>
@@ -267,6 +293,9 @@ export function SpecimenImportWorkspace() {
                     <td className="px-3 py-3 align-top font-medium text-zinc-700">{row.rowNumber}</td>
                     <td className="px-3 py-3 align-top">
                       <p className="font-medium text-zinc-900">{rowIdentity(row)}</p>
+                      {row.archivedInSource && (
+                        <span className="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-600">Archived in backup</span>
+                      )}
                       <p className="mt-0.5 text-xs text-zinc-500">{row.data.scientificName ?? "Scientific name not provided"}</p>
                       <p className="mt-0.5 text-xs text-zinc-500">
                         {row.data.accessionNumber
@@ -281,7 +310,13 @@ export function SpecimenImportWorkspace() {
                     <td className="max-w-[360px] px-3 py-3 align-top">
                       {row.errors.length > 0 && <ul className="list-disc space-y-1 pl-4 text-xs text-red-700">{row.errors.map((error, index) => <li key={`${row.rowNumber}-error-${index}`}>{error}</li>)}</ul>}
                       {row.duplicateWarnings.length > 0 && <ul className="list-disc space-y-1 pl-4 text-xs text-amber-800">{row.duplicateWarnings.map((warning, index) => <li key={`${row.rowNumber}-warning-${index}`}>{warning}</li>)}</ul>}
-                      {row.valid && row.duplicateWarnings.length === 0 && <span className="inline-flex items-center gap-1 text-xs font-medium text-forest-700"><CheckIcon className="h-3.5 w-3.5" /> Ready</span>}
+                      {row.fieldWarnings.length > 0 && (
+                        <div className="mt-1 text-xs text-amber-800">
+                          <p className="font-medium">Will be imported with these left blank:</p>
+                          <ul className="mt-0.5 list-disc space-y-1 pl-4">{row.fieldWarnings.map((warning, index) => <li key={`${row.rowNumber}-field-${index}`}>{warning}</li>)}</ul>
+                        </div>
+                      )}
+                      {row.valid && row.duplicateWarnings.length === 0 && row.fieldWarnings.length === 0 && <span className="inline-flex items-center gap-1 text-xs font-medium text-forest-700"><CheckIcon className="h-3.5 w-3.5" /> Ready</span>}
                     </td>
                   </tr>
                 ))}
@@ -299,7 +334,7 @@ export function SpecimenImportWorkspace() {
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4">
-            <p className="text-xs text-zinc-500">{selected.size} valid row{selected.size === 1 ? "" : "s"} selected</p>
+            <p className="text-xs text-zinc-500">{selected.size} row{selected.size === 1 ? "" : "s"} selected</p>
             <button
               type="button"
               onClick={handleCommit}

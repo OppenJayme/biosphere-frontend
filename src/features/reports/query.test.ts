@@ -63,7 +63,7 @@ describe("report contracts from a newer backend", () => {
     type: "AUDIT_LOG",
     title: "Audit Log Report",
     description: "",
-    formats: ["PDF"],
+    formats: ["XLSX", "PDF"],
     periods: ["ALL_TIME"],
     filters: [],
     periodAppliesTo: "",
@@ -73,6 +73,11 @@ describe("report contracts from a newer backend", () => {
     expect(
       reportDefinitionListSchema.parse([definition, { ...definition, type: "FUTURE_REPORT" }]).map((item) => item.type),
     ).toEqual(["AUDIT_LOG"]);
+  });
+
+  it("drops formats this page cannot generate and skips reports left with none", () => {
+    const parsed = reportDefinitionListSchema.parse([definition, { ...definition, type: "INVENTORY", formats: ["PDF"] }]);
+    expect(parsed.map((item) => [item.type, item.formats])).toEqual([["AUDIT_LOG", ["XLSX"]]]);
   });
 
   it("keeps history rows for unknown types and labels audit results", () => {
@@ -91,6 +96,8 @@ describe("report contracts from a newer backend", () => {
       generatedAt: "2026-10-04T00:00:00.000Z",
     });
     expect(item.type).toBeNull();
+    // Files generated before reports became Excel-only keep their format.
+    expect(item.format).toBe("PDF");
     expect(item.title).toBe("Future Report");
     expect(
       describeReportParameters({ periodLabel: "October 2026", filters: { auditModule: "auth", auditResult: "DENIED" } }),

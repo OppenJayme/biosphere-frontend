@@ -7,7 +7,7 @@ import {
   MailIcon,
   QrCodeIcon,
 } from "@/components/icons";
-import type { ReportDefinition, ReportType } from "@/features/reports/types";
+import { REPORT_FORMAT_LABELS, type ReportDefinition, type ReportType } from "@/features/reports/types";
 
 const REPORT_ICONS: Record<ReportType, typeof ChartBarIcon> = {
   CONSOLIDATED_OPERATIONS: ChartBarIcon,
@@ -20,8 +20,6 @@ const REPORT_ICONS: Record<ReportType, typeof ChartBarIcon> = {
 
 // Full-width cards: the Consolidated report leads, the audit export closes.
 const WIDE_REPORTS = new Set<ReportType>(["CONSOLIDATED_OPERATIONS", "AUDIT_LOG"]);
-
-const FORMAT_NAMES = { PDF: "PDF", DOCX: "Word", CSV: "CSV" } as const;
 
 export function AvailableReportsList({
   reports,
@@ -57,7 +55,7 @@ export function AvailableReportsList({
                 <span className="block text-sm font-semibold text-zinc-900">{report.title}</span>
                 <span className="mt-0.5 block text-xs text-zinc-500">{report.description}</span>
                 <span className="mt-2 block text-[0.6875rem] font-medium text-zinc-500">
-                  {report.formats.map((format) => FORMAT_NAMES[format]).join(" · ")}
+                  {report.formats.map((format) => REPORT_FORMAT_LABELS[format]).join(" · ")}
                 </span>
               </span>
               {active && (

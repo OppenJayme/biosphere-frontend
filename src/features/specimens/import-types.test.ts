@@ -48,6 +48,30 @@ describe("specimen import contracts", () => {
     expect(selectedWarningCount(parsed, new Set([1]))).toBe(0);
   });
 
+  it("defaults the newer fields for an older backend", () => {
+    const parsed = specimenImportPreviewSchema.parse(preview);
+    expect(parsed.rows[0].fieldWarnings).toEqual([]);
+    expect(parsed.rows[0].archivedInSource).toBe(false);
+    expect(parsed).toMatchObject({ rowsWithFieldWarnings: 0, archivedRows: 0, lotSheet: null });
+  });
+
+  it("keeps rows with blank values selectable and leaves archived backup rows unselected", () => {
+    const parsed = specimenImportPreviewSchema.parse({
+      ...preview,
+      rows: [
+        { ...preview.rows[0], fieldWarnings: ['Collection "Old" was not found; it will be left blank.'] },
+        { ...preview.rows[1], archivedInSource: true },
+        preview.rows[2],
+      ],
+      rowsWithFieldWarnings: 1,
+      archivedRows: 1,
+      lotSheet: { matched: 2, inactive: 1, unmatched: 0 },
+    });
+    expect(validImportRowNumbers(parsed)).toEqual([1]);
+    expect(parsed.rows[0].fieldWarnings).toHaveLength(1);
+    expect(parsed.lotSheet).toEqual({ matched: 2, inactive: 1, unmatched: 0 });
+  });
+
   it("rejects malformed commit responses", () => {
     expect(
       specimenImportCommitSchema.safeParse({
@@ -101,14 +125,15 @@ describe("specimen import contracts", () => {
     ).toBe(false);
   });
 
-  it("accepts CSV/XLSX but rejects empty, legacy Excel and oversized uploads before sending", () => {
-    expect(validateImportFileMetadata({ name: "specimens.csv", size: 10 })).toBeNull();
-    expect(validateImportFileMetadata({ name: "specimens.csv", size: 0 })).toMatch(/non-empty/i);
+  it("accepts only .xlsx and rejects CSV, empty, legacy Excel and oversized uploads before sending", () => {
+    expect(validateImportFileMetadata({ name: "specimens.xlsx", size: 10 })).toBeNull();
     expect(validateImportFileMetadata({ name: "specimens.XLSX", size: 10 })).toBeNull();
+    expect(validateImportFileMetadata({ name: "specimens.xlsx", size: 0 })).toMatch(/non-empty/i);
+    expect(validateImportFileMetadata({ name: "specimens.csv", size: 10 })).toMatch(/Only Excel \(\.xlsx\)/);
     expect(validateImportFileMetadata({ name: "specimens.xls", size: 10 })).toMatch(/\.xlsx/i);
     expect(
       validateImportFileMetadata({
-        name: "specimens.csv",
+        name: "specimens.xlsx",
         size: 5 * 1024 * 1024 + 1,
       }),
     ).toMatch(/5 MB/i);

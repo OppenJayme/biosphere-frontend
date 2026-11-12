@@ -3,10 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
   AlertTriangleIcon,
-  ArchiveIcon,
   CheckIcon,
   CloseIcon,
-  DocumentTextIcon,
   DownloadIcon,
   GridIcon,
 } from "@/components/icons";
@@ -14,28 +12,16 @@ import { attachmentFileName, type ReportRequestResult } from "@/features/reports
 import type { ReportDefinition, ReportFormat } from "@/features/reports/types";
 
 const FORMATS: Record<ReportFormat, { label: string; description: string; icon: typeof GridIcon; tint: string }> = {
-  CSV: {
-    label: "CSV",
-    description: "Raw data, best for spreadsheets and further analysis",
+  XLSX: {
+    label: "Excel workbook (.xlsx)",
+    description: "A summary sheet, then one sheet per table, ready to sort, filter or print",
     icon: GridIcon,
-    tint: "bg-amber-50 text-amber-600",
-  },
-  DOCX: {
-    label: "Word document (.docx)",
-    description: "Formatted layout, easy to annotate or share for review",
-    icon: DocumentTextIcon,
-    tint: "bg-sky-50 text-sky-600",
-  },
-  PDF: {
-    label: "PDF",
-    description: "Fixed layout, best for printing or official records",
-    icon: ArchiveIcon,
-    tint: "bg-red-50 text-red-600",
+    tint: "bg-forest-50 text-forest-700",
   },
 };
 
-// CSV first, then Word, then PDF, as in the SRS export modal.
-const FORMAT_ORDER: ReportFormat[] = ["CSV", "DOCX", "PDF"];
+// The museum keeps reports in Excel only (2026-11-12).
+const FORMAT_ORDER: ReportFormat[] = ["XLSX"];
 
 type Status =
   | { kind: "idle" }

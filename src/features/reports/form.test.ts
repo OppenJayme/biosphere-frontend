@@ -12,7 +12,7 @@ const inventory: ReportDefinition = {
   type: "INVENTORY",
   title: "Inventory Report",
   description: "",
-  formats: ["PDF", "CSV", "DOCX"],
+  formats: ["XLSX"],
   periods: ["MONTHLY", "YEARLY", "CUSTOM", "ALL_TIME"],
   filters: [
     "specimenStatus",
@@ -30,7 +30,7 @@ const consolidated: ReportDefinition = {
   type: "CONSOLIDATED_OPERATIONS",
   title: "Consolidated Museum Operations Report",
   description: "",
-  formats: ["DOCX", "PDF"],
+  formats: ["XLSX"],
   periods: ["MONTHLY", "YEARLY", "CUSTOM"],
   filters: ["remarks"],
   periodAppliesTo: "",
@@ -52,7 +52,7 @@ describe("report form", () => {
   it("builds a monthly request with only the filters the report accepts", () => {
     const result = buildReportRequest(
       inventory,
-      "CSV",
+      "XLSX",
       state({
         family: "  Papilionidae ",
         specimenStatus: "CATALOGED",
@@ -66,7 +66,7 @@ describe("report form", () => {
       ok: true,
       body: {
         type: "INVENTORY",
-        format: "CSV",
+        format: "XLSX",
         period: "MONTHLY",
         month: "2026-10",
         family: "Papilionidae",
@@ -80,7 +80,7 @@ describe("report form", () => {
   it("sends the sub-location opt-out only with a location", () => {
     const withUnit = buildReportRequest(
       inventory,
-      "PDF",
+      "XLSX",
       state({
         period: "ALL_TIME",
         storageUnitId: "d0000000-0000-4000-8000-000000000001",
@@ -91,41 +91,37 @@ describe("report form", () => {
 
     const withoutUnit = buildReportRequest(
       inventory,
-      "PDF",
+      "XLSX",
       state({ period: "ALL_TIME", includeDescendantUnits: false }),
     );
     expect(withoutUnit).toEqual({
       ok: true,
-      body: { type: "INVENTORY", format: "PDF", period: "ALL_TIME" },
+      body: { type: "INVENTORY", format: "XLSX", period: "ALL_TIME" },
     });
   });
 
   it("validates yearly and custom periods like the backend", () => {
-    expect(buildReportRequest(inventory, "PDF", state({ period: "YEARLY", year: "2026" }))).toMatchObject({
+    expect(buildReportRequest(inventory, "XLSX", state({ period: "YEARLY", year: "2026" }))).toMatchObject({
       ok: true,
       body: { period: "YEARLY", year: 2026 },
     });
-    expect(buildReportRequest(inventory, "PDF", state({ period: "YEARLY", year: "26" }))).toEqual({
+    expect(buildReportRequest(inventory, "XLSX", state({ period: "YEARLY", year: "26" }))).toEqual({
       ok: false,
       error: "Enter a four-digit year, for example 2026.",
     });
     expect(
-      buildReportRequest(inventory, "PDF", state({ period: "CUSTOM", from: "2026-09-30", to: "2026-09-01" })),
+      buildReportRequest(inventory, "XLSX", state({ period: "CUSTOM", from: "2026-09-30", to: "2026-09-01" })),
     ).toEqual({ ok: false, error: "The start date must not be after the end date." });
     expect(
-      buildReportRequest(inventory, "PDF", state({ period: "CUSTOM", from: "2026-02-30", to: "2026-03-01" })),
+      buildReportRequest(inventory, "XLSX", state({ period: "CUSTOM", from: "2026-02-30", to: "2026-03-01" })),
     ).toEqual({ ok: false, error: "Choose both a start and an end date." });
     expect(
-      buildReportRequest(inventory, "PDF", state({ period: "CUSTOM", from: "2010-01-01", to: "2026-01-01" })),
+      buildReportRequest(inventory, "XLSX", state({ period: "CUSTOM", from: "2010-01-01", to: "2026-01-01" })),
     ).toEqual({ ok: false, error: "A custom report period can cover at most 10 years." });
   });
 
-  it("rejects formats and periods the report does not offer", () => {
-    expect(buildReportRequest(consolidated, "CSV", state())).toEqual({
-      ok: false,
-      error: "The Consolidated Museum Operations Report is not available as CSV.",
-    });
-    expect(buildReportRequest(consolidated, "PDF", state({ period: "ALL_TIME" }))).toEqual({
+  it("rejects periods the report does not offer", () => {
+    expect(buildReportRequest(consolidated, "XLSX", state({ period: "ALL_TIME" }))).toEqual({
       ok: false,
       error: "Choose a reporting period this report supports.",
     });
@@ -133,28 +129,28 @@ describe("report form", () => {
 
   it("includes trimmed remarks for the Consolidated report", () => {
     expect(
-      buildReportRequest(consolidated, "DOCX", state({ remarks: "  Busy month.  ", family: "x" })),
+      buildReportRequest(consolidated, "XLSX", state({ remarks: "  Busy month.  ", family: "x" })),
     ).toEqual({
       ok: true,
       body: {
         type: "CONSOLIDATED_OPERATIONS",
-        format: "DOCX",
+        format: "XLSX",
         period: "MONTHLY",
         month: "2026-10",
         remarks: "Busy month.",
       },
     });
     expect(
-      buildReportRequest(consolidated, "DOCX", state({ remarks: "a".repeat(5001) })),
+      buildReportRequest(consolidated, "XLSX", state({ remarks: "a".repeat(5001) })),
     ).toEqual({ ok: false, error: "Remarks must be at most 5,000 characters." });
   });
 
   it("rejects over-long text filters and malformed locations", () => {
-    expect(buildReportRequest(inventory, "PDF", state({ category: "x".repeat(101) }))).toEqual({
+    expect(buildReportRequest(inventory, "XLSX", state({ category: "x".repeat(101) }))).toEqual({
       ok: false,
       error: "Category must be at most 100 characters.",
     });
-    expect(buildReportRequest(inventory, "PDF", state({ storageUnitId: "room-101" }))).toEqual({
+    expect(buildReportRequest(inventory, "XLSX", state({ storageUnitId: "room-101" }))).toEqual({
       ok: false,
       error: "Choose a storage location from the list.",
     });
@@ -173,7 +169,7 @@ describe("report form", () => {
       type: "AUDIT_LOG",
       title: "Audit Log Report",
       description: "",
-      formats: ["PDF", "CSV", "DOCX"],
+      formats: ["XLSX"],
       periods: ["MONTHLY", "YEARLY", "CUSTOM", "ALL_TIME"],
       filters: ["auditModule", "auditAction", "auditResult"],
       periodAppliesTo: "Date and time the event was recorded.",
@@ -182,14 +178,14 @@ describe("report form", () => {
     expect(
       buildReportRequest(
         audit,
-        "CSV",
+        "XLSX",
         state({ period: "ALL_TIME", auditModule: " auth ", auditAction: "LOGIN", auditResult: "DENIED", family: "x" }),
       ),
     ).toEqual({
       ok: true,
       body: {
         type: "AUDIT_LOG",
-        format: "CSV",
+        format: "XLSX",
         period: "ALL_TIME",
         auditModule: "auth",
         auditAction: "LOGIN",
