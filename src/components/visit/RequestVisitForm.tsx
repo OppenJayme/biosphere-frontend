@@ -32,6 +32,7 @@ import {
   type VisitFormField,
 } from "@/features/visit-requests/form";
 import { ScheduleDayHint } from "./ScheduleDayHint";
+import { ScheduleEndSelect, ScheduleStartSelect } from "./ScheduleTimeSelects";
 import { useVisitAvailability } from "./useVisitAvailability";
 
 let rowIdCounter = 0;
@@ -308,8 +309,6 @@ export function RequestVisitForm({
                   ...(rowError && { "aria-invalid": true as const }),
                   ...(describedBy && { "aria-describedby": describedBy }),
                 };
-                // Native pickers start inside that day's hours; validation still checks the exact window.
-                const timeBounds = windows.length > 0 ? { min: windows[0].start, max: windows.at(-1)?.end } : {};
                 return (
                   <li key={rowId} className="rounded-xl border border-line p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -337,35 +336,33 @@ export function RequestVisitForm({
                           min={today}
                           required
                           value={row.date}
-                          onChange={(event) => updateScheduleRow(rowId, index, { date: event.target.value })}
+                          // A new date has different hours, so the picked times start over.
+                          onChange={(event) => updateScheduleRow(rowId, index, { date: event.target.value, startTime: "", endTime: "" })}
                           className={fieldClasses}
                           {...invalid}
                         />
                       </Field>
                       <Field label="Start Time" htmlFor={`schedule-start-${rowId}`}>
-                        <input
+                        <ScheduleStartSelect
                           id={`schedule-start-${rowId}`}
-                          name="scheduleStart"
-                          type="time"
-                          required
+                          date={showDayHint ? row.date : ""}
                           value={row.startTime}
-                          onChange={(event) => updateScheduleRow(rowId, index, { startTime: event.target.value })}
+                          onChange={(startTime) => updateScheduleRow(rowId, index, { startTime, endTime: "" })}
+                          rules={scheduleRules}
                           className={fieldClasses}
-                          {...timeBounds}
-                          {...invalid}
+                          invalid={invalid}
                         />
                       </Field>
                       <Field label="End Time" htmlFor={`schedule-end-${rowId}`}>
-                        <input
+                        <ScheduleEndSelect
                           id={`schedule-end-${rowId}`}
-                          name="scheduleEnd"
-                          type="time"
-                          required
+                          date={showDayHint ? row.date : ""}
+                          startTime={row.startTime}
                           value={row.endTime}
-                          onChange={(event) => updateScheduleRow(rowId, index, { endTime: event.target.value })}
+                          onChange={(endTime) => updateScheduleRow(rowId, index, { endTime })}
+                          rules={scheduleRules}
                           className={fieldClasses}
-                          {...timeBounds}
-                          {...invalid}
+                          invalid={invalid}
                         />
                       </Field>
                     </div>
