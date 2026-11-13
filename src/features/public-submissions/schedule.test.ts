@@ -7,9 +7,12 @@ import {
   museumToday,
   normalizeTime,
   overlappingBookings,
+  openingWindowsFor,
   readableServerMessage,
+  scheduleTimeOptions,
   summarizeOpeningHours,
   validateSchedules,
+  weeklyWindows,
 } from "./schedule";
 
 const TODAY = "2026-09-29";
@@ -192,5 +195,46 @@ describe("formatting", () => {
     expect(formatSchedule({ date: "2026-10-15", startTime: "09:00", endTime: "13:30" })).toBe(
       "Thu, Oct 15, 2026, 9:00 AM – 1:30 PM",
     );
+  });
+});
+
+describe("12-hour schedule time options", () => {
+  it("offers start times inside each window with 24-hour values and 12-hour labels", () => {
+    const starts = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "start");
+    expect(starts[0]).toEqual({ value: "08:00", label: "8:00 AM" });
+    expect(starts.at(-1)).toEqual({ value: "15:45", label: "3:45 PM" });
+    expect(starts.find((option) => option.value === "13:00")?.label).toBe("1:00 PM");
+    // Closing times and the lunch break are never offered as a start.
+    expect(starts.map((option) => option.value)).not.toContain("11:00");
+    expect(starts.map((option) => option.value)).not.toContain("12:00");
+    expect(starts.map((option) => option.value)).not.toContain("16:00");
+    expect(starts).toHaveLength(24);
+  });
+
+  it("offers end times up to closing but not at opening", () => {
+    const ends = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "end").map((option) => option.value);
+    expect(ends[0]).toBe("08:15");
+    expect(ends).toContain("11:00");
+    expect(ends).toContain("16:00");
+    expect(ends).not.toContain("08:00");
+    expect(ends).not.toContain("13:00");
+  });
+
+  it("offers only the morning on Saturdays, and every window before a date is chosen", () => {
+    const saturday = scheduleTimeOptions(openingWindowsFor("2026-11-21"), "end");
+    expect(saturday.at(-1)).toEqual({ value: "11:00", label: "11:00 AM" });
+    expect(weeklyWindows()).toEqual([
+      { start: "08:00", end: "11:00" },
+      { start: "13:00", end: "16:00" },
+    ]);
+  });
+
+  it("keeps every offered option valid against the museum hours", () => {
+    const starts = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "start");
+    const ends = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "end");
+    for (const start of starts) {
+      const end = ends.find((option) => option.value > start.value)!;
+      expect(validateSchedules([{ date: "2026-11-16", startTime: start.value, endTime: end.value }], TODAY).valid).toBe(true);
+    }
   });
 });

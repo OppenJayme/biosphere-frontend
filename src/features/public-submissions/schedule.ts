@@ -196,6 +196,47 @@ export function formatScheduleTime(time: string) {
   return `${hour12}:${String(minutes).padStart(2, "0")} ${suffix}`;
 }
 
+/** Minutes between the times offered in the schedule time pickers. */
+export const SCHEDULE_TIME_STEP = 15;
+
+function toMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function fromMinutes(total: number) {
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** Every distinct opening window in the week, for a time picker before a date is chosen. */
+export function weeklyWindows(hours: readonly OpeningWindow[] = MUSEUM_OPENING_HOURS) {
+  const seen = new Map<string, { start: string; end: string }>();
+  for (const { start, end } of hours) seen.set(`${start}-${end}`, { start, end });
+  return [...seen.values()].sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+}
+
+export type TimeOption = { value: string; label: string };
+
+/**
+ * The times a visitor can pick inside the given opening windows, every `step` minutes. Values stay
+ * 24-hour "HH:MM" (what the API takes); labels are 12-hour ("1:30 PM") like the hours text, so the
+ * form never mixes the two formats. A start can't be a window's closing time and an end can't be
+ * its opening time, since neither leaves room for a visit.
+ */
+export function scheduleTimeOptions(
+  windows: readonly { start: string; end: string }[],
+  kind: "start" | "end",
+  step = SCHEDULE_TIME_STEP,
+): TimeOption[] {
+  const values = new Set<string>();
+  for (const window of windows) {
+    const first = toMinutes(window.start) + (kind === "end" ? step : 0);
+    const last = toMinutes(window.end) - (kind === "start" ? step : 0);
+    for (let minute = first; minute <= last; minute += step) values.add(fromMinutes(minute));
+  }
+  return [...values].sort().map((value) => ({ value, label: formatScheduleTime(value) }));
+}
+
 /**
  * Backend messages name fields by their API path ("preferredSchedules[1].startTime has already
  * passed today."); say "Option 2 start time" instead, matching the forms' own labels.

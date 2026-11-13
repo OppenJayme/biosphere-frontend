@@ -11,12 +11,23 @@ import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import type { ReferralActionState } from "@/features/inquiries/actions";
 import type { Inquiry } from "@/features/inquiries/types";
 import { NOTE_MAX } from "@/features/public-submissions/history";
-import { MAX_PREFERRED_SCHEDULES, MAX_VISITOR_COUNT, museumToday } from "@/features/public-submissions/schedule";
+import {
+  MAX_PREFERRED_SCHEDULES,
+  MAX_VISITOR_COUNT,
+  museumToday,
+  scheduleTimeOptions,
+  weeklyWindows,
+} from "@/features/public-submissions/schedule";
+import { ScheduleTimeSelect } from "@/components/visit/ScheduleTimeSelect";
 import { ActionError, primaryButtonClasses, secondaryButtonClasses, textareaClasses } from "./DetailParts";
 
 type ReferralAction = (previousState: ReferralActionState, formData: FormData) => Promise<ReferralActionState>;
 
 const inputClasses = textareaClasses;
+
+// 12-hour choices inside the museum's opening windows, the same picker the public visit form uses.
+const START_TIMES = scheduleTimeOptions(weeklyWindows(), "start");
+const END_TIMES = scheduleTimeOptions(weeklyWindows(), "end");
 
 let rowIdCounter = 0;
 const nextRowIds = (count: number) =>
@@ -196,7 +207,7 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                 const invalid = invalidProps(errorId, rowError);
                 return (
                   <div key={rowId}>
-                    <div className="grid grid-cols-[1fr_6.5rem_6.5rem_auto] items-end gap-2">
+                    <div className="grid grid-cols-[1fr_7.5rem_7.5rem_auto] items-end gap-2">
                       <label className="text-[0.6875rem] text-zinc-500">
                         Option {index + 1} date
                         <input
@@ -210,9 +221,9 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                       </label>
                       <label className="text-[0.6875rem] text-zinc-500">
                         Start
-                        <input
+                        <ScheduleTimeSelect
                           name="scheduleStart"
-                          type="time"
+                          options={START_TIMES}
                           defaultValue={values?.scheduleStart[index] ?? ""}
                           className={inputClasses}
                           {...invalid}
@@ -220,9 +231,9 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                       </label>
                       <label className="text-[0.6875rem] text-zinc-500">
                         End
-                        <input
+                        <ScheduleTimeSelect
                           name="scheduleEnd"
-                          type="time"
+                          options={END_TIMES}
                           defaultValue={values?.scheduleEnd[index] ?? ""}
                           className={inputClasses}
                           {...invalid}

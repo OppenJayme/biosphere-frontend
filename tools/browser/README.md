@@ -445,7 +445,8 @@ separate and are unchanged by this dialog-only repair.
 Run `npm run test:visit-count:browser` for the real RequestVisitForm bundled in
 an isolated headless Edge session. It accepts no application URL or credentials.
 Synthetic availability and submission responses are intercepted; all unexpected
-destinations are blocked. Fourteen scenarios cover the declared-name cap,
+destinations are blocked. Fifteen scenarios cover the declared-name cap,
+required first and last names, 12-hour time selects that submit 24-hour values,
 non-destructive count reductions, submission blocking, correction/removal,
 invalid counts, maximum visitor/schedule/vehicle feedback, a valid synthetic
 submission and Send another reset. No shared database, email, signed-in windows
