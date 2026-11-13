@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { communicationHistorySchema, entryTypeLabel, isInboundReply, isOutboundEmail, latestEmail } from "./history";
+import {
+  communicationHistorySchema,
+  delayReason,
+  deliveryProgress,
+  deliveryStatus,
+  entryTypeLabel,
+  isInboundReply,
+  isOutboundEmail,
+  latestEmail,
+} from "./history";
 
 const curatorNote = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -65,5 +74,33 @@ describe("communication history with visitor replies", () => {
 
   it("labels a reply for curators", () => {
     expect(entryTypeLabel("VISITOR_REPLY")).toBe("Visitor reply");
+  });
+});
+
+describe("delivery tracking (backend Brevo webhook)", () => {
+  const id = "<202611131903.56557643399@smtp-relay.mailin.fr>";
+
+  it("keeps accepted, delivered and delayed emails as sent", () => {
+    for (const result of [`SENT ${id}`, `SENT ${id} · delivered`, `SENT ${id} · delayed (deferred): Quota`]) {
+      expect(deliveryStatus(result)).toBe("sent");
+    }
+  });
+
+  it("tells delivered and delayed apart from plain acceptance", () => {
+    expect(deliveryProgress(`SENT ${id}`)).toBeNull();
+    expect(deliveryProgress(`SENT ${id} · delivered`)).toBe("delivered");
+    expect(deliveryProgress(`SENT ${id} · delayed (soft_bounce): Mailbox full`)).toBe("delayed");
+    expect(deliveryProgress("FAILED hard_bounce: No such user")).toBeNull();
+    expect(deliveryProgress(null)).toBeNull();
+  });
+
+  it("reads the delay reason", () => {
+    expect(delayReason(`SENT ${id} · delayed (soft_bounce): Mailbox full`)).toBe("soft bounce: Mailbox full");
+    expect(delayReason(`SENT ${id} · delayed (deferred)`)).toBe("deferred");
+    expect(delayReason(`SENT ${id} · delivered`)).toBe("");
+  });
+
+  it("shows a bounce after acceptance as failed", () => {
+    expect(deliveryStatus("FAILED hard_bounce: No such user")).toBe("failed");
   });
 });

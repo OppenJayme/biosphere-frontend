@@ -66,6 +66,28 @@ export function deliveryStatus(result: string | null): DeliveryStatus | null {
   return "failed";
 }
 
+/**
+ * What the email provider reported after accepting a sent email (backend Brevo delivery webhook):
+ * "SENT <id> · delivered", or "SENT <id> · delayed (deferred): <reason>" while it retries. A bounce
+ * after acceptance is stored as "FAILED <event>: <reason>", which deliveryStatus already reads as
+ * failed. Null means accepted with no report yet, including every email sent before tracking.
+ */
+export type DeliveryProgress = "delivered" | "delayed";
+
+export function deliveryProgress(result: string | null): DeliveryProgress | null {
+  if (!result?.startsWith("SENT")) return null;
+  if (result.includes(" · delivered")) return "delivered";
+  if (result.includes(" · delayed")) return "delayed";
+  return null;
+}
+
+/** Why a sent email is delayed, e.g. "deferred: Quota exceeded". */
+export function delayReason(result: string | null) {
+  const match = /· delayed \(([^)]+)\)(?::\s*(.*))?$/.exec(result ?? "");
+  if (!match) return "";
+  return match[2] ? `${match[1].replaceAll("_", " ")}: ${match[2]}` : match[1].replaceAll("_", " ");
+}
+
 /** The reason after the status word, e.g. "401 Key not found". */
 export function deliveryReason(result: string | null) {
   return (result ?? "").replace(/^(NOT_SENT|FAILED|SENT)\s*/, "").trim();
