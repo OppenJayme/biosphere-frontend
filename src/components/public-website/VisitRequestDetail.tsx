@@ -332,6 +332,7 @@ export function VisitRequestDetail({
           <NoteForm key={request.id} action={addVisitNoteAction.bind(null, request.id, returnQuery)} />
           <HistoryTimeline
             submittedAt={request.createdAt}
+            referredFrom={request.sourceInquiryId ? request.sourceInquiryId.slice(0, 8).toUpperCase() : null}
             entries={history}
             statusLabels={VISIT_REQUEST_STATUS_LABELS}
             currentAccountId={currentAccountId}
