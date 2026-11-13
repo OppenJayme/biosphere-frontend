@@ -439,3 +439,15 @@ screen-reader or full accessibility certification. The StrictMode wrapper does
 not imply development Strict Effects were executed in this production bundle.
 Pending-submit close/retention policy and server-side request behavior remain
 separate and are unchanged by this dialog-only repair.
+
+## Visit-request visitor-count feedback
+
+Run `npm run test:visit-count:browser` for the real RequestVisitForm bundled in
+an isolated headless Edge session. It accepts no application URL or credentials.
+Synthetic availability and submission responses are intercepted; all unexpected
+destinations are blocked. Fourteen scenarios cover the declared-name cap,
+non-destructive count reductions, submission blocking, correction/removal,
+invalid counts, maximum visitor/schedule/vehicle feedback, a valid synthetic
+submission and Send another reset. No shared database, email, signed-in windows
+or application servers are used. This does not certify deployed behavior,
+physical-phone usability, visual styling or assistive-technology output.
