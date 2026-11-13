@@ -4,6 +4,17 @@ This folder contains browser diagnostics, not application dependencies or a
 replacement for Vitest/backend tests. It does not configure Context7, install
 additional skills, or authorize testing production or another owner's module.
 
+## Draft-save click stability (BBT Cycle 3)
+
+`npm run test:draft-save:browser` bundles the real SpecimenCoreForm and Tailwind
+CSS with synthetic remote actions only. A fresh isolated Edge session blocks all
+network, focuses Common name, and holds pointer down over Save while duplicate
+loading/results render. Create/edit cases require stable coordinates and exactly
+one save for clear, found, unavailable and still-pending checks; keyboard Enter
+is also covered (10 scenarios). No database, login, existing browser window or
+accession generation is used. See `docs/BBT_CYCLE3_DRAFT_SAVE_LAYOUT.md` for the
+baseline failure and the live-retest boundary.
+
 ## Versions and installation
 
 - `@playwright/cli` is pinned to **0.1.22**; the separate lockfile pins its

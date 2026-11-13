@@ -12,6 +12,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs",
+    "test:draft-save:browser": "node tools/browser/draft-save.mjs",
     "test:public-submissions:browser": "node tools/browser/public-submission.mjs"
   },
   "dependencies": {
