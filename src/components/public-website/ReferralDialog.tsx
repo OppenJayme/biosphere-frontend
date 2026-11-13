@@ -11,14 +11,21 @@ import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import type { ReferralActionState } from "@/features/inquiries/actions";
 import type { Inquiry } from "@/features/inquiries/types";
 import { NOTE_MAX } from "@/features/public-submissions/history";
-import { MAX_PREFERRED_SCHEDULES, MAX_VISITOR_COUNT, museumToday } from "@/features/public-submissions/schedule";
-import { ScheduleEndSelect, ScheduleStartSelect } from "@/components/visit/ScheduleTimeSelects";
+import {
+  MAX_PREFERRED_SCHEDULES,
+  MAX_VISITOR_COUNT,
+  keepIfOffered,
+  museumToday,
+  scheduleRowOptions,
+} from "@/features/public-submissions/schedule";
+import { ScheduleTimeSelect } from "@/components/visit/ScheduleTimeSelect";
 import { useVisitAvailability } from "@/components/visit/useVisitAvailability";
 import { ActionError, primaryButtonClasses, secondaryButtonClasses, textareaClasses } from "./DetailParts";
 
 type ReferralAction = (previousState: ReferralActionState, formData: FormData) => Promise<ReferralActionState>;
 
 const inputClasses = textareaClasses;
+
 
 let rowIdCounter = 0;
 type ScheduleRow = { id: number; date: string; startTime: string; endTime: string };
@@ -205,6 +212,7 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
               </legend>
               {rows.map((row, index) => {
                 const rowId = row.id;
+                const options = scheduleRowOptions(row, today, rules);
                 const rowError = state.scheduleErrors?.[index];
                 const errorId = id(`schedule-${rowId}-error`);
                 const invalid = invalidProps(errorId, rowError);
@@ -219,8 +227,12 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                           min={today}
                           value={row.date}
                           onChange={(event) => {
-                            updateRow(rowId, { date: event.target.value, startTime: "", endTime: "" });
-                            ensureDate(event.target.value);
+                            const date = event.target.value;
+                            // Keep picked times the new date still offers; clear the rest.
+                            const startTime = keepIfOffered(row.startTime, scheduleRowOptions({ date, startTime: "" }, today, rules).start);
+                            const endTime = keepIfOffered(row.endTime, scheduleRowOptions({ date, startTime }, today, rules).end);
+                            updateRow(rowId, { date, startTime, endTime });
+                            ensureDate(date);
                           }}
                           className={inputClasses}
                           {...invalid}
@@ -228,25 +240,28 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                       </label>
                       <label className="text-[0.6875rem] text-zinc-500">
                         Start
-                        <ScheduleStartSelect
-                          date={row.date >= today ? row.date : ""}
+                        <ScheduleTimeSelect
+                          name="scheduleStart"
+                          options={options.start}
                           value={row.startTime}
-                          onChange={(startTime) => updateRow(rowId, { startTime, endTime: "" })}
-                          rules={rules}
+                          onChange={(event) => {
+                            const startTime = event.target.value;
+                            const end = scheduleRowOptions({ date: row.date, startTime }, today, rules).end;
+                            updateRow(rowId, { startTime, endTime: keepIfOffered(row.endTime, end) });
+                          }}
                           className={inputClasses}
-                          invalid={invalid}
+                          {...invalid}
                         />
                       </label>
                       <label className="text-[0.6875rem] text-zinc-500">
                         End
-                        <ScheduleEndSelect
-                          date={row.date >= today ? row.date : ""}
-                          startTime={row.startTime}
+                        <ScheduleTimeSelect
+                          name="scheduleEnd"
+                          options={options.end}
                           value={row.endTime}
-                          onChange={(endTime) => updateRow(rowId, { endTime })}
-                          rules={rules}
+                          onChange={(event) => updateRow(rowId, { endTime: event.target.value })}
                           className={inputClasses}
-                          invalid={invalid}
+                          {...invalid}
                         />
                       </label>
                       <button

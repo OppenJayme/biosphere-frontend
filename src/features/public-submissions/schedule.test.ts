@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
-  endTimeSlots,
-  startTimeSlots,
   MUSEUM_OPENING_HOURS,
+  endTimeSlots,
+  keepIfOffered,
+  scheduleRowOptions,
+  startTimeSlots,
   formatSchedule,
   formatTimeRange,
   museumClock,
   museumToday,
   normalizeTime,
   overlappingBookings,
+  openingWindowsFor,
   readableServerMessage,
+  scheduleTimeOptions,
   summarizeOpeningHours,
   validateSchedules,
+  weeklyWindows,
 } from "./schedule";
 
 const TODAY = "2026-09-29";
@@ -197,6 +202,47 @@ describe("formatting", () => {
   });
 });
 
+describe("12-hour schedule time options", () => {
+  it("offers start times inside each window with 24-hour values and 12-hour labels", () => {
+    const starts = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "start");
+    expect(starts[0]).toEqual({ value: "08:00", label: "8:00 AM" });
+    expect(starts.at(-1)).toEqual({ value: "15:45", label: "3:45 PM" });
+    expect(starts.find((option) => option.value === "13:00")?.label).toBe("1:00 PM");
+    // Closing times and the lunch break are never offered as a start.
+    expect(starts.map((option) => option.value)).not.toContain("11:00");
+    expect(starts.map((option) => option.value)).not.toContain("12:00");
+    expect(starts.map((option) => option.value)).not.toContain("16:00");
+    expect(starts).toHaveLength(24);
+  });
+
+  it("offers end times up to closing but not at opening", () => {
+    const ends = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "end").map((option) => option.value);
+    expect(ends[0]).toBe("08:15");
+    expect(ends).toContain("11:00");
+    expect(ends).toContain("16:00");
+    expect(ends).not.toContain("08:00");
+    expect(ends).not.toContain("13:00");
+  });
+
+  it("offers only the morning on Saturdays, and every window before a date is chosen", () => {
+    const saturday = scheduleTimeOptions(openingWindowsFor("2026-11-21"), "end");
+    expect(saturday.at(-1)).toEqual({ value: "11:00", label: "11:00 AM" });
+    expect(weeklyWindows()).toEqual([
+      { start: "08:00", end: "11:00" },
+      { start: "13:00", end: "16:00" },
+    ]);
+  });
+
+  it("keeps every offered option valid against the museum hours", () => {
+    const starts = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "start");
+    const ends = scheduleTimeOptions(openingWindowsFor("2026-11-16"), "end");
+    for (const start of starts) {
+      const end = ends.find((option) => option.value > start.value)!;
+      expect(validateSchedules([{ date: "2026-11-16", startTime: start.value, endTime: end.value }], TODAY).valid).toBe(true);
+    }
+  });
+});
+
 describe("time slot pickers (QA 2026-11-14: Saturday showed 6:00 AM to 5:00 PM)", () => {
   // 2026-11-14 is a Saturday (8:00 to 11:00 AM); 2026-11-16 a Monday (two windows); 2026-11-15 Sunday.
   const clock = { date: "2026-11-01", time: "09:00" };
@@ -236,5 +282,42 @@ describe("time slot pickers (QA 2026-11-14: Saturday showed 6:00 AM to 5:00 PM)"
     const ends = endTimeSlots("2026-11-16", "08:30", { booked });
     expect(ends.find((slot) => slot.value === "09:00")?.disabled).toBe(false);
     expect(ends.find((slot) => slot.value === "09:15")?.disabled).toBe(true);
+  });
+});
+
+describe("schedule row options (combined #152 and #155 pickers)", () => {
+  const clock = { date: "2026-11-01", time: "09:00" };
+  const today = "2026-11-01";
+
+  it("offers every weekly time before a date is chosen", () => {
+    const options = scheduleRowOptions({ date: "", startTime: "" }, today, {}, clock);
+    expect(options.start.map((option) => option.value)).toEqual(
+      scheduleTimeOptions(weeklyWindows(), "start").map((option) => option.value),
+    );
+  });
+
+  it("narrows to that day's bookable times once a date is chosen", () => {
+    const booked = [{ date: "2026-11-21", startTime: "08:00", endTime: "09:00" }];
+    const options = scheduleRowOptions({ date: "2026-11-21", startTime: "09:00" }, today, { booked }, clock);
+    expect(options.start[0]).toMatchObject({ value: "08:00", label: "8:00 AM (booked)", disabled: true });
+    expect(options.start.at(-1)?.value).toBe("10:45");
+    expect(options.end.map((option) => option.value)).toEqual(["09:15", "09:30", "09:45", "10:00", "10:15", "10:30", "10:45", "11:00"]);
+  });
+
+  it("keeps a picked time only while it is still an enabled choice", () => {
+    const sunday = scheduleRowOptions({ date: "2026-11-22", startTime: "" }, today, {}, clock);
+    expect(keepIfOffered("09:00", sunday.start)).toBe("");
+    const monday = scheduleRowOptions({ date: "2026-11-23", startTime: "" }, today, {}, clock);
+    expect(keepIfOffered("14:00", monday.start)).toBe("14:00");
+    const booked = scheduleRowOptions({ date: "2026-11-23", startTime: "" }, today, {
+      booked: [{ date: "2026-11-23", startTime: "14:00", endTime: "15:00" }],
+    }, clock);
+    expect(keepIfOffered("14:00", booked.start)).toBe("");
+  });
+
+  it("submits 24-hour HH:MM values and shows 12-hour labels", () => {
+    const options = scheduleRowOptions({ date: "2026-11-23", startTime: "13:00" }, today, {}, clock);
+    expect(options.start.find((option) => option.value === "13:00")?.label).toBe("1:00 PM");
+    expect(options.end.every((option) => /^\d{2}:\d{2}$/.test(option.value))).toBe(true);
   });
 });

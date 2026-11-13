@@ -33,14 +33,16 @@ export async function checkVisitorCount(page, bundle) {
     monday.setUTCDate(monday.getUTCDate()+7);
     while(monday.getUTCDay()!==1) monday.setUTCDate(monday.getUTCDate()+1);
     await date.fill(monday.toISOString().slice(0,10));
-    await page.locator('[name="scheduleStart"]').fill('09:00');
-    await page.locator('[name="scheduleEnd"]').fill('10:00');
+    // 12-hour selects that still submit 24-hour "HH:MM" values.
+    await page.getByLabel('Start Time',{exact:true}).selectOption({label:'9:00 AM'});
+    await page.getByLabel('End Time',{exact:true}).selectOption({label:'10:00 AM'});
     await page.locator('[name="consent"]').check();
   }
   await page.goto(`${origin}/visit`);
   await page.addScriptTag({path:bundle});
   const count = page.getByLabel('Number of Visitors', {exact:true});
   const names = page.locator('[name="visitorFirstName"]');
+  const lastNames = page.locator('[name="visitorLastName"]');
   const add = page.getByRole('button',{name:'Add a visitor name',exact:true});
   await count.fill('10');
   for (let i=1;i<10;i++) await add.click();
@@ -86,13 +88,20 @@ export async function checkVisitorCount(page, bundle) {
   await add.click();
   await names.nth(0).fill('Synthetic One');
   await names.nth(1).fill('Synthetic Two');
+  await lastNames.nth(0).fill('Visitor');
   await fillRequiredFields();
+  // Names are required: a missing last name blocks the request and marks only that row.
+  await page.getByRole('button',{name:'Submit Request',exact:true}).click();
+  await page.getByText("Enter this visitor's last name.",{exact:true}).waitFor();
+  assert(posts.length===0,'A missing last name still sent the request');
+  assert(await lastNames.nth(1).getAttribute('aria-invalid')==='true','The row missing a last name is not marked invalid');
+  await lastNames.nth(1).fill('Visitor');
   await page.getByRole('button',{name:'Submit Request',exact:true}).click();
   await page.getByRole('heading',{name:'Your visit request was sent',exact:true}).waitFor();
-  assert(posts.length===1 && posts[0].visitorCount===2 && posts[0].visitors.length===2,'Valid request did not preserve the declared count and names');
+  assert(posts.length===1 && posts[0].visitorCount===2 && posts[0].visitors.length===2 && posts[0].visitors[1].lastName==='Visitor' && posts[0].preferredSchedules[0].startTime==='09:00' && posts[0].preferredSchedules[0].endTime==='10:00','Valid request did not keep the count, full names and 24-hour times');
   await page.getByRole('button',{name:'Send another',exact:true}).click();
   assert(await count.inputValue()==='1' && await names.count()===1 && await add.isDisabled(),'Send another did not reset count, names and limit');
   assert(errors.length===0,`Browser errors: ${errors.join('; ')}`);
   assert(posts.length===1,'Unexpected extra form submission');
-  return {marker:'VISITOR_COUNT_UI_OK', scenarios:14, requests:posts.length};
+  return {marker:'VISITOR_COUNT_UI_OK', scenarios:15, requests:posts.length};
 }
