@@ -59,35 +59,35 @@ export function AccessionNumberCheck({ formRef, excludeSpecimenId }: AccessionNu
     };
   }, [excludeSpecimenId, formRef]);
 
-  if (checking) {
-    return (
-      <p aria-live="polite" className="mt-1 text-xs text-zinc-500">
-        Checking accession number…
-      </p>
-    );
-  }
-  if (state.status === "available") {
-    return (
-      <p aria-live="polite" className="mt-1 text-xs font-medium text-forest-700">
-        This accession number is available.
-      </p>
-    );
-  }
-  if (state.status === "taken") {
-    return (
-      <p aria-live="polite" className="mt-1 text-xs font-medium text-red-700">
-        {state.message}{" "}
-        {state.holder && (
-          <Link
-            href={`/specimens/${state.holder.id}`}
-            target="_blank"
-            className="underline underline-offset-2"
-          >
-            View record
-          </Link>
-        )}
-      </p>
-    );
-  }
-  return null;
+  // One line is always reserved, even when idle: the check starts on blur, often from the
+  // pointer-down on Save, and a status line appearing then would push Save away before the
+  // pointer is released (same failure as BB-SPC-01). The region also stays mounted, so screen
+  // readers announce each change reliably.
+  const tone = checking
+    ? "text-zinc-500"
+    : state.status === "available"
+      ? "font-medium text-forest-700"
+      : "font-medium text-red-700";
+  return (
+    <p aria-live="polite" className={`mt-1 min-h-4 text-xs leading-4 ${tone}`}>
+      {checking ? (
+        "Checking accession number…"
+      ) : state.status === "available" ? (
+        "This accession number is available."
+      ) : state.status === "taken" ? (
+        <>
+          {state.message}{" "}
+          {state.holder && (
+            <Link
+              href={`/specimens/${state.holder.id}`}
+              target="_blank"
+              className="underline underline-offset-2"
+            >
+              View record
+            </Link>
+          )}
+        </>
+      ) : null}
+    </p>
+  );
 }

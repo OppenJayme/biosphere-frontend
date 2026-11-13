@@ -10,8 +10,9 @@ additional skills, or authorize testing production or another owner's module.
 CSS with synthetic remote actions only. A fresh isolated Edge session blocks all
 network, focuses Common name, and holds pointer down over Save while duplicate
 loading/results render. Create/edit cases require stable coordinates and exactly
-one save for clear, found, unavailable and still-pending checks; keyboard Enter
-is also covered (10 scenarios). No database, login, existing browser window or
+one save for clear, found, unavailable and still-pending checks. Leaving
+Accession number while pressing Save is checked the same way for available and
+taken results; keyboard Enter is also covered (14 scenarios). No database, login, existing browser window or
 accession generation is used. See `docs/BBT_CYCLE3_DRAFT_SAVE_LAYOUT.md` for the
 baseline failure and the live-retest boundary.
 

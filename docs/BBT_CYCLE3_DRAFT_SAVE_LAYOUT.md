@@ -36,3 +36,17 @@ The existing six duplicate-ordering browser scenarios, focused ESLint,
 `next typegen` followed by `tsc --noEmit --incremental false`, and
 `git diff --check` also passed. Dependencies were reused through worktree
 junctions, not freshly installed. No application environment file was copied.
+
+## Follow-up: accession check (2026-11-13)
+
+Review of this fix found the same shift from the Accession number check: leaving
+that field shows "Checking accession number…" above Save, which moved Save 22.5px
+in create and edit mode before pointer-up. AccessionNumberCheck now always
+reserves one status line (and keeps its aria-live region mounted), so checking,
+available and one-line taken results no longer move Save. A taken message long
+enough to wrap can still add a line once the check finishes.
+
+`npm run test:draft-save:browser` now has 14 scenarios: the 10 above plus
+accession available/taken for create and edit, with the check held at
+"Checking" during pointer-down. Without the component change it fails with
+`create: accession checking moved Save before pointer-up`.
