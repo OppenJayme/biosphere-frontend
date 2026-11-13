@@ -93,6 +93,69 @@ export function overlappingBookings(schedule: ScheduleInput, booked: readonly Bo
   );
 }
 
+/** Time pickers offer this step; every opening window starts and ends on it. */
+export const SLOT_MINUTES = 15;
+
+/** One choice in a start or end time picker. Disabled choices stay visible so the day reads whole. */
+export type TimeSlot = { value: string; label: string; disabled: boolean };
+
+function toMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function fromMinutes(total: number) {
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/**
+ * Start times a visitor can pick on `date`: every SLOT_MINUTES step inside that day's opening
+ * windows, so a time outside the museum's hours can never be chosen (a closed day returns none).
+ * Times already held by an approved visit, or already passed today, are listed but disabled.
+ */
+export function startTimeSlots(
+  date: string,
+  rules: ScheduleRules = {},
+  clock: MuseumClock = museumClock(),
+): TimeSlot[] {
+  const booked = (rules.booked ?? []).filter((range) => range.date === date);
+  return openingWindowsFor(date, rules.openingHours ?? MUSEUM_OPENING_HOURS).flatMap((window) => {
+    const slots: TimeSlot[] = [];
+    for (let minute = toMinutes(window.start); minute < toMinutes(window.end); minute += SLOT_MINUTES) {
+      const value = fromMinutes(minute);
+      const passed = date < clock.date || (date === clock.date && value <= clock.time);
+      const taken = booked.some((range) => range.startTime <= value && value < range.endTime);
+      const suffix = taken ? " (booked)" : passed ? " (passed)" : "";
+      slots.push({ value, label: `${formatScheduleTime(value)}${suffix}`, disabled: passed || taken });
+    }
+    return slots;
+  });
+}
+
+/**
+ * End times for a visit starting at `startTime`: later steps up to the end of the same opening
+ * window. Ends that would run into the next approved visit are disabled, so the range can never
+ * cross the lunch break, closing time, or another booking.
+ */
+export function endTimeSlots(date: string, startTime: string, rules: ScheduleRules = {}): TimeSlot[] {
+  if (!TIME_PATTERN.test(startTime)) return [];
+  const window = openingWindowsFor(date, rules.openingHours ?? MUSEUM_OPENING_HOURS).find(
+    (item) => startTime >= item.start && startTime < item.end,
+  );
+  if (!window) return [];
+  const nextBooking = (rules.booked ?? [])
+    .filter((range) => range.date === date && range.startTime >= startTime)
+    .map((range) => range.startTime)
+    .sort()[0];
+  const slots: TimeSlot[] = [];
+  for (let minute = toMinutes(startTime) + SLOT_MINUTES; minute <= toMinutes(window.end); minute += SLOT_MINUTES) {
+    const value = fromMinutes(minute);
+    const overlaps = nextBooking !== undefined && value > nextBooking;
+    slots.push({ value, label: `${formatScheduleTime(value)}${overlaps ? " (booked)" : ""}`, disabled: overlaps });
+  }
+  return slots;
+}
+
 function isRealDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));

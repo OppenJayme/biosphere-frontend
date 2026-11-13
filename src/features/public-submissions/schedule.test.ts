@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  endTimeSlots,
+  startTimeSlots,
   MUSEUM_OPENING_HOURS,
   formatSchedule,
   formatTimeRange,
@@ -192,5 +194,47 @@ describe("formatting", () => {
     expect(formatSchedule({ date: "2026-10-15", startTime: "09:00", endTime: "13:30" })).toBe(
       "Thu, Oct 15, 2026, 9:00 AM – 1:30 PM",
     );
+  });
+});
+
+describe("time slot pickers (QA 2026-11-14: Saturday showed 6:00 AM to 5:00 PM)", () => {
+  // 2026-11-14 is a Saturday (8:00 to 11:00 AM); 2026-11-16 a Monday (two windows); 2026-11-15 Sunday.
+  const clock = { date: "2026-11-01", time: "09:00" };
+
+  it("offers only times inside that day's opening hours", () => {
+    const saturday = startTimeSlots("2026-11-14", {}, clock).map((slot) => slot.value);
+    expect(saturday[0]).toBe("08:00");
+    expect(saturday.at(-1)).toBe("10:45");
+    expect(saturday).not.toContain("06:00");
+    expect(saturday).not.toContain("11:00");
+    expect(startTimeSlots("2026-11-15", {}, clock)).toEqual([]);
+  });
+
+  it("skips the lunch break on weekdays", () => {
+    const monday = startTimeSlots("2026-11-16", {}, clock).map((slot) => slot.value);
+    expect(monday).toContain("10:45");
+    expect(monday).not.toContain("11:00");
+    expect(monday).not.toContain("12:30");
+    expect(monday).toContain("13:00");
+    expect(monday.at(-1)).toBe("15:45");
+  });
+
+  it("ends a visit inside the same window as its start", () => {
+    const ends = endTimeSlots("2026-11-16", "10:00").map((slot) => slot.value);
+    expect(ends).toEqual(["10:15", "10:30", "10:45", "11:00"]);
+  });
+
+  it("disables booked and already-passed start times, and ends that run into a booking", () => {
+    const booked = [{ date: "2026-11-16", startTime: "09:00", endTime: "10:00" }];
+    const today = { date: "2026-11-16", time: "08:20" };
+    const starts = startTimeSlots("2026-11-16", { booked }, today);
+    expect(starts.find((slot) => slot.value === "08:15")).toMatchObject({ disabled: true, label: "8:15 AM (passed)" });
+    expect(starts.find((slot) => slot.value === "08:30")?.disabled).toBe(false);
+    expect(starts.find((slot) => slot.value === "09:30")).toMatchObject({ disabled: true, label: "9:30 AM (booked)" });
+    expect(starts.find((slot) => slot.value === "10:00")?.disabled).toBe(false);
+
+    const ends = endTimeSlots("2026-11-16", "08:30", { booked });
+    expect(ends.find((slot) => slot.value === "09:00")?.disabled).toBe(false);
+    expect(ends.find((slot) => slot.value === "09:15")?.disabled).toBe(true);
   });
 });
