@@ -45,6 +45,33 @@ export async function checkDraftSave(page, bundle, css) {
       assert(submitted[0].values.commonName==='BB-TEST C3 Synthetic Beetle' && submitted[0].values.accessionNumber==='','Submission lost the typed name or blank accession');
       scenarios++;
     }
+    // Leaving Accession number starts its own check, whose status line sits above Save too.
+    for(const outcome of ['available','taken']) {
+      await mount(mode);
+      await page.getByRole('textbox',{name:'Accession number',exact:true}).fill('BB-TEST-ACC-0001');
+      const save=page.getByRole('button',{name:mode==='create'?'Save uncataloged draft':'Save core changes',exact:true});
+      await save.scrollIntoViewIfNeeded();
+      const before=await save.boundingBox();
+      const x=before.x+before.width/2, y=before.y+before.height/2;
+      await page.mouse.move(x,y);
+      await page.mouse.down();
+      await page.getByText('Checking accession number…',{exact:true}).waitFor();
+      let after=await save.boundingBox();
+      assert(Math.abs(after.y-before.y)<1,`${mode}: accession checking moved Save before pointer-up`);
+      // The blur also starts the duplicate check; React ends overlapping async transitions together.
+      await page.evaluate(()=>window.draftSaveFixture.requests.forEach(request=>request.resolve({status:'clear'})));
+      await page.evaluate(outcome=>window.draftSaveFixture.accessionRequests[0].resolve(outcome==='taken'
+        ?{status:'taken',holder:{id:'77777777-7777-4777-8777-777777777777'},message:'BB-TEST-ACC-0001 is already assigned.'}
+        :{status:'available'}),outcome);
+      await page.getByText(outcome==='taken'?'BB-TEST-ACC-0001 is already assigned.':'This accession number is available.',{exact:false}).waitFor();
+      after=await save.boundingBox();
+      assert(Math.abs(after.y-before.y)<1,`${mode}: accession ${outcome} result moved Save before pointer-up`);
+      await page.mouse.up();
+      await page.waitForFunction(()=>window.draftSaveFixture.submissions.length===1);
+      const submitted=await page.evaluate(()=>window.draftSaveFixture.submissions);
+      assert(submitted.length===1 && submitted[0].values.accessionNumber==='BB-TEST-ACC-0001','Accession first click did not reach exactly one save');
+      scenarios++;
+    }
     await mount(mode);
     await page.getByRole('textbox',{name:'Common name',exact:true}).fill('BB-TEST C3 Keyboard');
     await page.getByRole('textbox',{name:'Common name',exact:true}).press('Enter');

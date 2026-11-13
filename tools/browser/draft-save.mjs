@@ -96,7 +96,7 @@ try {
   cli("open", "about:blank");
   const result = JSON.parse(cli("run-code", `--filename=${script}`).result);
   assert.equal(result.marker, "DRAFT_SAVE_LAYOUT_OK");
-  assert.equal(result.scenarios, 10);
+  assert.equal(result.scenarios, 14);
 } catch (error) {
   failure = error;
 } finally {
@@ -111,5 +111,5 @@ if (failure) {
   process.exitCode = 1;
 } else
   console.log(
-    "DRAFT_SAVE_LAYOUT_OK: 10 scenarios passed; own session closed.",
+    "DRAFT_SAVE_LAYOUT_OK: 14 scenarios passed; own session closed.",
   );
