@@ -12,6 +12,8 @@ import type { ReferralActionState } from "@/features/inquiries/actions";
 import type { Inquiry } from "@/features/inquiries/types";
 import { NOTE_MAX } from "@/features/public-submissions/history";
 import { MAX_PREFERRED_SCHEDULES, MAX_VISITOR_COUNT, museumToday } from "@/features/public-submissions/schedule";
+import { ScheduleEndSelect, ScheduleStartSelect } from "@/components/visit/ScheduleTimeSelects";
+import { useVisitAvailability } from "@/components/visit/useVisitAvailability";
 import { ActionError, primaryButtonClasses, secondaryButtonClasses, textareaClasses } from "./DetailParts";
 
 type ReferralAction = (previousState: ReferralActionState, formData: FormData) => Promise<ReferralActionState>;
@@ -19,10 +21,16 @@ type ReferralAction = (previousState: ReferralActionState, formData: FormData) =
 const inputClasses = textareaClasses;
 
 let rowIdCounter = 0;
-const nextRowIds = (count: number) =>
-  Array.from({ length: Math.max(1, count) }, () => {
+type ScheduleRow = { id: number; date: string; startTime: string; endTime: string };
+const scheduleRows = (values?: { scheduleDate: string[]; scheduleStart: string[]; scheduleEnd: string[] }) =>
+  Array.from({ length: Math.max(1, values?.scheduleDate.length ?? 0) }, (_, index): ScheduleRow => {
     rowIdCounter += 1;
-    return rowIdCounter;
+    return {
+      id: rowIdCounter,
+      date: values?.scheduleDate[index] ?? "",
+      startTime: values?.scheduleStart[index] ?? "",
+      endTime: values?.scheduleEnd[index] ?? "",
+    };
   });
 
 function FieldMessage({ id, message }: { id: string; message?: string }) {
@@ -41,20 +49,25 @@ function invalidProps(id: string, message?: string) {
 export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: ReferralAction }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, {});
-  const [rowIds, setRowIds] = useState(() => nextRowIds(1));
+  const [rows, setRows] = useState(() => scheduleRows());
   const [seenState, setSeenState] = useState(state);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const fieldId = useId();
   const today = museumToday();
+  // Same hours and booked times the public form uses, so a curator cannot refer an unbookable slot.
+  const { availability, ensureDate } = useVisitAvailability(today);
+  const rules = { openingHours: availability?.openingHours, booked: availability?.booked };
+  const updateRow = (rowId: number, change: Partial<ScheduleRow>) =>
+    setRows((current) => current.map((row) => (row.id === rowId ? { ...row, ...change } : row)));
   const values = state.values;
   const errors = state.errors ?? {};
 
   // After a failed submit, match the schedule rows to what the curator had entered.
   if (state !== seenState) {
     setSeenState(state);
-    if (values) setRowIds(nextRowIds(values.scheduleDate.length));
+    if (values) setRows(scheduleRows(values));
   }
 
   useEffect(() => {
@@ -190,48 +203,56 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
               <legend className="text-xs font-medium text-zinc-700">
                 Preferred schedules (most preferred first, up to {MAX_PREFERRED_SCHEDULES})
               </legend>
-              {rowIds.map((rowId, index) => {
+              {rows.map((row, index) => {
+                const rowId = row.id;
                 const rowError = state.scheduleErrors?.[index];
                 const errorId = id(`schedule-${rowId}-error`);
                 const invalid = invalidProps(errorId, rowError);
                 return (
                   <div key={rowId}>
-                    <div className="grid grid-cols-[1fr_6.5rem_6.5rem_auto] items-end gap-2">
+                    <div className="grid grid-cols-[1fr_7.5rem_7.5rem_auto] items-end gap-2">
                       <label className="text-[0.6875rem] text-zinc-500">
                         Option {index + 1} date
                         <input
                           name="scheduleDate"
                           type="date"
                           min={today}
-                          defaultValue={values?.scheduleDate[index] ?? ""}
+                          value={row.date}
+                          onChange={(event) => {
+                            updateRow(rowId, { date: event.target.value, startTime: "", endTime: "" });
+                            ensureDate(event.target.value);
+                          }}
                           className={inputClasses}
                           {...invalid}
                         />
                       </label>
                       <label className="text-[0.6875rem] text-zinc-500">
                         Start
-                        <input
-                          name="scheduleStart"
-                          type="time"
-                          defaultValue={values?.scheduleStart[index] ?? ""}
+                        <ScheduleStartSelect
+                          date={row.date >= today ? row.date : ""}
+                          value={row.startTime}
+                          onChange={(startTime) => updateRow(rowId, { startTime, endTime: "" })}
+                          rules={rules}
                           className={inputClasses}
-                          {...invalid}
+                          invalid={invalid}
                         />
                       </label>
                       <label className="text-[0.6875rem] text-zinc-500">
                         End
-                        <input
-                          name="scheduleEnd"
-                          type="time"
-                          defaultValue={values?.scheduleEnd[index] ?? ""}
+                        <ScheduleEndSelect
+                          date={row.date >= today ? row.date : ""}
+                          startTime={row.startTime}
+                          value={row.endTime}
+                          onChange={(endTime) => updateRow(rowId, { endTime })}
+                          rules={rules}
                           className={inputClasses}
-                          {...invalid}
+                          invalid={invalid}
                         />
                       </label>
                       <button
                         type="button"
-                        disabled={rowIds.length === 1}
-                        onClick={() => setRowIds((ids) => ids.filter((existing) => existing !== rowId))}
+                        disabled={rows.length === 1}
+                        onClick={() => setRows((current) => current.filter((existing) => existing.id !== rowId))}
                         aria-label={`Remove option ${index + 1}`}
                         className="mb-0.5 rounded-lg p-2 text-zinc-500 hover:bg-sage-100 disabled:invisible"
                       >
@@ -243,10 +264,10 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
                 );
               })}
               <FieldMessage id={id("schedules-error")} message={errors.schedules} />
-              {rowIds.length < MAX_PREFERRED_SCHEDULES && (
+              {rows.length < MAX_PREFERRED_SCHEDULES && (
                 <button
                   type="button"
-                  onClick={() => setRowIds((ids) => [...ids, ...nextRowIds(1)])}
+                  onClick={() => setRows((current) => [...current, ...scheduleRows()])}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-forest-700 hover:underline"
                 >
                   <PlusIcon className="h-3.5 w-3.5" />
