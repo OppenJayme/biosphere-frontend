@@ -41,11 +41,17 @@ const visitFieldsSchema = z.object({
 });
 
 export const MAX_VEHICLES = 10;
+/** Philippine plates are about 7 characters ("ABC 1234"); 15 leaves room for conduction stickers. */
+export const PLATE_NUMBER_MAX = 15;
+export const VEHICLE_TEXT_MAX = 40;
+/** visit_request_visitor.visitor_name is 100 characters: first name, a space, and last name. */
+export const FIRST_NAME_MAX = 50;
+export const LAST_NAME_MAX = 49;
 
 const vehicleSchema = z.object({
-  plateNumber: requiredText("the plate number", 20),
-  carBrand: optionalText("the car brand", 100),
-  carType: optionalText("the car type", 100),
+  plateNumber: requiredText("the plate number", PLATE_NUMBER_MAX),
+  carBrand: optionalText("the car brand", VEHICLE_TEXT_MAX),
+  carType: optionalText("the car type", VEHICLE_TEXT_MAX),
 });
 
 export type VehicleField = keyof z.input<typeof vehicleSchema>;
@@ -61,7 +67,7 @@ export type VisitRequestSubmission = {
   purpose: string;
   preferredSchedules: ScheduleInput[];
   visitorCount: number;
-  visitors?: { firstName: string; lastName?: string }[];
+  visitors: { firstName: string; lastName: string }[];
   bringingVehicle: boolean;
   vehicles?: z.output<typeof vehicleSchema>[];
   equipment?: string;
@@ -78,6 +84,8 @@ export type VisitFormResult =
       scheduleErrors: (string | undefined)[];
       /** One entry per vehicle row, in form order; empty when that row is valid. */
       vehicleErrors: FieldErrors<VehicleField>[];
+      /** One entry per visitor name row, in form order; undefined when that row is valid. */
+      visitorErrors: (string | undefined)[];
     };
 
 /** Schedule rows come in as parallel scheduleDate/scheduleStart/scheduleEnd lists, in form order. */
@@ -92,24 +100,26 @@ export function readScheduleRows(formData: FormData): ScheduleInput[] {
   }));
 }
 
-/** Visitor rows with both names blank are skipped; a last name needs a first name. */
+/**
+ * Campus entry needs everyone's name, so every visitor row needs a first and a last name. The form
+ * shows one row per visitor; the count check is in readVisitRequestForm.
+ */
 function readVisitors(formData: FormData) {
-  const firstNames = stringValues(formData, "visitorFirstName");
   const lastNames = stringValues(formData, "visitorLastName");
-  const visitors: { firstName: string; lastName?: string }[] = [];
-  let error: string | undefined;
-
-  firstNames.forEach((rawFirst, index) => {
+  const visitors: { firstName: string; lastName: string }[] = [];
+  const rowErrors = stringValues(formData, "visitorFirstName").map((rawFirst, index) => {
     const firstName = rawFirst.trim();
     const lastName = (lastNames[index] ?? "").trim();
-    if (!firstName && !lastName) return;
-    if (!firstName) error ??= "Enter a first name for every visitor you list.";
-    else if (firstName.length > 50) error ??= "Keep first names to 50 characters or fewer.";
-    else if (lastName.length > 49) error ??= "Keep last names to 49 characters or fewer.";
-    else visitors.push(lastName ? { firstName, lastName } : { firstName });
+    if (!firstName && !lastName) return "Enter this visitor's first and last name.";
+    if (!firstName) return "Enter this visitor's first name.";
+    if (!lastName) return "Enter this visitor's last name.";
+    if (firstName.length > FIRST_NAME_MAX) return `Keep first names to ${FIRST_NAME_MAX} characters or fewer.`;
+    if (lastName.length > LAST_NAME_MAX) return `Keep last names to ${LAST_NAME_MAX} characters or fewer.`;
+    visitors.push({ firstName, lastName });
+    return undefined;
   });
 
-  return { visitors, error };
+  return { visitors, rowErrors };
 }
 
 /** Vehicle rows come in as parallel plateNumber/carBrand/carType lists, in form order. */
@@ -161,16 +171,17 @@ export function readVisitRequestForm(
 
   const schedules = readScheduleRows(formData);
   const scheduleCheck = validateSchedules(schedules, clock, rules);
-  const { visitors, error: visitorError } = readVisitors(formData);
+  const { visitors, rowErrors: visitorErrors } = readVisitors(formData);
 
   const errors: FieldErrors<VisitFormField> = {};
   if (!fields.success) Object.assign(errors, collectFieldErrors<VisitFormField>(fields.error));
   if (scheduleCheck.listError) errors.schedules = scheduleCheck.listError;
-  if (visitorError) errors.visitors = visitorError;
-  if (fields.success && visitors.length > fields.data.visitorCount) {
-    errors.visitors = `You listed ${visitors.length} names but ${fields.data.visitorCount} visitor${
-      fields.data.visitorCount === 1 ? "" : "s"
-    }. Raise the number of visitors or remove names.`;
+  const visitorsValid = visitorErrors.every((error) => !error);
+  if (fields.success && visitorErrors.length !== fields.data.visitorCount) {
+    const count = fields.data.visitorCount;
+    errors.visitors = `Enter a first and last name for each of the ${count} visitor${count === 1 ? "" : "s"}.`;
+  } else if (!visitorsValid) {
+    errors.visitors = "Enter a first and last name for every visitor.";
   }
 
   if (!fields.success || !vehicleCheck.valid || !scheduleCheck.valid || errors.visitors) {
@@ -179,6 +190,7 @@ export function readVisitRequestForm(
       errors,
       scheduleErrors: scheduleCheck.rowErrors,
       vehicleErrors: vehicleCheck.rowErrors,
+      visitorErrors,
     };
   }
 
@@ -189,7 +201,7 @@ export function readVisitRequestForm(
     data: {
       ...contact,
       preferredSchedules: schedules,
-      ...(visitors.length > 0 ? { visitors } : {}),
+      visitors,
       bringingVehicle,
       ...(vehicleCheck.vehicles.length > 0 ? { vehicles: vehicleCheck.vehicles } : {}),
       consentAccepted: true,

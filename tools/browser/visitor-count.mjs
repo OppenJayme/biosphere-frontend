@@ -80,7 +80,7 @@ try {
   cli("open", "about:blank");
   const result = JSON.parse(cli("run-code", `--filename=${script}`).result);
   assert.equal(result.marker, "VISITOR_COUNT_UI_OK");
-  assert.equal(result.scenarios, 14);
+  assert.equal(result.scenarios, 15);
 } catch (error) {
   failure = error;
 } finally {
@@ -95,5 +95,5 @@ if (failure) {
   process.exitCode = 1;
 } else
   console.log(
-    "VISITOR_COUNT_UI_OK: 14 scenarios passed; own session closed.",
+    "VISITOR_COUNT_UI_OK: 15 scenarios passed; own session closed.",
   );
