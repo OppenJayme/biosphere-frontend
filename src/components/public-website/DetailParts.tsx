@@ -468,6 +468,23 @@ function emailCardClasses(entry: CommunicationEntry) {
 /** The visitor's own text sent with the form (an inquiry's message, a visit request's notes). */
 export type VisitorMessage = { label: string; text: string; receivedAt: string };
 
+/**
+ * A message's full text. Long ones scroll inside a capped box, so it is a focusable, labelled region:
+ * keyboard users can tab to it and scroll with the arrow keys.
+ */
+function MessageBody({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      className="mt-1.5 max-h-80 overflow-y-auto whitespace-pre-line break-words rounded-sm text-sm text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
+    >
+      {children}
+    </div>
+  );
+}
+
 /** How many items the Messages panel lists, for the jump link. */
 export function messageCount(visitorMessage: VisitorMessage | null, entries: CommunicationEntry[] | null) {
   return (visitorMessage ? 1 : 0) + (entries ? emailThread(entries).length : 0);
@@ -525,9 +542,7 @@ export function MessageThread({
             <p className="text-[0.6875rem] text-zinc-500">
               From the visitor · {formatTimestamp(visitorMessage.receivedAt)}
             </p>
-            <p className="mt-1.5 max-h-80 overflow-y-auto whitespace-pre-line break-words text-sm text-zinc-800">
-              {visitorMessage.text}
-            </p>
+            <MessageBody label={visitorMessage.label}>{visitorMessage.text}</MessageBody>
           </li>
         )}
         {emails.map((entry) => (
@@ -543,9 +558,9 @@ export function MessageThread({
             </p>
             {entry.subject && <p className="mt-1 break-words text-xs font-medium text-zinc-800">{entry.subject}</p>}
             {isOutboundEmail(entry) && <DeliveryWarning result={entry.deliveryResult} />}
-            <p className="mt-1.5 max-h-80 overflow-y-auto whitespace-pre-line break-words text-sm text-zinc-800">
+            <MessageBody label={`${entryTypeLabel(entry.type)}, ${formatTimestamp(entry.sentAt ?? entry.createdAt)}`}>
               {entry.message}
-            </p>
+            </MessageBody>
           </li>
         ))}
       </ol>

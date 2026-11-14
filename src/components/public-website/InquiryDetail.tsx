@@ -41,7 +41,7 @@ import { InquiryStatusBadge } from "./StatusBadge";
 /** Anchor for the "Messages (N)" jump link; one inquiry is open at a time. */
 const MESSAGES_ID = "inquiry-messages";
 
-const STATUS_OPTIONS:Record<"REVIEWED" | "CLOSED", StatusOption> = {
+const STATUS_OPTIONS: Record<"REVIEWED" | "CLOSED", StatusOption> = {
   REVIEWED: {
     value: "REVIEWED",
     label: "Reviewed",

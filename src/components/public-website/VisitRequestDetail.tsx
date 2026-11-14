@@ -51,7 +51,7 @@ import { VisitStatusBadge } from "./StatusBadge";
 /** Anchor for the "Messages (N)" jump link; one visit request is open at a time. */
 const MESSAGES_ID = "visit-messages";
 
-const STATUS_DESCRIPTIONS:Record<CuratorSettableVisitStatus, string> = {
+const STATUS_DESCRIPTIONS: Record<CuratorSettableVisitStatus, string> = {
   SUBMITTED_FOR_CAMPUS_ENTRY: "You have sent the campus-entry summary through the USC campus-entry process.",
   COMPLETED: "The visit took place.",
   DECLINED: "The museum cannot accommodate this request.",

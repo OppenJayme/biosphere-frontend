@@ -79,6 +79,14 @@ describe("MessageThread", () => {
     expect(html).not.toContain("<details");
   });
 
+  it("lets keyboard users reach and scroll each message body", () => {
+    const html = render([sentEmail, reply]);
+    expect(html.match(/role="region"/g)).toHaveLength(3);
+    expect(html.match(/tabindex="0"/g)).toHaveLength(3);
+    expect(html).toContain('aria-label="Inquiry message"');
+    expect(html).toContain('aria-label="Visitor reply, ');
+  });
+
   it("says who each email is from and how it was delivered", () => {
     const html = render([sentEmail, failedEmail, reply]);
     expect(html).toContain("To visitor@example.test · You");
