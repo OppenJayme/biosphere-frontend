@@ -12,6 +12,8 @@ import {
   EMAIL_SUBJECT_MAX,
   NOTE_MAX,
   VISITOR_MESSAGE_MAX,
+  delayReason,
+  deliveryProgress,
   deliveryReason,
   deliveryStatus,
   entryTypeLabel,
@@ -369,10 +371,23 @@ export function NoteForm({ action }: { action: NoteAction }) {
 function DeliveryBadge({ result }: { result: string | null }) {
   const status = deliveryStatus(result);
   if (status === "sent") {
+    const progress = deliveryProgress(result);
+    if (progress === "delayed") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[0.625rem] font-semibold text-amber-800">
+          <ClockIcon className="h-3 w-3" />
+          Delayed
+        </span>
+      );
+    }
+    // "Sent" only means the email service accepted it; "Delivered" is its later confirmation.
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-forest-100 px-2 py-0.5 text-[0.625rem] font-semibold text-forest-700">
+      <span
+        title={progress === "delivered" ? "The visitor's mail server accepted this email." : "Accepted by the email service; delivery not confirmed yet."}
+        className="inline-flex items-center gap-1 rounded-full bg-forest-100 px-2 py-0.5 text-[0.625rem] font-semibold text-forest-700"
+      >
         <CheckIcon className="h-3 w-3" />
-        Sent
+        {progress === "delivered" ? "Delivered" : "Sent"}
       </span>
     );
   }
@@ -397,6 +412,13 @@ function EmailEntryBody({ entry }: { entry: CommunicationEntry }) {
           </>
         )}
       </p>
+      {deliveryProgress(entry.deliveryResult) === "delayed" && (
+        <p className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">
+          The email service is still trying to deliver this
+          {delayReason(entry.deliveryResult) ? ` (${delayReason(entry.deliveryResult)})` : ""}. If it stays delayed,
+          contact the visitor another way.
+        </p>
+      )}
       {status !== "sent" && (
         <p className="rounded-md bg-red-50 px-2 py-1 text-red-800">
           The visitor did not receive this{reason ? ` (${reason})` : ""}. Any status change was still saved;
