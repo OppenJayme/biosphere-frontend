@@ -27,6 +27,7 @@ import {
 } from "@/features/specimens/types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { CATALOGING_FILE_FEEDBACK_CLASSES } from "@/features/specimens/control-styles";
+import { LoadingImage } from "@/components/ui/LoadingImage";
 
 export type SpecimenMediaWithPreview = SpecimenMedia & {
   signedUrl: string | null;
@@ -327,11 +328,10 @@ function RemoveControl({ specimenId, item }: { specimenId: string; item: Specime
 function MediaCard({ specimenId, item, readOnly }: { specimenId: string; item: SpecimenMediaWithPreview; readOnly: boolean }) {
   return (
     <article className="overflow-hidden rounded-xl border border-black/10 bg-white">
-      <div className="aspect-[4/3] bg-zinc-100">
+      <div className="relative aspect-[4/3] bg-zinc-100">
         {item.signedUrl ? (
           // The browser loads the five-minute URL directly so Next's optimizer cannot cache a private image beyond expiry.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.signedUrl} alt={item.caption ?? "Specimen image"} className="h-full w-full object-contain" />
+          <LoadingImage src={item.signedUrl} alt={item.caption ?? "Specimen image"} className="h-full w-full object-contain" />
         ) : (
           <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500">
             Preview unavailable. Reload to request a fresh private link.
