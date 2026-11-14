@@ -4,7 +4,9 @@ import {
   delayReason,
   deliveryProgress,
   deliveryStatus,
+  emailThread,
   entryTypeLabel,
+  isEmailEntry,
   isInboundReply,
   isOutboundEmail,
   latestEmail,
@@ -102,5 +104,33 @@ describe("delivery tracking (backend Brevo webhook)", () => {
 
   it("shows a bounce after acceptance as failed", () => {
     expect(deliveryStatus("FAILED hard_bounce: No such user")).toBe("failed");
+  });
+});
+
+describe("email thread for the Messages panel", () => {
+  const receipt = {
+    ...outboundEmail,
+    id: "55555555-5555-4555-8555-555555555555",
+    type: "RECEIPT_EMAIL",
+    recordedBy: null,
+    createdAt: "2026-11-10T01:00:00.000Z",
+  };
+  const statusChange = {
+    ...curatorNote,
+    id: "66666666-6666-4666-8666-666666666666",
+    type: "STATUS_CHANGE",
+    message: "Status changed from PENDING to REVIEWED.",
+  };
+
+  it("keeps only emails to and from the visitor, in timeline order", () => {
+    const history = communicationHistorySchema.parse([receipt, curatorNote, outboundEmail, statusChange, visitorReply]);
+    expect(emailThread(history).map((entry) => entry.id)).toEqual([receipt.id, outboundEmail.id, visitorReply.id]);
+  });
+
+  it("does not count notes or status changes as emails", () => {
+    const [note, status] = communicationHistorySchema.parse([curatorNote, statusChange]);
+    expect(isEmailEntry(note)).toBe(false);
+    expect(isEmailEntry(status)).toBe(false);
+    expect(emailThread([note, status])).toEqual([]);
   });
 });

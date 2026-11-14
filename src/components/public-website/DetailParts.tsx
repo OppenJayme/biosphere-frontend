@@ -16,7 +16,9 @@ import {
   deliveryProgress,
   deliveryReason,
   deliveryStatus,
+  emailThread,
   entryTypeLabel,
+  isEmailEntry,
   isInboundReply,
   isOutboundEmail,
   readableHistoryMessage,
@@ -399,9 +401,30 @@ function DeliveryBadge({ result }: { result: string | null }) {
   );
 }
 
+/** Says plainly when a sent email is delayed or never reached the visitor. */
+function DeliveryWarning({ result }: { result: string | null }) {
+  const status = deliveryStatus(result);
+  const reason = deliveryReason(result);
+  return (
+    <>
+      {deliveryProgress(result) === "delayed" && (
+        <p className="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900">
+          The email service is still trying to deliver this
+          {delayReason(result) ? ` (${delayReason(result)})` : ""}. If it stays delayed, contact the visitor another
+          way.
+        </p>
+      )}
+      {status !== "sent" && (
+        <p className="mt-1 rounded-md bg-red-50 px-2 py-1 text-xs text-red-800">
+          The visitor did not receive this{reason ? ` (${reason})` : ""}. Any status change was still saved;
+          send a message to try again.
+        </p>
+      )}
+    </>
+  );
+}
+
 function EmailEntryBody({ entry }: { entry: CommunicationEntry }) {
-  const status = deliveryStatus(entry.deliveryResult);
-  const reason = deliveryReason(entry.deliveryResult);
   return (
     <div className="mt-0.5 space-y-1 text-xs text-zinc-700">
       <p className="break-words">
@@ -412,19 +435,7 @@ function EmailEntryBody({ entry }: { entry: CommunicationEntry }) {
           </>
         )}
       </p>
-      {deliveryProgress(entry.deliveryResult) === "delayed" && (
-        <p className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">
-          The email service is still trying to deliver this
-          {delayReason(entry.deliveryResult) ? ` (${delayReason(entry.deliveryResult)})` : ""}. If it stays delayed,
-          contact the visitor another way.
-        </p>
-      )}
-      {status !== "sent" && (
-        <p className="rounded-md bg-red-50 px-2 py-1 text-red-800">
-          The visitor did not receive this{reason ? ` (${reason})` : ""}. Any status change was still saved;
-          send a message to try again.
-        </p>
-      )}
+      <DeliveryWarning result={entry.deliveryResult} />
       <details>
         <summary className="cursor-pointer text-[0.6875rem] font-medium text-forest-700 hover:underline">
           Show email
@@ -446,6 +457,125 @@ function ReplyEntryBody({ entry }: { entry: CommunicationEntry }) {
         {entry.message}
       </blockquote>
     </div>
+  );
+}
+
+/** Tint for an email card: violet for what the visitor wrote, amber for what the museum sent. */
+function emailCardClasses(entry: CommunicationEntry) {
+  return isInboundReply(entry) ? "bg-violet-50/70 ring-violet-200" : "bg-amber-50/60 ring-amber-200";
+}
+
+/** The visitor's own text sent with the form (an inquiry's message, a visit request's notes). */
+export type VisitorMessage = { label: string; text: string; receivedAt: string };
+
+/**
+ * A message's full text. Long ones scroll inside a capped box, so it is a focusable, labelled region:
+ * keyboard users can tab to it and scroll with the arrow keys.
+ */
+function MessageBody({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      className="mt-1.5 max-h-80 overflow-y-auto whitespace-pre-line break-words rounded-sm text-sm text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
+    >
+      {children}
+    </div>
+  );
+}
+
+/** How many items the Messages panel lists, for the jump link. */
+export function messageCount(visitorMessage: VisitorMessage | null, entries: CommunicationEntry[] | null) {
+  return (visitorMessage ? 1 : 0) + (entries ? emailThread(entries).length : 0);
+}
+
+/** "Messages (N)" link in the record card that jumps to the Messages panel. */
+export function MessagesJumpLink({ targetId, count }: { targetId: string; count: number }) {
+  return (
+    <a
+      href={`#${targetId}`}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-forest-700/40 bg-forest-50 px-2.5 py-1 text-xs font-semibold text-forest-800 hover:bg-forest-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700"
+    >
+      <MailIcon className="h-3.5 w-3.5" />
+      Messages ({count})
+    </a>
+  );
+}
+
+/**
+ * The visitor's message and every email to and from them, oldest first, shown in full. Curators
+ * could not find these among notes and status changes in the history (curator UAT 2026-11-14), so
+ * they get their own panel near the top. The history still lists them in order with the rest.
+ */
+export function MessageThread({
+  id,
+  visitorMessage,
+  entries,
+  currentAccountId,
+}: {
+  id: string;
+  visitorMessage: VisitorMessage | null;
+  entries: CommunicationEntry[] | null;
+  currentAccountId: string | null;
+}) {
+  const emails = entries ? emailThread(entries) : [];
+  const headingId = `${id}-heading`;
+
+  // scroll-mt clears the sticky curator top bar (up to ~110px tall when it wraps) on a jump.
+  return (
+    <section id={id} aria-labelledby={headingId} className={`${panelClasses} scroll-mt-32 space-y-3`}>
+      <div>
+        <h3 id={headingId} className="flex items-center gap-1.5 text-sm font-semibold text-zinc-900">
+          <MailIcon className="h-4 w-4 text-forest-700" />
+          Messages
+        </h3>
+        <p className="mt-1 text-xs text-zinc-500">
+          What the visitor wrote and every email to and from them, oldest first. Notes and status changes are
+          under Notes and history.
+        </p>
+      </div>
+      <ol className="space-y-2.5">
+        {visitorMessage && (
+          <li className="rounded-lg bg-violet-50/70 px-3 py-2.5 ring-1 ring-violet-200">
+            <p className="text-xs font-semibold text-violet-900">{visitorMessage.label}</p>
+            <p className="text-[0.6875rem] text-zinc-500">
+              From the visitor · {formatTimestamp(visitorMessage.receivedAt)}
+            </p>
+            <MessageBody label={visitorMessage.label}>{visitorMessage.text}</MessageBody>
+          </li>
+        )}
+        {emails.map((entry) => (
+          <li key={entry.id} className={`rounded-lg px-3 py-2.5 ring-1 ${emailCardClasses(entry)}`}>
+            <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-zinc-800">
+              {entryTypeLabel(entry.type)}
+              {isOutboundEmail(entry) && <DeliveryBadge result={entry.deliveryResult} />}
+            </p>
+            <p className="break-words text-[0.6875rem] text-zinc-500">
+              {isInboundReply(entry)
+                ? `From the visitor · received ${formatTimestamp(entry.sentAt ?? entry.createdAt)}`
+                : `To ${entry.recipientEmail ?? "the visitor"} · ${entryAuthor(entry, currentAccountId)} · ${formatTimestamp(entry.createdAt)}`}
+            </p>
+            {entry.subject && <p className="mt-1 break-words text-xs font-medium text-zinc-800">{entry.subject}</p>}
+            {isOutboundEmail(entry) && <DeliveryWarning result={entry.deliveryResult} />}
+            <MessageBody label={`${entryTypeLabel(entry.type)}, ${formatTimestamp(entry.sentAt ?? entry.createdAt)}`}>
+              {entry.message}
+            </MessageBody>
+          </li>
+        ))}
+      </ol>
+      {entries === null && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Emails could not be loaded. Reload the page to try again.
+        </p>
+      )}
+      {entries !== null && emails.length === 0 && (
+        <p className="text-xs text-zinc-500">
+          No emails yet. Emails you send appear here, and visitor replies once they are imported from the museum
+          mailbox.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -561,12 +691,17 @@ export function HistoryTimeline({
           <p className="text-[0.6875rem] text-zinc-500">{formatTimestamp(submittedAt)}</p>
         </li>
         {entries?.map((entry) => (
-          <li key={entry.id} className="relative">
+          <li
+            key={entry.id}
+            className={`relative ${isEmailEntry(entry) ? `rounded-lg px-2.5 py-2 ring-1 ${emailCardClasses(entry)}` : ""}`}
+          >
+            {/* Email cards are padded, so their dot moves to stay on the timeline line. */}
             <span
               aria-hidden
-              className={`absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${entryDotClasses(entry)}`}
+              className={`absolute ${isEmailEntry(entry) ? "-left-[21px] top-3" : "-left-[21px] top-1"} h-2.5 w-2.5 rounded-full border-2 border-white ${entryDotClasses(entry)}`}
             />
             <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-zinc-800">
+              {isEmailEntry(entry) && <MailIcon aria-hidden className="h-3.5 w-3.5 text-zinc-600" />}
               {entryTypeLabel(entry.type)}
               {isOutboundEmail(entry) && <DeliveryBadge result={entry.deliveryResult} />}
             </p>

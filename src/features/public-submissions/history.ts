@@ -106,3 +106,16 @@ export function isInboundReply(entry: CommunicationEntry) {
 export function latestEmail(entries: CommunicationEntry[]) {
   return entries.findLast(isOutboundEmail);
 }
+
+/** An email to or from the visitor, as opposed to a note, status change or referral. */
+export function isEmailEntry(entry: CommunicationEntry) {
+  return isInboundReply(entry) || isOutboundEmail(entry);
+}
+
+/**
+ * The record's emails, oldest first, for the Messages panel. Curators could not find the visitor's
+ * emails among notes and status changes (curator UAT 2026-11-14), so they get their own list.
+ */
+export function emailThread(entries: CommunicationEntry[]) {
+  return entries.filter(isEmailEntry);
+}

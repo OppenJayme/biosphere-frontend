@@ -95,7 +95,19 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         ))}
       </div>
 
-      <Section title="Basic details">
+      <Section
+        title="Basic details"
+        action={
+          specimen.status !== "ARCHIVED" ? (
+            <Link
+              href={`/specimens/${specimen.id}/edit`}
+              className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
+            >
+              Edit basic details
+            </Link>
+          ) : undefined
+        }
+      >
         <DetailGrid
           entries={[
             { label: "Accession number", value: specimen.accessionNumber },
