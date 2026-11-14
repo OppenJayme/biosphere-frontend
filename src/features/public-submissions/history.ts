@@ -12,7 +12,11 @@ export const communicationEntrySchema = z.object({
   deliveryResult: z.string().nullable(),
   /** For an imported visitor reply, when the museum mailbox received it. */
   sentAt: z.string().nullable(),
-  /** The acting curator; null only on imported visitor replies (direction INBOUND, backend spec 0002 AC-4). */
+  /**
+   * The acting curator. Null on imported visitor replies (direction INBOUND, backend spec 0002 AC-4)
+   * and on entries BioSphere adds by itself: receipts and the pointer left when a reply to a
+   * referred inquiry is filed on its visit request.
+   */
   recordedBy: z.string().nullable(),
   createdAt: z.string().min(1),
 });
@@ -33,6 +37,7 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   STATUS_UPDATE_EMAIL: "Decision emailed to visitor",
   MESSAGE_EMAIL: "Email to visitor",
   VISITOR_REPLY: "Visitor reply",
+  RECEIPT_EMAIL: "Receipt emailed to visitor",
 };
 
 export function entryTypeLabel(type: string) {

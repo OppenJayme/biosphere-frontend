@@ -433,6 +433,12 @@ function entryDotClasses(entry: CommunicationEntry) {
   return entry.type === "NOTE" ? "bg-sky-500" : "bg-forest-600";
 }
 
+/** Who recorded a curator-side entry; BioSphere itself records receipts and reply pointers. */
+function entryAuthor(entry: CommunicationEntry, currentAccountId: string | null) {
+  if (entry.recordedBy === null) return isOutboundEmail(entry) ? "Sent automatically" : "BioSphere";
+  return entry.recordedBy === currentAccountId ? "You" : "A curator";
+}
+
 function minutesLabel(seconds: number) {
   const minutes = Math.max(1, Math.round(seconds / 60));
   return minutes === 1 ? "every minute" : `every ${minutes} minutes`;
@@ -495,12 +501,15 @@ function ReplyCheck({ status }: { status: MailboxSyncStatus | null }) {
 /** The record's timeline, oldest first, opened by the visitor's own submission. */
 export function HistoryTimeline({
   submittedAt,
+  referredFrom = null,
   entries,
   statusLabels,
   currentAccountId,
   mailboxStatus,
 }: {
   submittedAt: string;
+  /** Reference code of the inquiry a curator turned into this visit request, if any. */
+  referredFrom?: string | null;
   entries: CommunicationEntry[] | null;
   statusLabels: Record<string, string>;
   currentAccountId: string | null;
@@ -522,7 +531,11 @@ export function HistoryTimeline({
       <ol className="mt-3 space-y-3 border-l border-black/10 pl-4">
         <li className="relative">
           <span aria-hidden className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-zinc-400" />
-          <p className="text-xs font-semibold text-zinc-800">Submitted through the public website</p>
+          <p className="text-xs font-semibold text-zinc-800">
+            {referredFrom
+              ? `Created by a curator from inquiry ${referredFrom}`
+              : "Submitted through the public website"}
+          </p>
           <p className="text-[0.6875rem] text-zinc-500">{formatTimestamp(submittedAt)}</p>
         </li>
         {entries?.map((entry) => (
@@ -547,7 +560,7 @@ export function HistoryTimeline({
             <p className="mt-0.5 text-[0.6875rem] text-zinc-500">
               {isInboundReply(entry)
                 ? `From the visitor · received ${formatTimestamp(entry.sentAt ?? entry.createdAt)}`
-                : `${entry.recordedBy !== null && entry.recordedBy === currentAccountId ? "You" : "A curator"} · ${formatTimestamp(entry.createdAt)}`}
+                : `${entryAuthor(entry, currentAccountId)} · ${formatTimestamp(entry.createdAt)}`}
             </p>
           </li>
         ))}
