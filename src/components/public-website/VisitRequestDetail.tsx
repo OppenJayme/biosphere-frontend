@@ -31,12 +31,15 @@ import {
   EmailVisitorForm,
   HistoryTimeline,
   InfoRow,
+  MessageThread,
+  MessagesJumpLink,
   NoteForm,
   PanelHeading,
   StatusChangeForm,
   VisitorEmailFields,
   managementColumnClasses,
   managementColumnsClasses,
+  messageCount,
   panelClasses,
   primaryButtonClasses,
   secondaryButtonClasses,
@@ -44,6 +47,9 @@ import {
   type StatusOption,
 } from "./DetailParts";
 import { VisitStatusBadge } from "./StatusBadge";
+
+/** Anchor for the "Messages (N)" jump link; one visit request is open at a time. */
+const MESSAGES_ID = "visit-messages";
 
 const STATUS_DESCRIPTIONS: Record<CuratorSettableVisitStatus, string> = {
   SUBMITTED_FOR_CAMPUS_ENTRY: "You have sent the campus-entry summary through the USC campus-entry process.",
@@ -226,6 +232,10 @@ export function VisitRequestDetail({
 }) {
   const statusOptions = nextVisitStatuses(request.status).map(statusOption);
   const vehicles = request.vehicles.filter((vehicle) => vehicle.plateNumber || vehicle.brand || vehicle.type);
+  // The request's free-text notes are the visitor's own message, so they open the Messages panel.
+  const visitorMessage = request.notes
+    ? { label: "Notes sent with the request", text: request.notes, receivedAt: request.createdAt }
+    : null;
 
   return (
     <div className={managementColumnsClasses}>
@@ -242,6 +252,7 @@ export function VisitRequestDetail({
             </div>
             <VisitStatusBadge status={request.status} />
           </div>
+          <MessagesJumpLink targetId={MESSAGES_ID} count={messageCount(visitorMessage, history)} />
 
           {request.approvedSchedule && (
             <p className="flex items-center gap-2 rounded-lg bg-forest-50 px-3 py-2 text-xs font-semibold text-forest-800">
@@ -262,7 +273,13 @@ export function VisitRequestDetail({
             </InfoRow>
             <InfoRow label="Equipment">{request.equipment ?? <NotGiven />}</InfoRow>
             <InfoRow label="Notes">
-              <span className="whitespace-pre-line">{request.notes ?? <NotGiven />}</span>
+              {request.notes ? (
+                <a href={`#${MESSAGES_ID}`} className="text-forest-800 underline-offset-2 hover:underline">
+                  Shown under Messages
+                </a>
+              ) : (
+                <NotGiven />
+              )}
             </InfoRow>
             <InfoRow label="Privacy consent">Accepted {formatTimestamp(request.consentAcceptedAt)}</InfoRow>
           </dl>
@@ -327,11 +344,19 @@ export function VisitRequestDetail({
           )}
         </section>
 
+        <MessageThread
+          id={MESSAGES_ID}
+          visitorMessage={visitorMessage}
+          entries={history}
+          currentAccountId={currentAccountId}
+        />
+
         <section className={`${panelClasses} space-y-4`}>
           <PanelHeading icon={ChatIcon} title="Notes and history" />
           <NoteForm key={request.id} action={addVisitNoteAction.bind(null, request.id, returnQuery)} />
           <HistoryTimeline
             submittedAt={request.createdAt}
+            referredFrom={request.sourceInquiryId ? request.sourceInquiryId.slice(0, 8).toUpperCase() : null}
             entries={history}
             statusLabels={VISIT_REQUEST_STATUS_LABELS}
             currentAccountId={currentAccountId}

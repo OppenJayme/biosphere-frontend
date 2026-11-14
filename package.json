@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:visit-count:browser": "node tools/browser/visitor-count.mjs",
     "test:public-dialogs:browser": "node tools/browser/public-dialog.mjs",
     "test:notifications:browser": "node tools/browser/notification-state.mjs",
     "dev": "next dev",
@@ -11,6 +12,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:duplicates:browser": "node tools/browser/duplicate-ordering.mjs",
+    "test:draft-save:browser": "node tools/browser/draft-save.mjs",
     "test:public-submissions:browser": "node tools/browser/public-submission.mjs"
   },
   "dependencies": {

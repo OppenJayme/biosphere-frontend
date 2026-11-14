@@ -71,10 +71,23 @@ export async function checkPublicForms(page, bundle) {
       await page
         .locator('[name="purpose"]')
         .fill("Synthetic visit request retained after an uncertain response.");
+      // The time pickers are selects that only offer the chosen day's open, unpassed times, so
+      // start from the earliest allowed date and move on until a day has a time to pick.
       const date = page.locator('[name="scheduleDate"]');
-      await date.fill(await date.getAttribute("min"));
-      await page.locator('[name="scheduleStart"]').fill("09:00");
-      await page.locator('[name="scheduleEnd"]').fill("10:00");
+      const enabled = (name) =>
+        page.locator(`[name="${name}"] option:not([disabled]):not([value=""])`);
+      let day = new Date(`${await date.getAttribute("min")}T00:00:00Z`);
+      for (let tries = 0; tries < 8; tries++) {
+        await date.fill(day.toISOString().slice(0, 10));
+        if ((await enabled("scheduleStart").count()) > 0) break;
+        day = new Date(day.getTime() + 86_400_000);
+      }
+      await page
+        .locator('[name="scheduleStart"]')
+        .selectOption(await enabled("scheduleStart").first().getAttribute("value"));
+      await page
+        .locator('[name="scheduleEnd"]')
+        .selectOption(await enabled("scheduleEnd").first().getAttribute("value"));
       await page.locator('[name="visitorCount"]').fill("1");
       await page.locator('[name="visitorFirstName"]').fill("Synthetic");
       await page.locator('[name="visitorLastName"]').fill("Visitor");

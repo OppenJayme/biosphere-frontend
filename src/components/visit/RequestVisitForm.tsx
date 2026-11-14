@@ -13,7 +13,9 @@ import {
   museumClock,
   museumToday,
   normalizeTime,
+  keepIfOffered,
   openingWindowsFor,
+  scheduleRowOptions,
   summarizeOpeningHours,
   validateSchedules,
   type ScheduleInput,
@@ -25,12 +27,18 @@ import {
   type SubmissionResult,
 } from "@/features/public-submissions/submit";
 import {
+  FIRST_NAME_MAX,
+  LAST_NAME_MAX,
   MAX_VEHICLES,
+  PLATE_NUMBER_MAX,
+  VEHICLE_TEXT_MAX,
   readVisitRequestForm,
+  visitorCountField,
   type VehicleField,
   type VisitFormField,
 } from "@/features/visit-requests/form";
 import { ScheduleDayHint } from "./ScheduleDayHint";
+import { ScheduleTimeSelect } from "./ScheduleTimeSelect";
 import { useVisitAvailability } from "./useVisitAvailability";
 
 let rowIdCounter = 0;
@@ -81,11 +89,20 @@ export function RequestVisitForm({
   };
   const [scheduleRows, setScheduleRows] = useState<ScheduleRow[]>(() => [newScheduleRow()]);
   const [visitorRows, setVisitorRows] = useState<number[]>(() => [nextRowId()]);
+  const [visitorCount, setVisitorCount] = useState("1");
+  const visitorCountCheck = visitorCountField.safeParse(visitorCount);
+  const visitorLimit = visitorCountCheck.success ? visitorCountCheck.data : 0;
+  const visitorCountError = visitorCountCheck.success ? undefined : visitorCountCheck.error.issues[0]?.message;
+  const excessVisitorRows = visitorLimit > 0 && visitorRows.length > visitorLimit;
+  const visitorRowsError = excessVisitorRows
+    ? `You have ${visitorRows.length} visitor name rows but only ${visitorLimit} visitors. Remove extra rows or increase Number of Visitors. Your names have been kept.`
+    : undefined;
   const [bringingVehicle, setBringingVehicle] = useState(false);
   const [vehicleRows, setVehicleRows] = useState<number[]>(() => [nextRowId()]);
   const [errors, setErrors] = useState<FieldErrors<VisitFormField>>({});
   const [scheduleErrors, setScheduleErrors] = useState<(string | undefined)[]>([]);
   const [vehicleErrors, setVehicleErrors] = useState<FieldErrors<VehicleField>[]>([]);
+  const [visitorErrors, setVisitorErrors] = useState<(string | undefined)[]>([]);
   const [failure, setFailure] = useState<Extract<SubmissionResult, { ok: false }> | null>(null);
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -103,6 +120,7 @@ export function RequestVisitForm({
           setReceipt(null);
           setScheduleRows([newScheduleRow()]);
           setVisitorRows([nextRowId()]);
+          setVisitorCount("1");
           setBringingVehicle(false);
           setVehicleRows([nextRowId()]);
           setFormKey((key) => key + 1);
@@ -132,6 +150,10 @@ export function RequestVisitForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting || retryBlocked) return;
+    if (excessVisitorRows) {
+      formRef.current?.querySelector<HTMLInputElement>('[name="visitorCount"]')?.focus();
+      return;
+    }
 
     // The museum clock is read at submit time, so a form left open still catches a time that has passed.
     const parsed = readVisitRequestForm(new FormData(event.currentTarget), museumClock(), scheduleRules);
@@ -140,6 +162,7 @@ export function RequestVisitForm({
       setErrors(parsed.errors);
       setScheduleErrors(parsed.scheduleErrors);
       setVehicleErrors(parsed.vehicleErrors);
+      setVisitorErrors(parsed.visitorErrors);
       focusFirstInvalid(formRef.current);
       return;
     }
@@ -147,6 +170,7 @@ export function RequestVisitForm({
     setErrors({});
     setScheduleErrors([]);
     setVehicleErrors([]);
+    setVisitorErrors([]);
     setRetryAllowed(false);
     setSubmitting(true);
     const result = await postPublicSubmission("/visit-requests", parsed.data);
@@ -294,8 +318,8 @@ export function RequestVisitForm({
                   ...(rowError && { "aria-invalid": true as const }),
                   ...(describedBy && { "aria-describedby": describedBy }),
                 };
-                // Native pickers start inside that day's hours; validation still checks the exact window.
-                const timeBounds = windows.length > 0 ? { min: windows[0].start, max: windows.at(-1)?.end } : {};
+                // Every weekly time before a date is chosen; that day's bookable times after.
+                const options = scheduleRowOptions(row, today, scheduleRules);
                 return (
                   <li key={rowId} className="rounded-xl border border-line p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -323,34 +347,42 @@ export function RequestVisitForm({
                           min={today}
                           required
                           value={row.date}
-                          onChange={(event) => updateScheduleRow(rowId, index, { date: event.target.value })}
+                          // Keep picked times the new date still offers; clear the rest.
+                          onChange={(event) => {
+                            const date = event.target.value;
+                            const startTime = keepIfOffered(row.startTime, scheduleRowOptions({ date, startTime: "" }, today, scheduleRules).start);
+                            const endTime = keepIfOffered(row.endTime, scheduleRowOptions({ date, startTime }, today, scheduleRules).end);
+                            updateScheduleRow(rowId, index, { date, startTime, endTime });
+                          }}
                           className={fieldClasses}
                           {...invalid}
                         />
                       </Field>
                       <Field label="Start Time" htmlFor={`schedule-start-${rowId}`}>
-                        <input
+                        <ScheduleTimeSelect
                           id={`schedule-start-${rowId}`}
                           name="scheduleStart"
-                          type="time"
                           required
+                          options={options.start}
                           value={row.startTime}
-                          onChange={(event) => updateScheduleRow(rowId, index, { startTime: event.target.value })}
+                          onChange={(event) => {
+                            const startTime = event.target.value;
+                            const end = scheduleRowOptions({ date: row.date, startTime }, today, scheduleRules).end;
+                            updateScheduleRow(rowId, index, { startTime, endTime: keepIfOffered(row.endTime, end) });
+                          }}
                           className={fieldClasses}
-                          {...timeBounds}
                           {...invalid}
                         />
                       </Field>
                       <Field label="End Time" htmlFor={`schedule-end-${rowId}`}>
-                        <input
+                        <ScheduleTimeSelect
                           id={`schedule-end-${rowId}`}
                           name="scheduleEnd"
-                          type="time"
                           required
+                          options={options.end}
                           value={row.endTime}
                           onChange={(event) => updateScheduleRow(rowId, index, { endTime: event.target.value })}
                           className={fieldClasses}
-                          {...timeBounds}
                           {...invalid}
                         />
                       </Field>
@@ -373,19 +405,22 @@ export function RequestVisitForm({
             {scheduleRows.length < MAX_PREFERRED_SCHEDULES && (
               <button
                 type="button"
-                onClick={() => setScheduleRows((rows) => [...rows, newScheduleRow()])}
+                onClick={() => setScheduleRows((rows) => rows.length < MAX_PREFERRED_SCHEDULES ? [...rows, newScheduleRow()] : rows)}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
               >
                 <PlusIcon className="h-4 w-4" />
                 Add another option
               </button>
             )}
+            {scheduleRows.length === MAX_PREFERRED_SCHEDULES && (
+              <p role="status" className="text-sm text-ink-muted">Maximum of {MAX_PREFERRED_SCHEDULES} preferred schedules reached. Remove an option to add another.</p>
+            )}
           </fieldset>
 
           <div className="space-y-4">
             <FieldGroupLabel>Visitors</FieldGroupLabel>
             <div className="sm:max-w-[16rem]">
-              <Field label="Number of Visitors" htmlFor="visit-count" error={errors.visitorCount}>
+              <Field label="Number of Visitors" htmlFor="visit-count" error={visitorCountError ?? errors.visitorCount}>
                 <input
                   id="visit-count"
                   name="visitorCount"
@@ -393,65 +428,111 @@ export function RequestVisitForm({
                   inputMode="numeric"
                   min={1}
                   max={MAX_VISITOR_COUNT}
-                  defaultValue={1}
+                  step={1}
+                  value={visitorCount}
+                  onChange={(event) => {
+                    setVisitorCount(event.target.value);
+                    setErrors((current) => ({ ...current, visitorCount: undefined, visitors: undefined }));
+                  }}
                   required
                   className={fieldClasses}
-                  {...fieldErrorProps("visit-count", errors.visitorCount)}
+                  {...fieldErrorProps("visit-count", visitorCountError ?? errors.visitorCount)}
                 />
               </Field>
             </div>
+            <p className="text-sm text-ink-muted">Enter the total number attending, including accompanying adults. Up to {MAX_VISITOR_COUNT} visitors per request.</p>
+            {visitorCountError && <p role="alert" className="sr-only">{visitorCountError}</p>}
+            {visitorLimit === MAX_VISITOR_COUNT && (
+              <p role="status" className="text-sm text-ink-muted">Maximum request size reached ({MAX_VISITOR_COUNT} visitors).</p>
+            )}
 
-            <fieldset className="min-w-0 space-y-3">
-              <legend className="text-xs font-medium text-ink-muted">
-                Visitor names <span className="font-normal text-ink-muted/80">(optional, used for campus entry)</span>
-              </legend>
-              {visitorRows.map((rowId, index) => (
-                <div key={rowId} className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
-                  <Field label="First Name" htmlFor={`visitor-first-${rowId}`}>
-                    <input
-                      id={`visitor-first-${rowId}`}
-                      name="visitorFirstName"
-                      type="text"
-                      placeholder="Juan"
-                      maxLength={50}
-                      className={fieldClasses}
-                      {...fieldErrorProps("visit-visitors", errors.visitors)}
-                    />
-                  </Field>
-                  <Field label="Last Name" htmlFor={`visitor-last-${rowId}`}>
-                    <input
-                      id={`visitor-last-${rowId}`}
-                      name="visitorLastName"
-                      type="text"
-                      placeholder="Dela Cruz"
-                      maxLength={49}
-                      className={fieldClasses}
-                    />
-                  </Field>
-                  <button
-                    type="button"
-                    disabled={visitorRows.length === 1}
-                    onClick={() => setVisitorRows((rows) => rows.filter((id) => id !== rowId))}
-                    aria-label={`Remove visitor ${index + 1}`}
-                    className="rounded-lg p-2.5 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible"
-                  >
-                    <CloseIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+            <fieldset className="min-w-0 space-y-3" aria-describedby="visit-name-limit">
+              <legend className="text-xs font-medium text-ink-muted">Visitor names</legend>
+              <p className="text-sm text-ink-muted">
+                Enter the first and last name of every visitor. The university needs the full list for campus entry.
+              </p>
+              {visitorRows.map((rowId, index) => {
+                const rowError = visitorErrors[index];
+                const errorId = `visitor-${rowId}-error`;
+                // Mark only the incomplete rows; when every row is complete but there are too few,
+                // the list message applies to all of them.
+                const listError = errors.visitors && !visitorErrors.some(Boolean);
+                const describedBy = [rowError && errorId, (rowError || listError) && errors.visitors && fieldErrorId("visit-visitors")]
+                  .filter(Boolean)
+                  .join(" ");
+                const invalid = {
+                  ...((rowError || listError) && { "aria-invalid": true as const }),
+                  ...(describedBy && { "aria-describedby": describedBy }),
+                };
+                return (
+                  <div key={rowId}>
+                    <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+                      <Field label="First Name" htmlFor={`visitor-first-${rowId}`}>
+                        <input
+                          id={`visitor-first-${rowId}`}
+                          name="visitorFirstName"
+                          type="text"
+                          autoComplete="off"
+                          placeholder="Juan"
+                          required
+                          maxLength={FIRST_NAME_MAX}
+                          aria-label={`Visitor ${index + 1} first name`}
+                          className={fieldClasses}
+                          {...invalid}
+                        />
+                      </Field>
+                      <Field label="Last Name" htmlFor={`visitor-last-${rowId}`}>
+                        <input
+                          id={`visitor-last-${rowId}`}
+                          name="visitorLastName"
+                          type="text"
+                          autoComplete="off"
+                          placeholder="Dela Cruz"
+                          required
+                          maxLength={LAST_NAME_MAX}
+                          aria-label={`Visitor ${index + 1} last name`}
+                          className={fieldClasses}
+                          {...invalid}
+                        />
+                      </Field>
+                      <button
+                        type="button"
+                        disabled={visitorRows.length === 1}
+                        onClick={() => {
+                          setVisitorRows((rows) => rows.filter((id) => id !== rowId));
+                          setVisitorErrors([]);
+                          setErrors((current) => ({ ...current, visitors: undefined }));
+                        }}
+                        aria-label={`Remove visitor ${index + 1}`}
+                        className="rounded-lg p-2.5 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible"
+                      >
+                        <CloseIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
+                  </div>
+                );
+              })}
               {errors.visitors && <FieldError id={fieldErrorId("visit-visitors")}>{errors.visitors}</FieldError>}
             </fieldset>
 
-            {visitorRows.length < MAX_VISITOR_COUNT && (
-              <button
-                type="button"
-                onClick={() => setVisitorRows((rows) => [...rows, nextRowId()])}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add a visitor name
-              </button>
-            )}
+            <p id="visit-name-limit" role={excessVisitorRows ? "alert" : "status"} className={excessVisitorRows ? "text-sm font-medium text-red-700" : "text-sm text-ink-muted"}>
+              {visitorRowsError ?? (visitorLimit === 0
+                ? "Enter a valid Number of Visitors before adding names."
+                : visitorRows.length === visitorLimit
+                  ? `Visitor name limit reached (${visitorLimit}): one name for each visitor. Increase Number of Visitors to add another.`
+                  : `${visitorRows.length} of ${visitorLimit} visitor names. Add a name for each visitor.`)}
+            </p>
+            <button
+              type="button"
+              disabled={visitorLimit === 0 || visitorRows.length >= visitorLimit}
+              aria-describedby="visit-name-limit"
+              onClick={() => setVisitorRows((rows) => rows.length < visitorLimit ? [...rows, nextRowId()] : rows)}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add a visitor name
+            </button>
           </div>
 
           <fieldset className="min-w-0 space-y-4">
@@ -515,7 +596,7 @@ export function RequestVisitForm({
                               type="text"
                               placeholder="ABC 1234"
                               required
-                              maxLength={20}
+                              maxLength={PLATE_NUMBER_MAX}
                               className={fieldClasses}
                               {...fieldErrorProps(`visit-plate-${rowId}`, rowErrors?.plateNumber)}
                             />
@@ -526,7 +607,7 @@ export function RequestVisitForm({
                               name="carBrand"
                               type="text"
                               placeholder="Toyota"
-                              maxLength={100}
+                              maxLength={VEHICLE_TEXT_MAX}
                               className={fieldClasses}
                               {...fieldErrorProps(`visit-car-brand-${rowId}`, rowErrors?.carBrand)}
                             />
@@ -537,7 +618,7 @@ export function RequestVisitForm({
                               name="carType"
                               type="text"
                               placeholder="Van, Sedan, School Bus"
-                              maxLength={100}
+                              maxLength={VEHICLE_TEXT_MAX}
                               className={fieldClasses}
                               {...fieldErrorProps(`visit-car-type-${rowId}`, rowErrors?.carType)}
                             />
@@ -551,12 +632,15 @@ export function RequestVisitForm({
                 {vehicleRows.length < MAX_VEHICLES && (
                   <button
                     type="button"
-                    onClick={() => setVehicleRows((rows) => [...rows, nextRowId()])}
+                    onClick={() => setVehicleRows((rows) => rows.length < MAX_VEHICLES ? [...rows, nextRowId()] : rows)}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
                   >
                     <PlusIcon className="h-4 w-4" />
                     Add another vehicle
                   </button>
+                )}
+                {vehicleRows.length === MAX_VEHICLES && (
+                  <p role="status" className="text-sm text-ink-muted">Maximum of {MAX_VEHICLES} vehicles reached. Remove a vehicle to add another.</p>
                 )}
               </>
             )}
@@ -612,7 +696,7 @@ export function RequestVisitForm({
               Cancel
             </Button>
           )}
-          <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked} aria-busy={submitting || undefined}>
+          <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked || excessVisitorRows} aria-busy={submitting || undefined}>
             {submitting ? "Sending…" : "Submit Request"}
             {!submitting && <ArrowRightIcon className="h-4 w-4" />}
           </Button>

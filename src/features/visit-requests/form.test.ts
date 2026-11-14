@@ -22,8 +22,8 @@ const base = {
   scheduleStart: ["09:00", "13:00:00"],
   scheduleEnd: ["11:00", "15:00"],
   visitorCount: "3",
-  visitorFirstName: ["Ana", "", ""],
-  visitorLastName: ["Reyes", "", ""],
+  visitorFirstName: ["Ana", "Ben", "Carla"],
+  visitorLastName: ["Reyes", "Cruz", "Santos"],
   bringingVehicle: "false",
   equipment: "",
   notes: "",
@@ -46,7 +46,11 @@ describe("readVisitRequestForm", () => {
         { date: "2026-10-15", startTime: "09:00", endTime: "11:00" },
         { date: "2026-10-16", startTime: "13:00", endTime: "15:00" },
       ],
-      visitors: [{ firstName: "Ana", lastName: "Reyes" }],
+      visitors: [
+        { firstName: "Ana", lastName: "Reyes" },
+        { firstName: "Ben", lastName: "Cruz" },
+        { firstName: "Carla", lastName: "Santos" },
+      ],
       bringingVehicle: false,
       consentAccepted: true,
     });
@@ -98,20 +102,92 @@ describe("readVisitRequestForm", () => {
     expect(repeated.vehicleErrors).toEqual([{}, { plateNumber: "This plate number is already listed." }]);
   });
 
-  it("rejects more named visitors than the visitor count, and last names without first names", () => {
-    const tooMany = readVisitRequestForm(
-      formData({ ...base, visitorCount: "1", visitorFirstName: ["Ana", "Ben"], visitorLastName: ["", ""] }),
+  it("requires a first and last name for every visitor, one row per visitor", () => {
+    const blanks = readVisitRequestForm(
+      formData({ ...base, visitorFirstName: ["Ana", "", "Carla"], visitorLastName: ["Reyes", "", ""] }),
       TODAY,
     );
-    expect(tooMany.success).toBe(false);
-    if (!tooMany.success) expect(tooMany.errors.visitors).toMatch(/2 names but 1 visitor/);
+    expect(blanks.success).toBe(false);
+    if (!blanks.success) {
+      expect(blanks.visitorErrors).toEqual([
+        undefined,
+        "Enter this visitor's first and last name.",
+        "Enter this visitor's last name.",
+      ]);
+      expect(blanks.errors.visitors).toMatch(/every visitor/);
+    }
 
-    const lastOnly = readVisitRequestForm(
-      formData({ ...base, visitorFirstName: [""], visitorLastName: ["Reyes"] }),
+    const firstMissing = readVisitRequestForm(
+      formData({ ...base, visitorFirstName: ["Ana", "Ben", " "], visitorLastName: ["Reyes", "Cruz", "Santos"] }),
       TODAY,
     );
-    expect(lastOnly.success).toBe(false);
-    if (!lastOnly.success) expect(lastOnly.errors.visitors).toMatch(/first name/);
+    expect(!firstMissing.success && firstMissing.visitorErrors[2]).toBe("Enter this visitor's first name.");
+
+    const tooFew = readVisitRequestForm(
+      formData({ ...base, visitorFirstName: ["Ana"], visitorLastName: ["Reyes"] }),
+      TODAY,
+    );
+    expect(!tooFew.success && tooFew.errors.visitors).toBe("Enter a first and last name for each of the 3 visitors.");
+
+    const tooMany = readVisitRequestForm(
+      formData({ ...base, visitorCount: "1", visitorFirstName: ["Ana", "Ben"], visitorLastName: ["Reyes", "Cruz"] }),
+      TODAY,
+    );
+    expect(!tooMany.success && tooMany.errors.visitors).toBe("Enter a first and last name for each of the 1 visitor.");
+
+    const noNames = readVisitRequestForm(
+      formData({ ...base, visitorCount: "1", visitorFirstName: [], visitorLastName: [] }),
+      TODAY,
+    );
+    expect(noNames.success).toBe(false);
+  });
+
+  it("caps name lengths to fit the 100-character visitor_name column", () => {
+    const longFirst = readVisitRequestForm(
+      formData({ ...base, visitorFirstName: ["A".repeat(51), "Ben", "Carla"] }),
+      TODAY,
+    );
+    expect(!longFirst.success && longFirst.visitorErrors[0]).toMatch(/50 characters/);
+
+    const longLast = readVisitRequestForm(
+      formData({ ...base, visitorLastName: ["R".repeat(50), "Cruz", "Santos"] }),
+      TODAY,
+    );
+    expect(!longLast.success && longLast.visitorErrors[0]).toMatch(/49 characters/);
+  });
+
+  it("limits plate numbers to 15 characters and car brand and type to 40", () => {
+    const vehicle = { ...base, bringingVehicle: "true" };
+    const atLimit = readVisitRequestForm(
+      formData({ ...vehicle, plateNumber: "P".repeat(15), carBrand: "B".repeat(40), carType: "T".repeat(40) }),
+      TODAY,
+    );
+    expect(atLimit.success).toBe(true);
+
+    const overLimit = readVisitRequestForm(
+      formData({ ...vehicle, plateNumber: "P".repeat(16), carBrand: "B".repeat(41), carType: "T".repeat(41) }),
+      TODAY,
+    );
+    expect(!overLimit.success && overLimit.vehicleErrors[0]).toEqual({
+      plateNumber: "Keep the plate number to 15 characters or fewer.",
+      carBrand: "Keep the car brand to 40 characters or fewer.",
+      carType: "Keep the car type to 40 characters or fewer.",
+    });
+  });
+
+  it("accepts up to 200 visitors and rejects huge or non-numeric counts", () => {
+    const names = (count: number) => ({
+      visitorCount: String(count),
+      visitorFirstName: Array.from({ length: count }, (_, index) => `Visitor${index}`),
+      visitorLastName: Array.from({ length: count }, () => "Cruz"),
+    });
+    expect(readVisitRequestForm(formData({ ...base, ...names(200) }), TODAY).success).toBe(true);
+
+    for (const visitorCount of ["201", "1e100", "0", "2.5", "abc"]) {
+      const result = readVisitRequestForm(formData({ ...base, visitorCount }), TODAY);
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.errors.visitorCount).toBeDefined();
+    }
   });
 
   it("reports schedule problems per row and requires phone, organization, and consent", () => {

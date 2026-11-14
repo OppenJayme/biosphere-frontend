@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightIcon, ChatIcon, DocumentTextIcon } from "@/components/icons";
+import { ArrowRightIcon, ChatIcon } from "@/components/icons";
 import {
   addInquiryNoteAction,
   referInquiryAction,
@@ -24,16 +24,22 @@ import {
   EmailVisitorForm,
   HistoryTimeline,
   InfoRow,
+  MessageThread,
+  MessagesJumpLink,
   NoteForm,
   PanelHeading,
   StatusChangeForm,
   managementColumnClasses,
   managementColumnsClasses,
+  messageCount,
   panelClasses,
   type StatusOption,
 } from "./DetailParts";
 import { ReferralDialog } from "./ReferralDialog";
 import { InquiryStatusBadge } from "./StatusBadge";
+
+/** Anchor for the "Messages (N)" jump link; one inquiry is open at a time. */
+const MESSAGES_ID = "inquiry-messages";
 
 const STATUS_OPTIONS: Record<"REVIEWED" | "CLOSED", StatusOption> = {
   REVIEWED: {
@@ -63,6 +69,7 @@ export function InquiryDetail({
   mailboxStatus: MailboxSyncStatus | null;
 }) {
   const statusOptions = nextInquiryStatuses(inquiry.status).map((status) => STATUS_OPTIONS[status]);
+  const visitorMessage = { label: "Inquiry message", text: inquiry.message, receivedAt: inquiry.createdAt };
 
   return (
     <div className={managementColumnsClasses}>
@@ -79,6 +86,7 @@ export function InquiryDetail({
             </div>
             <InquiryStatusBadge status={inquiry.status} />
           </div>
+          <MessagesJumpLink targetId={MESSAGES_ID} count={messageCount(visitorMessage, history)} />
 
           <dl className="divide-y divide-black/5 border-y border-black/5">
             {/* The visitor's own reference number, quoted in emails and follow-ups. */}
@@ -105,16 +113,6 @@ export function InquiryDetail({
             )}
           </dl>
 
-          <div>
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-              <DocumentTextIcon className="h-3.5 w-3.5" />
-              Message
-            </p>
-            <p className="whitespace-pre-line break-words rounded-lg bg-sage-50 px-3 py-2.5 text-sm text-zinc-800">
-              {inquiry.message}
-            </p>
-          </div>
-
           {inquiry.visitRequestId && (
             <Link
               href={publicWebsiteHref({ tab: "visits" }, { selected: inquiry.visitRequestId })}
@@ -125,6 +123,13 @@ export function InquiryDetail({
             </Link>
           )}
         </section>
+
+        <MessageThread
+          id={MESSAGES_ID}
+          visitorMessage={visitorMessage}
+          entries={history}
+          currentAccountId={currentAccountId}
+        />
 
         <section className={`${panelClasses} space-y-4`}>
           <PanelHeading

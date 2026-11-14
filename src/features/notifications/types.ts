@@ -15,6 +15,8 @@ export const NOTIFICATION_TYPES = [
   "NEW_INQUIRY",
   "NEW_VISIT_REQUEST",
   "SUBMISSION_EMAIL_FAILED",
+  // A visitor email reply no curator has followed up yet (backend team decision 2026-11-14).
+  "VISITOR_REPLY",
   "SYNC_FAILED",
   "BACKUP_FAILED",
   "REPORT_FAILED",

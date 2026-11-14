@@ -261,11 +261,6 @@ export function SpecimenCoreForm({
         </div>
       </div>
 
-      <SpecimenDuplicateCheck
-        formRef={formRef}
-        excludeSpecimenId={mode === "edit" ? specimenId : undefined}
-      />
-
       {state.message && (
         <div
           role="alert"
@@ -292,6 +287,13 @@ export function SpecimenCoreForm({
         </button>
         <PendingOverlay pending={pending} label="Saving specimen…" />
       </div>
+
+      {/* Blur can start this advisory while Save is pressed. Keep it below the
+          actions so its loading/result height cannot move the click target. */}
+      <SpecimenDuplicateCheck
+        formRef={formRef}
+        excludeSpecimenId={mode === "edit" ? specimenId : undefined}
+      />
     </form>
   );
 }

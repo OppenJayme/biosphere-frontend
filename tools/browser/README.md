@@ -4,6 +4,18 @@ This folder contains browser diagnostics, not application dependencies or a
 replacement for Vitest/backend tests. It does not configure Context7, install
 additional skills, or authorize testing production or another owner's module.
 
+## Draft-save click stability (BBT Cycle 3)
+
+`npm run test:draft-save:browser` bundles the real SpecimenCoreForm and Tailwind
+CSS with synthetic remote actions only. A fresh isolated Edge session blocks all
+network, focuses Common name, and holds pointer down over Save while duplicate
+loading/results render. Create/edit cases require stable coordinates and exactly
+one save for clear, found, unavailable and still-pending checks. Leaving
+Accession number while pressing Save is checked the same way for available and
+taken results; keyboard Enter is also covered (14 scenarios). No database, login, existing browser window or
+accession generation is used. See `docs/BBT_CYCLE3_DRAFT_SAVE_LAYOUT.md` for the
+baseline failure and the live-retest boundary.
+
 ## Versions and installation
 
 - `@playwright/cli` is pinned to **0.1.22**; the separate lockfile pins its
@@ -439,3 +451,16 @@ screen-reader or full accessibility certification. The StrictMode wrapper does
 not imply development Strict Effects were executed in this production bundle.
 Pending-submit close/retention policy and server-side request behavior remain
 separate and are unchanged by this dialog-only repair.
+
+## Visit-request visitor-count feedback
+
+Run `npm run test:visit-count:browser` for the real RequestVisitForm bundled in
+an isolated headless Edge session. It accepts no application URL or credentials.
+Synthetic availability and submission responses are intercepted; all unexpected
+destinations are blocked. Fifteen scenarios cover the declared-name cap,
+required first and last names, 12-hour time selects that submit 24-hour values,
+non-destructive count reductions, submission blocking, correction/removal,
+invalid counts, maximum visitor/schedule/vehicle feedback, a valid synthetic
+submission and Send another reset. No shared database, email, signed-in windows
+or application servers are used. This does not certify deployed behavior,
+physical-phone usability, visual styling or assistive-technology output.

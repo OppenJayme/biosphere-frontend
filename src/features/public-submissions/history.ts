@@ -12,7 +12,11 @@ export const communicationEntrySchema = z.object({
   deliveryResult: z.string().nullable(),
   /** For an imported visitor reply, when the museum mailbox received it. */
   sentAt: z.string().nullable(),
-  /** The acting curator; null only on imported visitor replies (direction INBOUND, backend spec 0002 AC-4). */
+  /**
+   * The acting curator. Null on imported visitor replies (direction INBOUND, backend spec 0002 AC-4)
+   * and on entries BioSphere adds by itself: receipts and the pointer left when a reply to a
+   * referred inquiry is filed on its visit request.
+   */
   recordedBy: z.string().nullable(),
   createdAt: z.string().min(1),
 });
@@ -33,6 +37,7 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   STATUS_UPDATE_EMAIL: "Decision emailed to visitor",
   MESSAGE_EMAIL: "Email to visitor",
   VISITOR_REPLY: "Visitor reply",
+  RECEIPT_EMAIL: "Receipt emailed to visitor",
 };
 
 export function entryTypeLabel(type: string) {
@@ -61,6 +66,28 @@ export function deliveryStatus(result: string | null): DeliveryStatus | null {
   return "failed";
 }
 
+/**
+ * What the email provider reported after accepting a sent email (backend Brevo delivery webhook):
+ * "SENT <id> · delivered", or "SENT <id> · delayed (deferred): <reason>" while it retries. A bounce
+ * after acceptance is stored as "FAILED <event>: <reason>", which deliveryStatus already reads as
+ * failed. Null means accepted with no report yet, including every email sent before tracking.
+ */
+export type DeliveryProgress = "delivered" | "delayed";
+
+export function deliveryProgress(result: string | null): DeliveryProgress | null {
+  if (!result?.startsWith("SENT")) return null;
+  if (result.includes(" · delivered")) return "delivered";
+  if (result.includes(" · delayed")) return "delayed";
+  return null;
+}
+
+/** Why a sent email is delayed, e.g. "deferred: Quota exceeded". */
+export function delayReason(result: string | null) {
+  const match = /· delayed \(([^)]+)\)(?::\s*(.*))?$/.exec(result ?? "");
+  if (!match) return "";
+  return match[2] ? `${match[1].replaceAll("_", " ")}: ${match[2]}` : match[1].replaceAll("_", " ");
+}
+
 /** The reason after the status word, e.g. "401 Key not found". */
 export function deliveryReason(result: string | null) {
   return (result ?? "").replace(/^(NOT_SENT|FAILED|SENT)\s*/, "").trim();
@@ -78,4 +105,17 @@ export function isInboundReply(entry: CommunicationEntry) {
 /** The newest email on the timeline (entries come oldest first). */
 export function latestEmail(entries: CommunicationEntry[]) {
   return entries.findLast(isOutboundEmail);
+}
+
+/** An email to or from the visitor, as opposed to a note, status change or referral. */
+export function isEmailEntry(entry: CommunicationEntry) {
+  return isInboundReply(entry) || isOutboundEmail(entry);
+}
+
+/**
+ * The record's emails, oldest first, for the Messages panel. Curators could not find the visitor's
+ * emails among notes and status changes (curator UAT 2026-11-14), so they get their own list.
+ */
+export function emailThread(entries: CommunicationEntry[]) {
+  return entries.filter(isEmailEntry);
 }

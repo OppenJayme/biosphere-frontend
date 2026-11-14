@@ -16,6 +16,24 @@ export async function checkPublicDialogs(page, bundle) {
         body: '<!doctype html><body style="overflow:auto"><main id="root"></main></body>',
       });
     }
+    // The visit form reads public opening hours and booked times when it opens. It is a read,
+    // not a submission, so answer it with fixture hours instead of counting it as unexpected.
+    const url = new URL(request.url());
+    if (
+      request.method() === "GET" &&
+      url.origin === origin &&
+      url.pathname === "/visit-requests/availability"
+    ) {
+      return route.fulfill({
+        json: {
+          openingHours: [
+            { dayOfWeek: 1, start: "08:00", end: "11:00" },
+            { dayOfWeek: 6, start: "08:00", end: "11:00" },
+          ],
+          booked: [],
+        },
+      });
+    }
     unexpectedRequests++;
     return route.abort();
   });
