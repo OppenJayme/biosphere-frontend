@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightIcon, ChatIcon } from "@/components/icons";
+import { ArrowRightIcon, ChatIcon, ClockIcon, MailIcon, RefreshIcon } from "@/components/icons";
+import { Collapsible } from "@/components/ui/Collapsible";
+import { ModalButton } from "@/components/ui/ModalButton";
 import {
   addInquiryNoteAction,
   referInquiryAction,
@@ -21,17 +23,20 @@ import { formatTimestamp } from "@/features/public-submissions/format";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
 import { publicWebsiteHref, type ReturnQuery } from "@/features/public-submissions/query";
 import {
+  ActionRow,
   EmailVisitorForm,
   HistoryTimeline,
   InfoRow,
   MessageThread,
   MessagesJumpLink,
   NoteForm,
-  PanelHeading,
+  NotesList,
   StatusChangeForm,
-  managementColumnClasses,
+  actionButtonClasses,
+  actionButtonSecondaryClasses,
   managementColumnsClasses,
   messageCount,
+  noteCount,
   panelClasses,
   type StatusOption,
 } from "./DetailParts";
@@ -72,8 +77,8 @@ export function InquiryDetail({
   const visitorMessage = { label: "Inquiry message", text: inquiry.message, receivedAt: inquiry.createdAt };
 
   return (
-    <div className={managementColumnsClasses}>
-      <div className={managementColumnClasses}>
+    <div className="space-y-4">
+      <div className={managementColumnsClasses}>
         <section aria-labelledby="inquiry-detail-heading" className={`${panelClasses} space-y-3`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -122,6 +127,77 @@ export function InquiryDetail({
               <ArrowRightIcon className="h-3.5 w-3.5" />
             </Link>
           )}
+
+          {/* Each action opens its form in a modal and asks for confirmation before it runs. */}
+          <ActionRow>
+            <ModalButton
+              key={`reply-${inquiry.id}`}
+              label={
+                <>
+                  <MailIcon className="h-4 w-4" />
+                  Send Email
+                </>
+              }
+              title="Reply by email"
+              description="Sends your answer to the visitor. The inquiry's status does not change."
+              className={actionButtonClasses}
+            >
+              <EmailVisitorForm
+                action={sendInquiryReplyAction.bind(null, inquiry.id, returnQuery)}
+                recipient={inquiry.email}
+                placeholder="Answer the visitor's question here."
+              />
+            </ModalButton>
+
+            {!isInquiryFinal(inquiry.status) && statusOptions.length > 0 && (
+              <ModalButton
+                key={`status-${inquiry.id}-${inquiry.status}`}
+                label={
+                  <>
+                    <RefreshIcon className="h-4 w-4" />
+                    Change status
+                  </>
+                }
+                title="Change status"
+                description="Move this inquiry to its next workflow stage."
+                className={actionButtonSecondaryClasses}
+              >
+                <StatusChangeForm
+                  action={updateInquiryStatusAction.bind(null, inquiry.id, returnQuery)}
+                  options={statusOptions}
+                />
+              </ModalButton>
+            )}
+
+            {!isInquiryFinal(inquiry.status) && canReferInquiry(inquiry.status) && (
+              <ReferralDialog
+                key={inquiry.id}
+                inquiry={inquiry}
+                triggerClassName={actionButtonSecondaryClasses}
+                action={referInquiryAction.bind(
+                  null,
+                  inquiry.id,
+                  { phone: inquiry.phone === null, organization: inquiry.organization === null },
+                  returnQuery,
+                )}
+              />
+            )}
+
+            <ModalButton
+              key={`note-${inquiry.id}`}
+              label={
+                <>
+                  <ChatIcon className="h-4 w-4" />
+                  Add note
+                </>
+              }
+              title="Add an internal note"
+              description="For curators only. Record calls and other contact here; notes are never emailed."
+              className={actionButtonSecondaryClasses}
+            >
+              <NoteForm action={addInquiryNoteAction.bind(null, inquiry.id, returnQuery)} />
+            </ModalButton>
+          </ActionRow>
         </section>
 
         <MessageThread
@@ -130,66 +206,35 @@ export function InquiryDetail({
           entries={history}
           currentAccountId={currentAccountId}
         />
-
-        <section className={`${panelClasses} space-y-4`}>
-          <PanelHeading
-            icon={ChatIcon}
-            title="Notes and history"
-            description="Visitor email replies appear here once they are imported from the museum mailbox. Record calls and other contact as a note."
-          />
-          <NoteForm key={inquiry.id} action={addInquiryNoteAction.bind(null, inquiry.id, returnQuery)} />
-          <HistoryTimeline
-            submittedAt={inquiry.createdAt}
-            entries={history}
-            statusLabels={INQUIRY_STATUS_LABELS}
-            currentAccountId={currentAccountId}
-            mailboxStatus={mailboxStatus}
-          />
-        </section>
       </div>
 
-      <div className={managementColumnClasses}>
-        {!isInquiryFinal(inquiry.status) && (
-          <>
-            {statusOptions.length > 0 && (
-              <StatusChangeForm
-                key={`${inquiry.id}-${inquiry.status}`}
-                action={updateInquiryStatusAction.bind(null, inquiry.id, returnQuery)}
-                options={statusOptions}
-                recordLabel="inquiry"
-              />
-            )}
-            {canReferInquiry(inquiry.status) && (
-              <section className={`${panelClasses} space-y-3`}>
-                <PanelHeading
-                  icon={ArrowRightIcon}
-                  title="Visit request"
-                  description="If the visitor wants to come to the museum, turn this inquiry into a visit request."
-                />
-                <ReferralDialog
-                  key={inquiry.id}
-                  inquiry={inquiry}
-                  action={referInquiryAction.bind(
-                    null,
-                    inquiry.id,
-                    { phone: inquiry.phone === null, organization: inquiry.organization === null },
-                    returnQuery,
-                  )}
-                />
-              </section>
-            )}
-          </>
-        )}
+      {/* Reference information stays collapsed until a curator asks for it. */}
+      <Collapsible
+        key={`notes-${inquiry.id}`}
+        icon={ChatIcon}
+        title="Notes"
+        summary={`${noteCount(history)} ${noteCount(history) === 1 ? "note" : "notes"}`}
+      >
+        <NotesList entries={history} currentAccountId={currentAccountId} />
+      </Collapsible>
 
-        <EmailVisitorForm
-          key={`reply-${inquiry.id}`}
-          action={sendInquiryReplyAction.bind(null, inquiry.id, returnQuery)}
-          recipient={inquiry.email}
-          title="Reply by email"
-          description="Sends your answer to the visitor. The inquiry's status does not change."
-          placeholder="Answer the visitor's question here."
+      <Collapsible
+        key={`history-${inquiry.id}`}
+        icon={ClockIcon}
+        title="History"
+        summary="Status changes, emails and notes in order"
+      >
+        <p className="text-xs text-zinc-500">
+          Visitor email replies appear here once they are imported from the museum mailbox.
+        </p>
+        <HistoryTimeline
+          submittedAt={inquiry.createdAt}
+          entries={history}
+          statusLabels={INQUIRY_STATUS_LABELS}
+          currentAccountId={currentAccountId}
+          mailboxStatus={mailboxStatus}
         />
-      </div>
+      </Collapsible>
     </div>
   );
 }

@@ -12,7 +12,6 @@ import {
   type TaxonomyFormState,
   type TaxonomyFormValues,
 } from "@/features/specimens/taxonomy-form";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import {
   CONSERVATION_STATUS_OPTIONS,
   ECOLOGICAL_ROLE_OPTIONS,
@@ -22,6 +21,7 @@ import {
   type FieldOptionList,
 } from "@/features/specimens/field-options";
 import { OptionField } from "./OptionField";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 type SpecimenTaxonomyFormProps = {
   specimenId: string;
@@ -189,14 +189,14 @@ export function SpecimenTaxonomyForm({
         >
           Cancel
         </Link>
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label={mode === "create" ? "Create taxonomy record" : "Save taxonomy changes"}
+          question={mode === "create" ? "Create this taxonomy record?" : "Save these taxonomy changes?"}
+          confirmLabel={mode === "create" ? "Create record" : "Save changes"}
+          pending={pending}
+          pendingLabel="Saving taxonomy…"
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {mode === "create" ? "Create taxonomy record" : "Save taxonomy changes"}
-        </button>
-        <PendingOverlay pending={pending} label="Saving taxonomy…" />
+        />
       </div>
     </form>
   );

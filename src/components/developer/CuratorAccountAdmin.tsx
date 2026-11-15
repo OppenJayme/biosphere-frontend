@@ -7,7 +7,6 @@
 
 import { useActionState, useId } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import {
   handOverCuratorAction,
   onboardCuratorAction,
@@ -22,6 +21,7 @@ import {
   type ResendInviteFormState,
 } from "@/features/developer/form";
 import type { CuratorAccount } from "@/features/developer/types";
+import { useResultToast } from "@/components/ui/toast";
 
 const inputClasses =
   "mt-1 w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
@@ -47,6 +47,7 @@ function OnboardCuratorForm({ hasActiveCurator }: { hasActiveCurator: boolean })
   const [state, action, pending] = useActionState<OnboardFormState, FormData>(onboardCuratorAction, {
     values: { email: "", fullName: "" },
   });
+  useResultToast(state);
 
   return (
     <section className="rounded-xl border border-black/10 bg-white p-5" aria-labelledby="onboard-heading">
@@ -89,10 +90,15 @@ function OnboardCuratorForm({ hasActiveCurator }: { hasActiveCurator: boolean })
           />
         </label>
         <div className="sm:col-span-2">
-          <button type="submit" disabled={pending} className={primaryButtonClasses}>
-            Send invitation
-          </button>
-          <PendingOverlay pending={pending} label="Sending invitation…" />
+          <ConfirmButton
+            label="Send invitation"
+            question="Send this invitation?"
+            detail="An invitation email with a password-setup link is sent to the address you entered."
+            confirmLabel="Send invitation"
+            pending={pending}
+            pendingLabel="Sending invitation…"
+            className={primaryButtonClasses}
+          />
           <FormMessage message={state.message} />
           {state.success && (
             <p role="status" className="mt-3 text-xs font-medium text-emerald-700">
@@ -130,17 +136,19 @@ function ResendInviteControl({ curator }: { curator: CuratorAccount }) {
     resendCuratorInviteAction.bind(null, curator.id),
     {},
   );
+  useResultToast(state);
 
   return (
     <form action={formAction} className="mb-2">
-      <button
-        type="submit"
-        disabled={pending}
+      <ConfirmButton
+        label="Resend invitation"
+        question="Resend this invitation?"
+        detail="A new password-setup link is emailed to this curator."
+        confirmLabel="Resend invitation"
+        pending={pending}
+        pendingLabel="Sending invitation…"
         className="text-xs font-semibold text-forest-800 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        Resend invitation
-      </button>
-      <PendingOverlay pending={pending} label="Sending invitation…" />
+      />
       <FormMessage message={state.message} />
       {state.success && (
         <p role="status" className="mt-1 max-w-sm text-xs font-medium text-emerald-700">
@@ -154,6 +162,7 @@ function ResendInviteControl({ curator }: { curator: CuratorAccount }) {
 function CuratorStatusControl({ curator }: { curator: CuratorAccount }) {
   const action = updateCuratorStatusAction.bind(null, curator.id);
   const [state, formAction, pending] = useActionState<CuratorStatusFormState, FormData>(action, {});
+  useResultToast(state);
   const reasonId = useId();
   const deactivating = curator.status === "ACTIVE";
 
@@ -209,6 +218,7 @@ function CuratorStatusControl({ curator }: { curator: CuratorAccount }) {
  */
 function CuratorHandoverForm({ curators }: { curators: CuratorAccount[] }) {
   const [state, action, pending] = useActionState<CuratorHandoverFormState, FormData>(handOverCuratorAction, {});
+  useResultToast(state);
   const reasonId = useId();
   const outgoing = curators.filter((curator) => curator.status === "ACTIVE");
   const successors = curators.filter((curator) => curator.status === "ACTIVE" && curator.inviteAccepted);

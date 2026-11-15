@@ -13,6 +13,7 @@ import type { StorageMovement, StorageUnit } from "@/features/storage-locations/
 import { storageBrowserView } from "@/features/storage-locations/browser-view";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { FlashToast } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "Locations",
@@ -84,11 +85,8 @@ export default async function LocationPage({ searchParams }: LocationPageProps) 
         description="Where specimens are kept: rooms, cabinets, drawers, shelves and boxes."
       />
 
-      {notice && (
-        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-          {notice}
-        </div>
-      )}
+      {/* The outcome of the last action, shown once as a toast and then removed from the URL. */}
+      <FlashToast message={notice ?? null} params="notice" />
 
       <LocationWorkspace
         key={selectedId ?? "default"}

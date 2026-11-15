@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { Geist, Playfair_Display } from "next/font/google";
 import Link from "next/link";
 import { InactivityGuard } from "@/components/auth/InactivityGuard";
+import { AppToaster } from "@/components/ui/toast";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { signOut } from "@/features/auth/actions";
 import { getDeveloperAccess } from "@/features/developer/session";
@@ -42,6 +44,7 @@ export default async function DeveloperLayout({ children }: { children: ReactNod
     >
       <body className="min-h-full bg-sage-50/60 font-sans text-zinc-900">
         <InactivityGuard />
+        <AppToaster />
         <header className="border-b border-black/10 bg-white">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-6">
             <div className="flex items-center gap-3">
@@ -65,12 +68,14 @@ export default async function DeveloperLayout({ children }: { children: ReactNod
                 Change password
               </Link>
               <form action={signOut}>
-                <button
-                  type="submit"
+                <ConfirmButton
+                  label="Sign out"
+                  question="Sign out of BioSphere?"
+                  detail="You will need to sign in again to continue."
+                  confirmLabel="Sign out"
+                  pendingLabel="Signing out…"
                   className="rounded-lg border border-black/15 px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
-                >
-                  Sign out
-                </button>
+                />
               </form>
             </div>
           </div>

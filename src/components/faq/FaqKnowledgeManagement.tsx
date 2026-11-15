@@ -11,7 +11,6 @@ import {
 } from "@/features/faq/actions";
 import type { FaqCommandState, FaqFormState, FaqFormValues } from "@/features/faq/management";
 import type { FaqEntry } from "@/features/faq/types";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { InfoTip } from "@/components/ui/InfoTip";
 
 const inputClasses =
@@ -81,10 +80,15 @@ function CreateFaqForm() {
           New entries always start inactive and require explicit curator activation before future chatbot use.
         </p>
         <FaqFields values={state.values} />
-        <button type="submit" disabled={pending} className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60">
-          Create inactive entry
-        </button>
-        <PendingOverlay pending={pending} label="Creating knowledge entry…" />
+        <ConfirmButton
+          label="Create inactive entry"
+          question="Create this knowledge entry?"
+          detail="It is saved as inactive."
+          confirmLabel="Create entry"
+          pending={pending}
+          pendingLabel="Creating knowledge entry…"
+          className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
+        />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -107,10 +111,14 @@ function EditFaqForm({ entry }: { entry: FaqEntry }) {
           </p>
         )}
         <FaqFields values={state.values} />
-        <button type="submit" disabled={pending} className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60">
-          Save knowledge
-        </button>
-        <PendingOverlay pending={pending} label="Saving knowledge…" />
+        <ConfirmButton
+          label="Save knowledge"
+          question="Save changes to this knowledge entry?"
+          confirmLabel="Save changes"
+          pending={pending}
+          pendingLabel="Saving knowledge…"
+          className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
+        />
         <FormMessage message={state.message} />
       </form>
     </details>

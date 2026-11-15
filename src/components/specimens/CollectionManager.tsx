@@ -17,7 +17,7 @@ import {
   type CollectionListQuery,
 } from "@/features/specimens/collection-management";
 import type { CollectionPage, MuseumCollection } from "@/features/specimens/types";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 const inputClasses =
   "w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 disabled:cursor-not-allowed disabled:bg-zinc-100";
@@ -54,14 +54,14 @@ function CollectionCreateForm() {
             </p>
           )}
         </div>
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label="Add collection"
+          question="Add this collection?"
+          confirmLabel="Add collection"
+          pending={pending}
+          pendingLabel="Adding collection…"
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Add collection
-        </button>
-        <PendingOverlay pending={pending} label="Adding collection…" />
+        />
       </div>
     </form>
   );
@@ -97,14 +97,14 @@ function CollectionRenameForm({ collection }: { collection: MuseumCollection }) 
           </p>
         )}
       </div>
-      <button
-        type="submit"
-        disabled={pending}
+      <ConfirmButton
+        label="Rename"
+        question="Rename this collection?"
+        confirmLabel="Rename"
+        pending={pending}
+        pendingLabel="Renaming collection…"
         className="rounded-lg border border-forest-700 px-3 py-2.5 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        Rename
-      </button>
-      <PendingOverlay pending={pending} label="Renaming collection…" />
+      />
     </form>
   );
 }

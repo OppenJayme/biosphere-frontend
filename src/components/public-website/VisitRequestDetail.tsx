@@ -2,8 +2,22 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { ArrowRightIcon, CalendarIcon, CarIcon, ChatIcon, CheckIcon, ClipboardIcon, UsersIcon } from "@/components/icons";
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  CarIcon,
+  ChatIcon,
+  CheckIcon,
+  ClipboardIcon,
+  ClockIcon,
+  ListIcon,
+  MailIcon,
+  RefreshIcon,
+  UsersIcon,
+} from "@/components/icons";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { ModalButton } from "@/components/ui/ModalButton";
 import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
 import { formatTimestamp } from "@/features/public-submissions/format";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
@@ -27,6 +41,7 @@ import {
 } from "@/features/visit-requests/workflow";
 import {
   ActionError,
+  ActionRow,
   DecisionNote,
   EmailVisitorForm,
   HistoryTimeline,
@@ -34,12 +49,14 @@ import {
   MessageThread,
   MessagesJumpLink,
   NoteForm,
-  PanelHeading,
+  NotesList,
   StatusChangeForm,
   VisitorEmailFields,
-  managementColumnClasses,
+  actionButtonClasses,
+  actionButtonSecondaryClasses,
   managementColumnsClasses,
   messageCount,
+  noteCount,
   panelClasses,
   primaryButtonClasses,
   secondaryButtonClasses,
@@ -80,12 +97,7 @@ function ApproveScheduleForm({ request, action }: { request: VisitRequest; actio
   const chosen = request.preferredSchedules.find((schedule) => schedule.preferenceOrder === choice);
 
   return (
-    <form action={formAction} className={`${panelClasses} space-y-3`}>
-      <PanelHeading
-        icon={CalendarIcon}
-        title="Approve a schedule"
-        description="Approving one option sets the request to Approved by Curator. The other options stay on record."
-      />
+    <form action={formAction} className="space-y-3">
       <fieldset className="space-y-2">
         <legend className="sr-only">Preferred schedules</legend>
         {request.preferredSchedules.map((schedule) => {
@@ -176,12 +188,7 @@ function CampusEntryCard({ summary }: { summary: CampusEntrySummary | null }) {
   const [copied, setCopied] = useState<"idle" | "copied" | "failed">("idle");
 
   return (
-    <section className={`${panelClasses} space-y-3`}>
-      <PanelHeading
-        icon={ClipboardIcon}
-        title="Campus-entry summary"
-        description="Copy these approved details into the USC campus-entry process. BioSphere does not submit them to USC."
-      />
+    <div className="space-y-3">
       {summary ? (
         <>
           <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-sage-50 px-3 py-2.5 font-sans text-xs leading-relaxed text-zinc-800">
@@ -211,7 +218,7 @@ function CampusEntryCard({ summary }: { summary: CampusEntrySummary | null }) {
           The summary could not be loaded. Reload the page to try again.
         </p>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -238,8 +245,8 @@ export function VisitRequestDetail({
     : null;
 
   return (
-    <div className={managementColumnsClasses}>
-      <div className={managementColumnClasses}>
+    <div className="space-y-4">
+      <div className={managementColumnsClasses}>
         <section aria-labelledby="visit-detail-heading" className={`${panelClasses} space-y-3`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -267,71 +274,27 @@ export function VisitRequestDetail({
             <InfoRow label="Contact person">{request.name}</InfoRow>
             <InfoRow label="Email">{request.email}</InfoRow>
             <InfoRow label="Contact number">{request.phone}</InfoRow>
-            <InfoRow label="Address">{request.address ?? <NotGiven />}</InfoRow>
             <InfoRow label="Purpose">
               <span className="whitespace-pre-line">{request.purpose ?? <NotGiven />}</span>
             </InfoRow>
-            <InfoRow label="Equipment">{request.equipment ?? <NotGiven />}</InfoRow>
-            <InfoRow label="Notes">
-              {request.notes ? (
-                <a href={`#${MESSAGES_ID}`} className="text-forest-800 underline-offset-2 hover:underline">
-                  Shown under Messages
-                </a>
-              ) : (
-                <NotGiven />
-              )}
+            <InfoRow label="Visitors">
+              {request.visitorCount} visitor{request.visitorCount === 1 ? "" : "s"}
             </InfoRow>
-            <InfoRow label="Privacy consent">Accepted {formatTimestamp(request.consentAcceptedAt)}</InfoRow>
           </dl>
-
-          {!canApproveSchedule(request.status) && (
-            <div>
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-                <CalendarIcon className="h-3.5 w-3.5" />
-                Preferred schedules
-              </p>
-              <ol className="space-y-1 text-xs text-zinc-700">
-                {request.preferredSchedules.map((schedule) => (
-                  <li key={schedule.preferenceOrder}>
-                    {schedule.preferenceOrder}. {formatSchedule(schedule)}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
 
           <div>
             <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-              <UsersIcon className="h-3.5 w-3.5" />
-              {request.visitorCount} visitor{request.visitorCount === 1 ? "" : "s"}
-              {request.visitors.length > 0 && `, ${request.visitors.length} named`}
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Preferred schedules
             </p>
-            {request.visitors.length > 0 && (
-              <ol className="max-h-40 list-decimal space-y-0.5 overflow-y-auto pl-8 text-xs text-zinc-700">
-                {request.visitors.map((visitor, index) => (
-                  <li key={`${visitor.name}-${index}`}>{visitor.name}</li>
-                ))}
-              </ol>
-            )}
+            <ol className="space-y-1 text-xs text-zinc-700">
+              {request.preferredSchedules.map((schedule) => (
+                <li key={schedule.preferenceOrder}>
+                  {schedule.preferenceOrder}. {formatSchedule(schedule)}
+                </li>
+              ))}
+            </ol>
           </div>
-
-          {vehicles.length > 0 && (
-            <div>
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
-                <CarIcon className="h-3.5 w-3.5" />
-                {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"}
-              </p>
-              <ul className="space-y-0.5 text-xs text-zinc-700">
-                {vehicles.map((vehicle, index) => (
-                  <li key={index}>
-                    <span className="font-mono font-semibold">{vehicle.plateNumber ?? "No plate given"}</span>
-                    {[vehicle.brand, vehicle.type].filter(Boolean).length > 0 &&
-                      ` · ${[vehicle.brand, vehicle.type].filter(Boolean).join(", ")}`}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {request.sourceInquiryId && (
             <Link
@@ -342,6 +305,105 @@ export function VisitRequestDetail({
               <ArrowRightIcon className="h-3.5 w-3.5" />
             </Link>
           )}
+
+          {/* Each action opens its form in a modal and asks for confirmation before it runs. */}
+          <ActionRow>
+            {canApproveSchedule(request.status) && (
+              <ModalButton
+                key={`approve-${request.id}`}
+                label={
+                  <>
+                    <CalendarIcon className="h-4 w-4" />
+                    Approve a schedule
+                  </>
+                }
+                title="Approve a schedule"
+                description="Approving one option sets the request to Approved by Curator. The other options stay on record."
+                className={actionButtonClasses}
+              >
+                <ApproveScheduleForm
+                  request={request}
+                  action={approveVisitScheduleAction.bind(null, request.id, returnQuery)}
+                />
+              </ModalButton>
+            )}
+
+            {hasCampusEntrySummary(request) && (
+              <ModalButton
+                key={`campus-${request.id}`}
+                label={
+                  <>
+                    <ClipboardIcon className="h-4 w-4" />
+                    Campus-entry summary
+                  </>
+                }
+                title="Campus-entry summary"
+                description="Copy these approved details into the USC campus-entry process. BioSphere does not submit them to USC."
+                // The next step after approval is copying this summary, so it leads until that is done.
+                className={request.status === "APPROVED_BY_CURATOR" ? actionButtonClasses : actionButtonSecondaryClasses}
+              >
+                <CampusEntryCard summary={campusEntry} />
+              </ModalButton>
+            )}
+
+            {statusOptions.length > 0 && (
+              <ModalButton
+                key={`status-${request.id}-${request.status}`}
+                label={
+                  <>
+                    <RefreshIcon className="h-4 w-4" />
+                    Change status
+                  </>
+                }
+                title="Change status"
+                description="Move this visit request to its next workflow stage, or decline or cancel it."
+                className={actionButtonSecondaryClasses}
+              >
+                <StatusChangeForm
+                  action={updateVisitStatusAction.bind(null, request.id, returnQuery)}
+                  options={statusOptions}
+                  visitorEmail={{
+                    recipient: request.email,
+                    sendsFor: (status) => emailsVisitorOnStatus(status as CuratorSettableVisitStatus),
+                  }}
+                />
+              </ModalButton>
+            )}
+
+            <ModalButton
+              key={`message-${request.id}`}
+              label={
+                <>
+                  <MailIcon className="h-4 w-4" />
+                  Send Email
+                </>
+              }
+              title="Email the visitor"
+              description="Ask for more information or share details. The request's status does not change."
+              className={actionButtonSecondaryClasses}
+            >
+              <EmailVisitorForm
+                action={sendVisitMessageAction.bind(null, request.id, returnQuery)}
+                recipient={request.email}
+                placeholder="e.g. Could you send the full list of students joining the visit?"
+              />
+            </ModalButton>
+
+            <ModalButton
+              key={`note-${request.id}`}
+              label={
+                <>
+                  <ChatIcon className="h-4 w-4" />
+                  Add note
+                </>
+              }
+              title="Add an internal note"
+              description="For curators only. Record calls and other contact here; notes are never emailed."
+              className={actionButtonSecondaryClasses}
+            >
+              <NoteForm action={addVisitNoteAction.bind(null, request.id, returnQuery)} />
+            </ModalButton>
+          </ActionRow>
         </section>
 
         <MessageThread
@@ -350,54 +412,88 @@ export function VisitRequestDetail({
           entries={history}
           currentAccountId={currentAccountId}
         />
-
-        <section className={`${panelClasses} space-y-4`}>
-          <PanelHeading icon={ChatIcon} title="Notes and history" />
-          <NoteForm key={request.id} action={addVisitNoteAction.bind(null, request.id, returnQuery)} />
-          <HistoryTimeline
-            submittedAt={request.createdAt}
-            referredFrom={request.sourceInquiryId ? request.sourceInquiryId.slice(0, 8).toUpperCase() : null}
-            entries={history}
-            statusLabels={VISIT_REQUEST_STATUS_LABELS}
-            currentAccountId={currentAccountId}
-            mailboxStatus={mailboxStatus}
-          />
-        </section>
       </div>
 
-      <div className={managementColumnClasses}>
-        {canApproveSchedule(request.status) && (
-          <ApproveScheduleForm
-            key={request.id}
-            request={request}
-            action={approveVisitScheduleAction.bind(null, request.id, returnQuery)}
-          />
+      {/* Reference information stays collapsed until a curator asks for it. */}
+      <Collapsible
+        key={`details-${request.id}`}
+        icon={ListIcon}
+        title="Request details"
+        summary="Address, equipment, named visitors, vehicles, consent"
+      >
+        <dl className="divide-y divide-black/5 border-y border-black/5">
+          <InfoRow label="Address">{request.address ?? <NotGiven />}</InfoRow>
+          <InfoRow label="Equipment">{request.equipment ?? <NotGiven />}</InfoRow>
+          <InfoRow label="Notes">
+            {request.notes ? (
+              <a href={`#${MESSAGES_ID}`} className="text-forest-800 underline-offset-2 hover:underline">
+                Shown under Messages
+              </a>
+            ) : (
+              <NotGiven />
+            )}
+          </InfoRow>
+          <InfoRow label="Privacy consent">Accepted {formatTimestamp(request.consentAcceptedAt)}</InfoRow>
+        </dl>
+
+        <div>
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+            <UsersIcon className="h-3.5 w-3.5" />
+            {request.visitorCount} visitor{request.visitorCount === 1 ? "" : "s"}
+            {request.visitors.length > 0 && `, ${request.visitors.length} named`}
+          </p>
+          {request.visitors.length > 0 && (
+            <ol className="max-h-40 list-decimal space-y-0.5 overflow-y-auto pl-8 text-xs text-zinc-700">
+              {request.visitors.map((visitor, index) => (
+                <li key={`${visitor.name}-${index}`}>{visitor.name}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        {vehicles.length > 0 && (
+          <div>
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+              <CarIcon className="h-3.5 w-3.5" />
+              {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"}
+            </p>
+            <ul className="space-y-0.5 text-xs text-zinc-700">
+              {vehicles.map((vehicle, index) => (
+                <li key={index}>
+                  <span className="font-mono font-semibold">{vehicle.plateNumber ?? "No plate given"}</span>
+                  {[vehicle.brand, vehicle.type].filter(Boolean).length > 0 &&
+                    ` · ${[vehicle.brand, vehicle.type].filter(Boolean).join(", ")}`}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
+      </Collapsible>
 
-        {hasCampusEntrySummary(request) && <CampusEntryCard summary={campusEntry} />}
+      <Collapsible
+        key={`notes-${request.id}`}
+        icon={ChatIcon}
+        title="Notes"
+        summary={`${noteCount(history)} ${noteCount(history) === 1 ? "note" : "notes"}`}
+      >
+        <NotesList entries={history} currentAccountId={currentAccountId} />
+      </Collapsible>
 
-        {statusOptions.length > 0 && (
-          <StatusChangeForm
-            key={`${request.id}-${request.status}`}
-            action={updateVisitStatusAction.bind(null, request.id, returnQuery)}
-            options={statusOptions}
-            recordLabel="visit request"
-            visitorEmail={{
-              recipient: request.email,
-              sendsFor: (status) => emailsVisitorOnStatus(status as CuratorSettableVisitStatus),
-            }}
-          />
-        )}
-
-        <EmailVisitorForm
-          key={`message-${request.id}`}
-          action={sendVisitMessageAction.bind(null, request.id, returnQuery)}
-          recipient={request.email}
-          title="Email the visitor"
-          description="Ask for more information or share details. The request's status does not change."
-          placeholder="e.g. Could you send the full list of students joining the visit?"
+      <Collapsible
+        key={`history-${request.id}`}
+        icon={ClockIcon}
+        title="History"
+        summary="Status changes, emails and notes in order"
+      >
+        <HistoryTimeline
+          submittedAt={request.createdAt}
+          referredFrom={request.sourceInquiryId ? request.sourceInquiryId.slice(0, 8).toUpperCase() : null}
+          entries={history}
+          statusLabels={VISIT_REQUEST_STATUS_LABELS}
+          currentAccountId={currentAccountId}
+          mailboxStatus={mailboxStatus}
         />
-      </div>
+      </Collapsible>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { CuratorSidebar } from "./CuratorSidebar";
 import { CuratorTopbar } from "./CuratorTopbar";
+import { AppToaster } from "@/components/ui/toast";
+import { NotificationFeedProvider } from "@/features/notifications/notification-feed";
 
 const COLLAPSE_STORAGE_KEY = "biosphere_curator_sidebar_collapsed";
 
@@ -44,18 +46,22 @@ export function CuratorChrome({
 
   return (
     <div className="flex min-h-screen bg-sage-50/60">
-      <CuratorSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} collapsed={collapsed} />
+      {/* One notification feed for the bell and the sidebar badges, so their counts always agree. */}
+      <NotificationFeedProvider>
+        <CuratorSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} collapsed={collapsed} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <CuratorTopbar
-          onMenuClick={() => setMobileOpen(true)}
-          onToggleCollapse={toggleCollapsed}
-          sidebarCollapsed={collapsed}
-          ownerId={ownerId}
-          profile={profile}
-        />
-        <main className="flex-1 p-5 lg:p-6">{children}</main>
-      </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <CuratorTopbar
+            onMenuClick={() => setMobileOpen(true)}
+            onToggleCollapse={toggleCollapsed}
+            sidebarCollapsed={collapsed}
+            ownerId={ownerId}
+            profile={profile}
+          />
+          <main className="flex-1 p-5 lg:p-6">{children}</main>
+        </div>
+      </NotificationFeedProvider>
+      <AppToaster />
     </div>
   );
 }

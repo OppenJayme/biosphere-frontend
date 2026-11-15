@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
 import { ChevronDownIcon, LockIcon, LogOutIcon } from "@/components/icons";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { signOut } from "@/features/auth/actions";
 
 function initialsFor(fullName: string) {
@@ -13,21 +12,23 @@ function initialsFor(fullName: string) {
   return (parts[0][0] + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
 }
 
+/** Asks before signing out; confirming submits the surrounding sign-out form. */
 function SignOutButton() {
-  const { pending } = useFormStatus();
   return (
-    <>
-      <button
-        type="submit"
-        role="menuitem"
-        disabled={pending}
-        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-red-700 hover:bg-red-50 focus-visible:bg-red-50 focus-visible:outline-none disabled:opacity-60"
-      >
-        <LogOutIcon className="h-4 w-4" />
-        Sign out
-      </button>
-      <PendingOverlay pending={pending} label="Signing out…" />
-    </>
+    <ConfirmButton
+      role="menuitem"
+      label={
+        <>
+          <LogOutIcon className="h-4 w-4" />
+          Sign out
+        </>
+      }
+      question="Sign out of BioSphere?"
+      detail="You will need to sign in again to continue. Anything you have not saved on this page is lost."
+      confirmLabel="Sign out"
+      pendingLabel="Signing out…"
+      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-red-700 hover:bg-red-50 focus-visible:bg-red-50 focus-visible:outline-none disabled:opacity-60"
+    />
   );
 }
 

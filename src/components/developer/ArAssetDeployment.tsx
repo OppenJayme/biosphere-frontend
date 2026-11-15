@@ -5,7 +5,6 @@
 import { useActionState, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { ModelFilePreview } from "./ModelFilePreview";
 import {
   activateArAssetAction,
@@ -293,10 +292,15 @@ function UploadForm({ exhibits }: { exhibits: ArExhibit[] }) {
             Activate immediately (otherwise the asset is deployed inactive)
           </label>
           <div className="sm:col-span-2">
-            <button type="submit" disabled={pending} className={primaryButtonClasses}>
-              Upload asset
-            </button>
-            <PendingOverlay pending={pending} label="Uploading AR asset…" />
+            <ConfirmButton
+              label="Upload asset"
+              question="Upload this AR asset?"
+              detail="The file is saved for this exhibit."
+              confirmLabel="Upload asset"
+              pending={pending}
+              pendingLabel="Uploading AR asset…"
+              className={primaryButtonClasses}
+            />
             <NoticeLine notice={notice} />
           </div>
         </form>
@@ -409,10 +413,16 @@ function ReplaceControl({ asset }: { asset: ArAsset }) {
         {file && <ModelFilePreview key={`${file.name}-${file.lastModified}-${file.size}`} file={file} />}
         <AuthorizationField disabled={pending} hint="Recorded in the audit log with the replacement." />
         <div>
-          <button type="submit" disabled={pending} className={outlineButtonClasses}>
-            Replace file
-          </button>
-          <PendingOverlay pending={pending} label="Replacing AR model…" />
+          <ConfirmButton
+            label="Replace file"
+            question="Replace this model file?"
+            detail="The current file is replaced by the one you chose."
+            confirmLabel="Replace file"
+            tone="danger"
+            pending={pending}
+            pendingLabel="Replacing AR model…"
+            className={outlineButtonClasses}
+          />
           <NoticeLine notice={notice} />
         </div>
       </form>

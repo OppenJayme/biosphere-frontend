@@ -121,6 +121,17 @@ export type NotificationStateRequest = z.infer<
   typeof notificationStateRequestSchema
 >;
 
+/** "Mark all as read" / "Clear all": applies one state to every notification in the curator's feed. */
+export const notificationBulkStateRequestSchema = z
+  .object({ all: z.enum(["READ", "DISMISSED"]) })
+  .strict();
+export type NotificationBulkState = z.infer<
+  typeof notificationBulkStateRequestSchema
+>["all"];
+
+/** The backend's largest page (ListNotificationsQueryDto.MAX_NOTIFICATION_LIMIT). */
+export const NOTIFICATION_FEED_MAX = 100;
+
 export type CuratorNotification = z.infer<typeof curatorNotificationSchema>;
 export type NotificationFeed = z.infer<typeof notificationFeedSchema>;
 
@@ -159,6 +170,44 @@ export function isFailureNotification(type: NotificationType) {
 
 export function isChangeNotification(type: NotificationType) {
   return CHANGE_NOTIFICATION_TYPES.includes(type);
+}
+
+const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+  NEW_INQUIRY: "Inquiry",
+  NEW_VISIT_REQUEST: "Visit request",
+  SUBMISSION_EMAIL_FAILED: "Email failed",
+  VISITOR_REPLY: "Visitor reply",
+  SYNC_FAILED: "Sync failed",
+  BACKUP_FAILED: "Backup failed",
+  REPORT_FAILED: "Report failed",
+  SPECIMEN_ARCHIVED: "Specimen archived",
+  SPECIMEN_RESTORED: "Specimen restored",
+  LOT_MOVED: "Lot moved",
+  LOT_DEACCESSIONED: "Lot deaccessioned",
+  LOT_MISSING_LOSS: "Lot missing or lost",
+  RECORD_INCOMPLETE: "Uncataloged record",
+};
+
+/** Two or three words naming the kind of alert, shown beside its time. */
+export function notificationTypeLabel(type: NotificationType) {
+  return NOTIFICATION_TYPE_LABELS[type];
+}
+
+/**
+ * Notifications about one kind of record that still need the curator's attention, for the
+ * sidebar badges. With per-curator state these are the unread ones; without it nothing can be
+ * marked read, so every listed alert counts. Counts only what the feed loaded.
+ */
+export function attentionCount(
+  feed: Pick<NotificationFeed, "stateManagementEnabled" | "items"> | null,
+  recordType: CuratorNotification["recordType"],
+) {
+  if (!feed) return 0;
+  return feed.items.filter(
+    (item) =>
+      item.recordType === recordType &&
+      (!feed.stateManagementEnabled || !item.readAt),
+  ).length;
 }
 
 /** Short count for the bell badge. */

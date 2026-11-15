@@ -18,6 +18,7 @@ import {
 } from "@/features/specimens/api";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
+import { FlashToast } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "Specimen Media",
@@ -92,11 +93,8 @@ export default async function SpecimenMediaPage({
         </p>
       </header>
 
-      {notice && (
-        <div role="status" className={`rounded-lg border px-4 py-3 text-sm font-medium ${noticeValue === "removed-cleanup" ? "border-amber-200 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
-          {notice}
-        </div>
-      )}
+      {/* The outcome of the last action, shown once as a toast and then removed from the URL. */}
+      <FlashToast message={notice} tone={noticeValue === "removed-cleanup" ? "warning" : "success"} params="media" />
       {unavailablePreviewCount > 0 && (
         <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           {unavailablePreviewCount} private image preview{unavailablePreviewCount === 1 ? " is" : "s are"} temporarily unavailable. Its metadata remains accessible.

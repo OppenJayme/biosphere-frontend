@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   AlertTriangleIcon,
   ArchiveIcon,
@@ -11,25 +11,20 @@ import {
   ClipboardIcon,
   MoveIcon,
 } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { notify } from "@/components/ui/toast";
+import { useNotificationFeed } from "@/features/notifications/notification-feed";
 import {
   isChangeNotification,
   isFailureNotification,
   notificationBadge,
-  notificationFeedSchema,
   notificationHref,
+  notificationTypeLabel,
   type CuratorNotification,
-  type NotificationFeed,
 } from "@/features/notifications/types";
 import { LOCAL_SYNC_ALERT_HREF, withoutServerReported } from "@/features/notifications/local-alerts";
 import { useLocalSyncAlerts } from "@/features/notifications/use-local-sync-alerts";
 import { formatTimestamp } from "@/features/public-submissions/format";
-
-const REFRESH_MS = 60_000;
-
-type FeedState =
-  | { status: "loading" }
-  | { status: "ready"; feed: NotificationFeed }
-  | { status: "error"; message: string };
 
 function ItemIcon({ item }: { item: CuratorNotification }) {
   if (isFailureNotification(item.type)) {
@@ -62,136 +57,40 @@ function ItemIcon({ item }: { item: CuratorNotification }) {
  */
 export function NotificationBell({ ownerId }: { ownerId: string }) {
   const deviceAlerts = useLocalSyncAlerts(ownerId);
-  const [state, setState] = useState<FeedState>({ status: "loading" });
+  // The feed is shared with the sidebar badges, so both update together.
+  const { state, feed, updating, actionError, clearActionError, refresh, changeState, changeAll } =
+    useNotificationFeed();
   const [open, setOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const panelId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const requestVersion = useRef(0);
-  const updatingRef = useRef(false);
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
-  const refresh = useCallback(async (preserveFeed = false) => {
-    if (updatingRef.current && !preserveFeed) return false;
-    const version = ++requestVersion.current;
-    try {
-      const response = await fetch("/api/notifications", { cache: "no-store" });
-      const body: unknown = await response.json().catch(() => null);
-      if (version !== requestVersion.current) return false;
-      if (!response.ok) {
-        const message =
-          body &&
-          typeof body === "object" &&
-          "message" in body &&
-          typeof body.message === "string"
-            ? body.message
-            : "Notifications could not be loaded.";
-        if (preserveFeed)
-          setActionError(
-            "The update may have saved, but the feed could not be refreshed. Refresh notifications or try again.",
-          );
-        else setState({ status: "error", message });
-        return false;
-      }
-      const parsed = notificationFeedSchema.safeParse(body);
-      if (!parsed.success && preserveFeed) {
-        setActionError(
-          "The updated notification feed could not be confirmed. Refresh notifications.",
-        );
-        return false;
-      }
-      setState(
-        parsed.success
-          ? { status: "ready", feed: parsed.data }
-          : { status: "error", message: "Notifications could not be loaded." },
-      );
-      return parsed.success;
-    } catch {
-      if (version !== requestVersion.current) return false;
-      if (preserveFeed)
-        setActionError(
-          "The update may have saved, but the feed could not be refreshed. Refresh notifications or try again.",
-        );
-      else
-        setState({
-          status: "error",
-          message: "Notifications could not be loaded. Check your connection.",
-        });
-      return false;
-    }
-  }, []);
-
-  async function changeState(
-    item: CuratorNotification,
-    next: "READ" | "DISMISSED",
-  ) {
-    if (updatingRef.current) return;
-    updatingRef.current = true;
-    requestVersion.current++;
-    setUpdating(item.id);
-    setActionError(null);
-    try {
-      const response = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId: item.id, state: next }),
-      });
-      const body: unknown = await response.json().catch(() => null);
-      if (
-        !response.ok ||
-        !body ||
-        typeof body !== "object" ||
-        !("updated" in body) ||
-        body.updated !== true
-      ) {
-        const message =
-          response.status === 401
-            ? "Your session expired. Sign in again."
-            : response.status === 403
-              ? "Your account cannot update notifications."
-              : response.status === 404
-                ? "This notification is no longer available. Refresh notifications."
-                : "The notification update could not be confirmed. Refresh notifications or try again.";
-        throw new Error(message);
-      }
-      await refresh(true);
-    } catch (error) {
-      setActionError(
-        error instanceof TypeError
-          ? "The notification update could not be confirmed. Check your connection, then refresh notifications or try again."
-          : error instanceof Error
-            ? error.message
-            : "The notification update could not be confirmed.",
-      );
-    } finally {
-      updatingRef.current = false;
-      setUpdating(null);
+  async function markOne(item: CuratorNotification, next: "READ" | "DISMISSED") {
+    if (await changeState(item, next)) {
+      notify("success", next === "READ" ? "Notification marked as read." : "Notification dismissed.");
     }
   }
 
-  // Poll while the tab is visible, and refresh when the curator comes back to it.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load from an external source
-    void refresh();
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") void refresh();
-    }, REFRESH_MS);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refresh();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [refresh]);
+  async function markAllRead() {
+    const count = await changeAll("READ");
+    if (count === null) return;
+    notify("success", count === 0 ? "There was nothing unread." : "All notifications were marked as read.");
+  }
+
+  async function clearAll() {
+    setConfirmClear(false);
+    const count = await changeAll("DISMISSED");
+    if (count === null) return;
+    notify("success", count === 1 ? "1 notification was cleared." : `${count} notifications were cleared.`);
+  }
 
   // Close on Escape (returning focus to the bell) or on a click outside the panel.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      // While the "Clear all" confirmation is open, Escape belongs to that dialog.
+      if (event.key === "Escape" && !confirmClear) {
         setOpen(false);
         buttonRef.current?.focus();
       }
@@ -205,7 +104,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [open]);
+  }, [open, confirmClear]);
 
   function toggle() {
     const next = !open;
@@ -213,7 +112,6 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
     if (next) void refresh();
   }
 
-  const feed = state.status === "ready" ? state.feed : null;
   const localAlerts = withoutServerReported(deviceAlerts, feed?.items ?? []);
   const feedCount = feed
     ? feed.stateManagementEnabled
@@ -273,6 +171,29 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
               </p>
             )}
           </div>
+
+          {feed?.stateManagementEnabled && feed.items.length > 0 && (
+            <div className="flex items-center justify-between gap-2 border-b border-black/10 px-3 py-1.5 text-xs">
+              <button
+                type="button"
+                disabled={updating !== null || (feed.unreadTotal ?? 0) === 0}
+                onClick={() => void markAllRead()}
+                className="rounded px-2 py-1 font-semibold text-forest-800 hover:bg-sage-100 focus-visible:outline-2 disabled:opacity-50"
+              >
+                Mark all as read
+              </button>
+              {updating === "ALL" && <span role="status">Updating…</span>}
+              <button
+                type="button"
+                disabled={updating !== null}
+                aria-haspopup="dialog"
+                onClick={() => setConfirmClear(true)}
+                className="rounded px-2 py-1 font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-2 disabled:opacity-50"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
 
           {localAlerts.length > 0 && (
             <ul
@@ -352,9 +273,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
                         {item.title}
                       </span>
                       <span className="block text-xs text-zinc-500">
-                        Ref{" "}
-                        <span className="font-mono">{item.referenceCode}</span>{" "}
-                        · {formatTimestamp(item.createdAt)}
+                        {notificationTypeLabel(item.type)} · {formatTimestamp(item.createdAt)}
                       </span>
                     </span>
                   </Link>
@@ -366,8 +285,9 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
                         <button
                           type="button"
                           disabled={updating !== null}
+                          // The reference stays in the accessible name only, to tell same-titled alerts apart.
                           aria-label={`Mark as read: ${item.title} (${item.referenceCode})`}
-                          onClick={() => void changeState(item, "READ")}
+                          onClick={() => void markOne(item, "READ")}
                           className="rounded px-2 py-1 font-semibold text-forest-800 hover:bg-sage-100 focus-visible:outline-2 disabled:opacity-50"
                         >
                           Mark as read
@@ -377,7 +297,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
                         type="button"
                         disabled={updating !== null}
                         aria-label={`Dismiss: ${item.title} (${item.referenceCode})`}
-                        onClick={() => void changeState(item, "DISMISSED")}
+                        onClick={() => void markOne(item, "DISMISSED")}
                         className="rounded px-2 py-1 font-semibold text-zinc-700 hover:bg-sage-100 focus-visible:outline-2 disabled:opacity-50"
                       >
                         Dismiss
@@ -401,7 +321,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
                 type="button"
                 disabled={updating !== null}
                 onClick={() => {
-                  setActionError(null);
+                  clearActionError();
                   void refresh(true);
                 }}
                 className="mt-2 rounded px-2 py-1 font-semibold hover:bg-amber-50 disabled:opacity-50"
@@ -423,6 +343,16 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
           </p>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmClear}
+        title="Clear all notifications?"
+        message={`${feed && feed.total === 1 ? "1 notification is" : `All ${feed?.total ?? 0} notifications are`} removed from your list. This affects only your account: pending inquiries, visit requests and unresolved failures are not changed. It cannot be undone.`}
+        confirmLabel="Clear all"
+        tone="danger"
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={() => void clearAll()}
+      />
     </div>
   );
 }

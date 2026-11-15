@@ -14,6 +14,8 @@ import {
   type ExportEntry,
   type ExportOverview,
 } from "@/features/backup/exports-types";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { notify } from "@/components/ui/toast";
 
 const DAY_NAMES: Record<string, string> = {
   SUN: "Sunday",
@@ -95,7 +97,12 @@ export function WeeklyExportsPanel({
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [notice, setNoticeState] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  /** Shows the result in the panel and as a toast. */
+  function setNotice(next: { kind: "ok" | "error"; text: string } | null) {
+    setNoticeState(next);
+    if (next) notify(next.kind === "ok" ? "success" : "error", next.text);
+  }
 
   async function runNow() {
     setRunning(true);
@@ -167,15 +174,21 @@ export function WeeklyExportsPanel({
             saved. Files are private: only curators can download them.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={runNow}
-          disabled={running}
+        <ConfirmButton
+          label={
+            <>
+              <RefreshIcon className="h-4 w-4" aria-hidden="true" />
+              Run export now
+            </>
+          }
+          question="Run the Excel export now?"
+          detail="A new export file is created and added to the list below. It can take a moment."
+          confirmLabel="Run export"
+          pending={running}
+          pendingLabel="Exporting…"
+          onConfirm={() => void runNow()}
           className="inline-flex items-center gap-2 rounded-lg bg-forest-700 px-4 py-2 text-sm font-medium text-white hover:bg-forest-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <RefreshIcon className={`h-4 w-4 ${running ? "animate-spin" : ""}`} aria-hidden="true" />
-          {running ? "Exporting…" : "Run export now"}
-        </button>
+        />
       </div>
 
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">

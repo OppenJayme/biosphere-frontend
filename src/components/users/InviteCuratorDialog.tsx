@@ -14,6 +14,7 @@ import {
   FULL_NAME_MAX_LENGTH,
   type InviteCuratorState,
 } from "@/features/user-accounts/form";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 const inputClasses =
   "mt-1 w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-700 aria-[invalid=true]:border-red-400";
@@ -162,9 +163,15 @@ export function InviteCuratorDialog() {
               <button type="button" onClick={close} className={secondaryButtonClasses}>
                 {state.success ? "Done" : "Cancel"}
               </button>
-              <button type="submit" disabled={pending} className={primaryButtonClasses}>
-                Send invitation
-              </button>
+              <ConfirmButton
+                label="Send invitation"
+                question="Send this invitation?"
+                detail="An invitation email with a password-setup link is sent to the address you entered."
+                confirmLabel="Send invitation"
+                pending={pending}
+                pendingLabel="Sending invitation…"
+                className={primaryButtonClasses}
+              />
             </div>
           </form>
         )}
