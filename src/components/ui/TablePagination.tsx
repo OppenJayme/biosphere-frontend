@@ -78,6 +78,7 @@ export function TablePagination({
   pageSize,
   total,
   className = "",
+  sizes = TABLE_PAGE_SIZES,
   ...control
 }: {
   /** Names the list for screen readers, e.g. "Specimen catalog pages". */
@@ -88,6 +89,8 @@ export function TablePagination({
   pageSize: number;
   total: number;
   className?: string;
+  /** Rows-per-page choices; the shared 10 / 25 / 50 unless a list needs smaller pages. */
+  sizes?: readonly number[];
 } & PageControl) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const first = (page - 1) * pageSize + 1;
@@ -144,10 +147,10 @@ export function TablePagination({
       <PageSizeSelect
         label={`Rows per page for ${noun}`}
         value={pageSize}
-        sizes={TABLE_PAGE_SIZES}
+        sizes={sizes}
         hrefs={
           "sizeHrefFor" in control
-            ? Object.fromEntries(TABLE_PAGE_SIZES.map((size) => [size, control.sizeHrefFor(size)]))
+            ? Object.fromEntries(sizes.map((size) => [size, control.sizeHrefFor(size)]))
             : undefined
         }
         onChange={"onPageSizeChange" in control ? control.onPageSizeChange : undefined}
