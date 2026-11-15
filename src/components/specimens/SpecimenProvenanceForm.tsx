@@ -12,13 +12,13 @@ import {
   type ProvenanceFormState,
   type ProvenanceFormValues,
 } from "@/features/specimens/provenance-form";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { museumToday } from "@/lib/museum-date";
 import {
   PRESERVATION_TYPE_OPTIONS,
   preservationMethodSuggestions,
 } from "@/features/specimens/field-options";
 import { OptionField } from "./OptionField";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 type SpecimenProvenanceFormProps = {
   specimenId: string;
@@ -211,14 +211,14 @@ export function SpecimenProvenanceForm({
         >
           Cancel
         </Link>
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label={mode === "create" ? "Create provenance record" : "Save provenance changes"}
+          question={mode === "create" ? "Create this provenance record?" : "Save these provenance changes?"}
+          confirmLabel={mode === "create" ? "Create record" : "Save changes"}
+          pending={pending}
+          pendingLabel="Saving provenance…"
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {mode === "create" ? "Create provenance record" : "Save provenance changes"}
-        </button>
-        <PendingOverlay pending={pending} label="Saving provenance…" />
+        />
       </div>
     </form>
   );

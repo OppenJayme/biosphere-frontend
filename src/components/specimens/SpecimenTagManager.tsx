@@ -15,7 +15,6 @@ import {
 } from "@/features/specimens/tag-actions";
 import type { DetachTagState, TagFormState } from "@/features/specimens/tag-form";
 import type { SpecimenTag } from "@/features/specimens/types";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 type SpecimenTagManagerProps = {
   specimenId: string;
@@ -102,14 +101,14 @@ function TagRow({
               className={inputClasses}
             />
           </label>
-          <button
-            type="submit"
-            disabled={pending}
+          <ConfirmButton
+            label="Save"
+            question="Save this tag change?"
+            confirmLabel="Save"
+            pending={pending}
+            pendingLabel="Changing tag…"
             className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Save
-          </button>
-          <PendingOverlay pending={pending} label="Changing tag…" />
+          />
           <button
             type="button"
             disabled={pending}
@@ -261,14 +260,14 @@ export function SpecimenTagManager({
                 </p>
               )}
             </label>
-            <button
-              type="submit"
-              disabled={pending}
+            <ConfirmButton
+              label="Attach tag"
+              question="Attach this tag?"
+              confirmLabel="Attach tag"
+              pending={pending}
+              pendingLabel="Attaching tag…"
               className="mt-5 rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Attach tag
-            </button>
-            <PendingOverlay pending={pending} label="Attaching tag…" />
+            />
           </form>
 
           {state.message && (

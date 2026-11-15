@@ -10,7 +10,7 @@ import {
 } from "@/features/specimen-lots/form";
 import type { StorageUnitOption } from "@/features/specimen-lots/types";
 import { ConditionField } from "@/components/specimens/ConditionField";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 type SpecimenLotCreationFormProps = {
   specimenId: string;
@@ -193,14 +193,16 @@ export function SpecimenLotCreationForm({
         >
           Cancel
         </Link>
-        <button
-          type="submit"
-          disabled={pending || !hasStorageUnits}
+        <ConfirmButton
+          label="Create specimen lot"
+          question="Create this specimen lot?"
+          detail="The lot and its starting quantity are recorded in the lot history."
+          confirmLabel="Create lot"
+          pending={pending}
+          pendingLabel="Creating specimen lot…"
+          disabled={!hasStorageUnits}
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Create specimen lot
-        </button>
-        <PendingOverlay pending={pending} label="Creating specimen lot…" />
+        />
       </div>
     </form>
   );

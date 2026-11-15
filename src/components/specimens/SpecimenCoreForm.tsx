@@ -9,7 +9,6 @@ import {
   type SpecimenFormValues,
 } from "@/features/specimens/form";
 import { SPECIMEN_GENDERS, type MuseumCollection } from "@/features/specimens/types";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import {
   CLASSIFICATION_STATUS_OPTIONS,
   SPECIMEN_CATEGORY_OPTIONS,
@@ -17,6 +16,7 @@ import {
 import { AccessionNumberCheck } from "./AccessionNumberCheck";
 import { OptionField } from "./OptionField";
 import { SpecimenDuplicateCheck } from "./SpecimenDuplicateCheck";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 type SpecimenCoreFormProps = {
   mode: "create" | "edit";
@@ -278,14 +278,14 @@ export function SpecimenCoreForm({
         >
           Cancel
         </Link>
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label={mode === "create" ? "Save uncataloged draft" : "Save core changes"}
+          question={mode === "create" ? "Save this uncataloged draft?" : "Save these core changes?"}
+          confirmLabel={mode === "create" ? "Save draft" : "Save changes"}
+          pending={pending}
+          pendingLabel="Saving specimen…"
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {mode === "create" ? "Save uncataloged draft" : "Save core changes"}
-        </button>
-        <PendingOverlay pending={pending} label="Saving specimen…" />
+        />
       </div>
 
       {/* Blur can start this advisory while Save is pressed. Keep it below the

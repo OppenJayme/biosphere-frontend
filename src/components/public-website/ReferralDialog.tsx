@@ -7,7 +7,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { CalendarIcon, CloseIcon, PlusIcon } from "@/components/icons";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import type { ReferralActionState } from "@/features/inquiries/actions";
 import type { Inquiry } from "@/features/inquiries/types";
 import { NOTE_MAX } from "@/features/public-submissions/history";
@@ -53,7 +53,16 @@ function invalidProps(id: string, message?: string) {
   return message ? { "aria-invalid": true as const, "aria-describedby": id } : {};
 }
 
-export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: ReferralAction }) {
+export function ReferralDialog({
+  inquiry,
+  action,
+  triggerClassName = secondaryButtonClasses,
+}: {
+  inquiry: Inquiry;
+  action: ReferralAction;
+  /** Classes for the button that opens the dialog. */
+  triggerClassName?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, {});
   const [rows, setRows] = useState(() => scheduleRows());
@@ -98,20 +107,19 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className={secondaryButtonClasses}
+        className={triggerClassName}
       >
         <CalendarIcon className="h-4 w-4" />
         Turn into visit request
       </button>
-
-      <PendingOverlay pending={pending} label="Creating visit request…" />
 
       <dialog
         ref={dialogRef}
         aria-labelledby={titleId}
         onCancel={(event) => {
           event.preventDefault();
-          close();
+          // Escape inside the nested confirmation belongs to that dialog, not this one.
+          if (event.target === event.currentTarget) close();
         }}
         className="m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-black/10 bg-white p-0 text-left text-zinc-900 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] backdrop:bg-forest-900/50 backdrop:backdrop-blur-sm"
       >
@@ -318,9 +326,15 @@ export function ReferralDialog({ inquiry, action }: { inquiry: Inquiry; action: 
               >
                 Cancel
               </button>
-              <button type="submit" disabled={pending} className={`${primaryButtonClasses} sm:w-auto sm:px-4`}>
-                Create visit request
-              </button>
+              <ConfirmButton
+                label="Create visit request"
+                question="Create this visit request?"
+                detail={`A Pending visit request is created for ${inquiry.name}, and this inquiry is marked as turned into a visit request. This cannot be undone.`}
+                confirmLabel="Create visit request"
+                pending={pending}
+                pendingLabel="Creating visit request…"
+                className={`${primaryButtonClasses} sm:w-auto sm:px-4`}
+              />
             </div>
           </form>
         )}

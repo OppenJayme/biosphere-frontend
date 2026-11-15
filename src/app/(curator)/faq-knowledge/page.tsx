@@ -11,6 +11,7 @@ import type { FaqEntryPage } from "@/features/faq/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { PageHeader, PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
+import { FlashToast } from "@/components/ui/toast";
 
 export const metadata: Metadata = { title: "FAQ Knowledge" };
 
@@ -70,11 +71,8 @@ export default async function FaqKnowledgePage({ searchParams }: FaqKnowledgePag
         }
       />
 
-      {notice && (
-        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-          {notice}
-        </div>
-      )}
+      {/* The outcome of the last action, shown once as a toast and then removed from the URL. */}
+      <FlashToast message={notice ?? null} params="notice" />
 
       <FaqKnowledgeWorkspace
         key={selectedResult.success ? selectedResult.data : faqKnowledgeHref(query)}

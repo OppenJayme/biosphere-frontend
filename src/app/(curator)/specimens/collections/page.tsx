@@ -10,6 +10,7 @@ import {
   parseCollectionListQuery,
 } from "@/features/specimens/collection-management";
 import { verifySession } from "@/lib/session";
+import { FlashToast } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "Manage Collections",
@@ -76,14 +77,13 @@ export default async function CollectionManagementPage({
         </p>
       </header>
 
-      {(notice === "created" || notice === "renamed") && (
-        <div
-          role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
-        >
-          {notice === "created" ? "The collection was added." : "The collection was renamed."}
-        </div>
-      )}
+      {/* The outcome of the last action, shown once as a toast and then removed from the URL. */}
+      <FlashToast
+        message={
+          notice === "created" ? "The collection was added." : notice === "renamed" ? "The collection was renamed." : null
+        }
+        params="notice"
+      />
 
       <CollectionManager page={page} query={query} />
     </div>

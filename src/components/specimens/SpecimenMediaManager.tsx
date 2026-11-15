@@ -25,9 +25,8 @@ import {
   specimenMediaSchema,
   type SpecimenMedia,
 } from "@/features/specimens/types";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { CATALOGING_FILE_FEEDBACK_CLASSES } from "@/features/specimens/control-styles";
-import { LoadingImage } from "@/components/ui/LoadingImage";
+import { ZoomableImage } from "@/components/ui/ImageViewer";
 
 export type SpecimenMediaWithPreview = SpecimenMedia & {
   signedUrl: string | null;
@@ -162,14 +161,14 @@ function UploadForm({ specimenId }: { specimenId: string }) {
           <input type="checkbox" name="isCover" disabled={pending} />
           Use as the specimen cover image
         </label>
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label="Upload image"
+          question="Upload this image?"
+          confirmLabel="Upload image"
+          pending={pending}
+          pendingLabel="Uploading image…"
           className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Upload image
-        </button>
-        <PendingOverlay pending={pending} label="Uploading image…" />
+        />
       </form>
       {notice && <div className="mt-4"><NoticeBox notice={notice} /></div>}
     </section>
@@ -211,10 +210,14 @@ function MetadataForm({ specimenId, item }: { specimenId: string; item: Specimen
           {state.errors?.displayOrder?.[0] && <span className="mt-1 block text-xs text-red-700">{state.errors.displayOrder[0]}</span>}
         </label>
       </div>
-      <button type="submit" disabled={pending} className={mediaActionButtonClasses}>
-        Save metadata
-      </button>
-      <PendingOverlay pending={pending} label="Saving image details…" />
+      <ConfirmButton
+        label="Save metadata"
+        question="Save these image details?"
+        confirmLabel="Save details"
+        pending={pending}
+        pendingLabel="Saving image details…"
+        className={mediaActionButtonClasses}
+      />
       {state.message && <p role="alert" className="text-xs text-red-700">{state.message}</p>}
     </form>
   );
@@ -296,10 +299,14 @@ function CoverControl({ specimenId, mediaId }: { specimenId: string; mediaId: st
   const [state, formAction, pending] = useActionState<MediaCommandState, FormData>(action, {});
   return (
     <form action={formAction}>
-      <button type="submit" disabled={pending} className={mediaActionButtonClasses}>
-        Set as cover
-      </button>
-      <PendingOverlay pending={pending} label="Setting cover image…" />
+      <ConfirmButton
+        label="Set as cover"
+        question="Set this image as the cover?"
+        confirmLabel="Set as cover"
+        pending={pending}
+        pendingLabel="Setting cover image…"
+        className={mediaActionButtonClasses}
+      />
       {state.message && <p role="alert" className="mt-1 text-xs text-red-700">{state.message}</p>}
     </form>
   );
@@ -331,7 +338,10 @@ function MediaCard({ specimenId, item, readOnly }: { specimenId: string; item: S
       <div className="relative aspect-[4/3] bg-zinc-100">
         {item.signedUrl ? (
           // The browser loads the five-minute URL directly so Next's optimizer cannot cache a private image beyond expiry.
-          <LoadingImage src={item.signedUrl} alt={item.caption ?? "Specimen image"} className="h-full w-full object-contain" />
+          <ZoomableImage
+            image={{ src: item.signedUrl, alt: item.caption ?? "Specimen image", caption: item.caption }}
+            fit="contain"
+          />
         ) : (
           <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500">
             Preview unavailable. Reload to request a fresh private link.

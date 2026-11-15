@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Geist, Playfair_Display } from "next/font/google";
 import { InactivityGuard } from "@/components/auth/InactivityGuard";
 import { CuratorChrome } from "@/components/curator/CuratorChrome";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 import { signOut } from "@/features/auth/actions";
@@ -84,12 +85,14 @@ function AccountVerificationError() {
         </p>
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
           <form action={signOut}>
-            <button
-              type="submit"
+            <ConfirmButton
+              label="Sign out"
+              question="Sign out of BioSphere?"
+              detail="You will need to sign in again to continue."
+              confirmLabel="Sign out"
+              pendingLabel="Signing out…"
               className="w-full rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2"
-            >
-              Sign out
-            </button>
+            />
           </form>
           {/* A plain link forces a fresh server render, which re-runs the verification. */}
           <a
