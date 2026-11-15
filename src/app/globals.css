@@ -190,3 +190,55 @@ html:has(> body.site) {
     opacity: 1;
   }
 }
+
+/* Shared image viewer (components/ui/ImageViewer.tsx). The component picks the zoom and slide
+   keyframes only with motion-safe and falls back to the two fades under reduced motion. */
+@keyframes viewer-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes viewer-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes viewer-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes viewer-zoom-out {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes viewer-slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes viewer-slide-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+/* Skeleton sweep shown until a photo has loaded. */
+@keyframes viewer-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

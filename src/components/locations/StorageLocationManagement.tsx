@@ -23,7 +23,6 @@ import type {
   StorageLocationMoveState,
 } from "@/features/storage-locations/management";
 import type { StorageUnit } from "@/features/storage-locations/types";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 
 /** Lets the Add location button beside the hierarchy reach this form. */
 export const ADD_LOCATION_FORM_ID = "add-storage-location";
@@ -202,14 +201,14 @@ function CreateStorageLocationForm({
           {STORAGE_ARRANGEMENT_HINT} Capacity is optional; actual quantities are tracked from specimen lots either way.
         </p>
         <StorageFields values={state.values} parents={activeParents} includeParent />
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label="Create location"
+          question="Create this storage location?"
+          confirmLabel="Create location"
+          pending={pending}
+          pendingLabel="Creating location…"
           className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Create location
-        </button>
-        <PendingOverlay pending={pending} label="Creating location…" />
+        />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -228,14 +227,14 @@ function UpdateStorageLocationForm({ unit }: { unit: StorageUnit }) {
       <summary className="cursor-pointer text-sm font-semibold text-forest-800">Edit selected location</summary>
       <form action={formAction} className="mt-4">
         <StorageFields values={state.values} parents={[]} includeParent={false} />
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label="Save changes"
+          question="Save changes to this storage location?"
+          confirmLabel="Save changes"
+          pending={pending}
+          pendingLabel="Saving location…"
           className="mt-4 rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Save changes
-        </button>
-        <PendingOverlay pending={pending} label="Saving location…" />
+        />
         <FormMessage message={state.message} />
       </form>
     </details>
@@ -281,14 +280,15 @@ function MoveStorageLocationForm({ unit, units }: { unit: StorageUnit; units: St
             className={`${inputClasses} mt-1 resize-y`}
           />
         </label>
-        <button
-          type="submit"
-          disabled={pending}
+        <ConfirmButton
+          label="Move location"
+          question="Move this storage location?"
+          detail="Its place in the storage hierarchy changes."
+          confirmLabel="Move location"
+          pending={pending}
+          pendingLabel="Moving location…"
           className="mt-4 rounded-lg border border-forest-700 px-4 py-2 text-sm font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Move location
-        </button>
-        <PendingOverlay pending={pending} label="Moving location…" />
+        />
         <FormMessage message={state.message} />
       </form>
     </details>

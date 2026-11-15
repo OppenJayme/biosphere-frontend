@@ -36,12 +36,14 @@ function markup(readOnly = false, isCover = true) {
 }
 
 describe("Cataloging native file feedback", () => {
-  it("gives metadata/cover submit buttons working hover, focus and disabled feedback", () => {
+  it("gives metadata/cover buttons working hover, focus and disabled feedback, and asks before saving", () => {
     const html = markup(false, false);
     for (const label of ["Save metadata", "Set as cover"]) {
       const button = html.match(new RegExp(`<button\\b[^>]*>\\s*${label}\\s*</button>`))?.[0];
       expect(button).toBeDefined();
-      expect(button).toContain('type="submit"');
+      // Each opens the shared confirmation dialog, whose Confirm button submits the form.
+      expect(button).toContain('aria-haspopup="dialog"');
+      expect(button).toContain("data-confirm-submit");
       expect(button).toContain("enabled:hover:bg-forest-100");
       expect(button).toContain("focus-visible:outline-2");
       expect(button).toContain("disabled:cursor-not-allowed");

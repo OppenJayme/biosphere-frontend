@@ -39,6 +39,8 @@ export async function checkDraftSave(page, bundle, css) {
       after=await save.boundingBox();
       assert(Math.abs(after.y-before.y)<1 && Math.abs(after.x-before.x)<1,`${mode}: settled ${outcome} response moved Save before pointer-up`);
       await page.mouse.up();
+      // Saving now asks for confirmation first; the dialog's own button submits the form.
+      await page.getByRole('button',{name:mode==='create'?'Save draft':'Save changes',exact:true}).click();
       await page.waitForFunction(()=>window.draftSaveFixture.submissions.length===1);
       const submitted=await page.evaluate(()=>window.draftSaveFixture.submissions);
       assert(submitted.length===1 && submitted[0].mode===mode,'First click did not reach exactly one save action');
@@ -67,6 +69,8 @@ export async function checkDraftSave(page, bundle, css) {
       after=await save.boundingBox();
       assert(Math.abs(after.y-before.y)<1,`${mode}: accession ${outcome} result moved Save before pointer-up`);
       await page.mouse.up();
+      // Saving now asks for confirmation first; the dialog's own button submits the form.
+      await page.getByRole('button',{name:mode==='create'?'Save draft':'Save changes',exact:true}).click();
       await page.waitForFunction(()=>window.draftSaveFixture.submissions.length===1);
       const submitted=await page.evaluate(()=>window.draftSaveFixture.submissions);
       assert(submitted.length===1 && submitted[0].values.accessionNumber==='BB-TEST-ACC-0001','Accession first click did not reach exactly one save');
@@ -75,7 +79,9 @@ export async function checkDraftSave(page, bundle, css) {
     await mount(mode);
     await page.getByRole('textbox',{name:'Common name',exact:true}).fill('BB-TEST C3 Keyboard');
     await page.getByRole('textbox',{name:'Common name',exact:true}).press('Enter');
-    await page.waitForFunction(()=>window.draftSaveFixture.submissions.length===1);
+    // Saving now asks for confirmation first; the dialog's own button submits the form.
+      await page.getByRole('button',{name:mode==='create'?'Save draft':'Save changes',exact:true}).click();
+      await page.waitForFunction(()=>window.draftSaveFixture.submissions.length===1);
     scenarios++;
   }
   assert(errors.length===0,`Runtime errors: ${errors.join('; ')}`);

@@ -9,7 +9,6 @@
 import { useActionState, useState } from "react";
 import { ConditionField } from "@/components/specimens/ConditionField";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import {
   adjustSpecimenLotQuantityAction,
   changeSpecimenLotConditionAction,
@@ -208,14 +207,16 @@ function MoveLotForm({
       </div>
       <FormMessage message={state.message} />
       <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={pending || destinations.length === 0}
+        <ConfirmButton
+          label="Move specimens"
+          question="Move these specimens?"
+          detail="The move is recorded in the lot history."
+          confirmLabel="Move specimens"
+          pending={pending}
+          pendingLabel="Moving specimens…"
+          disabled={destinations.length === 0}
           className={submitClasses}
-        >
-          Move specimens
-        </button>
-        <PendingOverlay pending={pending} label="Moving specimens…" />
+        />
       </div>
     </form>
   );
@@ -268,10 +269,15 @@ function ChangeConditionForm({ lot }: { lot: LotSnapshot }) {
       </div>
       <FormMessage message={state.message} />
       <div className="flex justify-end">
-        <button type="submit" disabled={pending} className={submitClasses}>
-          Change condition
-        </button>
-        <PendingOverlay pending={pending} label="Changing condition…" />
+        <ConfirmButton
+          label="Change condition"
+          question="Change the condition?"
+          detail="The change is recorded in the lot history."
+          confirmLabel="Change condition"
+          pending={pending}
+          pendingLabel="Changing condition…"
+          className={submitClasses}
+        />
       </div>
     </form>
   );
@@ -429,10 +435,14 @@ function LotNotesForm({ lot }: { lot: LotSnapshot }) {
       </div>
       <FormMessage message={state.message} />
       <div className="flex justify-end">
-        <button type="submit" disabled={pending} className={submitClasses}>
-          Save notes
-        </button>
-        <PendingOverlay pending={pending} label="Saving storage notes…" />
+        <ConfirmButton
+          label="Save notes"
+          question="Save these storage notes?"
+          confirmLabel="Save notes"
+          pending={pending}
+          pendingLabel="Saving storage notes…"
+          className={submitClasses}
+        />
       </div>
     </form>
   );

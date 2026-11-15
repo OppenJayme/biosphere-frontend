@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { ClockIcon, CalendarIcon, ShieldIcon, CheckIcon, ArrowRightIcon, MailIcon, InfoIcon } from "@/components/icons";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { getUserRecentActivity, resendInvitationAction } from "@/features/user-accounts/actions";
 import type { ResendInvitationState } from "@/features/user-accounts/form";
 import type { AccountUser, RecentActivityResult } from "@/features/user-accounts/types";
 import { STATUS_STYLES } from "./UserTable";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
+import { useResultToast } from "@/components/ui/toast";
 
 function InfoRow({ icon: Icon, label, children }: { icon: typeof ClockIcon; label: string; children: ReactNode }) {
   return (
@@ -82,6 +83,7 @@ function ResendInvitation({ user }: { user: AccountUser }) {
     resendInvitationAction.bind(null, user.id),
     {},
   );
+  useResultToast(state);
 
   return (
     <form action={formAction} className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -89,15 +91,20 @@ function ResendInvitation({ user }: { user: AccountUser }) {
         This curator has not set a password yet. If their link expired or got lost, send a new one. Earlier
         links stop working.
       </p>
-      <button
-        type="submit"
-        disabled={pending}
+      <ConfirmButton
+        label={
+          <>
+            <MailIcon className="h-3.5 w-3.5" />
+            Resend invitation
+          </>
+        }
+        question="Resend this invitation?"
+        detail="A new password-setup link is emailed. Earlier links stop working."
+        confirmLabel="Resend invitation"
+        pending={pending}
+        pendingLabel="Sending invitation…"
         className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-forest-700 bg-white px-3 py-1.5 text-xs font-semibold text-forest-800 hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <MailIcon className="h-3.5 w-3.5" />
-        Resend invitation
-      </button>
-      <PendingOverlay pending={pending} label="Sending invitation…" />
+      />
       {state.message && (
         <p role="alert" className="mt-2 text-xs font-medium text-red-700">
           {state.message}

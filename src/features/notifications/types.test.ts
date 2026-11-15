@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  NOTIFICATION_TYPES,
+  attentionCount,
   isChangeNotification,
   isFailureNotification,
   notificationBadge,
+  notificationBulkStateRequestSchema,
   notificationFeedSchema,
   notificationHref,
   notificationStateRequestSchema,
+  notificationTypeLabel,
 } from "./types";
 
 const id = "5589315f-81fb-49a7-8b1c-df177703e1de";
@@ -126,5 +130,37 @@ describe("curator notifications", () => {
     expect(isChangeNotification("LOT_MOVED")).toBe(true);
     expect(isChangeNotification("RECORD_INCOMPLETE")).toBe(false);
     expect(isFailureNotification("SPECIMEN_ARCHIVED")).toBe(false);
+  });
+
+  it("counts the alerts that still need attention per kind of record, for the sidebar badges", () => {
+    const item = (id: string, recordType: "inquiry" | "visit_request", readAt: string | null) => ({
+      id: `NEW_INQUIRY:${id}`,
+      type: "NEW_INQUIRY" as const,
+      title: "New general inquiry",
+      recordType,
+      recordId: id,
+      referenceCode: "A1B2C3D4",
+      createdAt: "2026-11-14T15:18:00.000Z",
+      readAt,
+    });
+    const items = [
+      item("11111111-1111-4111-8111-111111111111", "inquiry", null),
+      item("22222222-2222-4222-8222-222222222222", "inquiry", "2026-11-14T16:00:00.000Z"),
+      item("33333333-3333-4333-8333-333333333333", "visit_request", null),
+    ];
+    // With per-curator state, a read alert no longer counts.
+    expect(attentionCount({ stateManagementEnabled: true, items }, "inquiry")).toBe(1);
+    expect(attentionCount({ stateManagementEnabled: true, items }, "visit_request")).toBe(1);
+    // Without it nothing can be marked read, so every listed alert counts.
+    expect(attentionCount({ stateManagementEnabled: false, items }, "inquiry")).toBe(2);
+    expect(attentionCount(null, "inquiry")).toBe(0);
+  });
+
+  it("names every notification type and accepts only the two bulk states", () => {
+    for (const type of NOTIFICATION_TYPES) expect(notificationTypeLabel(type)).not.toBe("");
+    expect(notificationBulkStateRequestSchema.safeParse({ all: "READ" }).success).toBe(true);
+    expect(notificationBulkStateRequestSchema.safeParse({ all: "DISMISSED" }).success).toBe(true);
+    expect(notificationBulkStateRequestSchema.safeParse({ all: "DELETED" }).success).toBe(false);
+    expect(notificationBulkStateRequestSchema.safeParse({ all: "READ", accountId: "other" }).success).toBe(false);
   });
 });

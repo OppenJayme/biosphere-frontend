@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
+import { useNotificationFeed } from "@/features/notifications/notification-feed";
+import { attentionCount, notificationBadge, type CuratorNotification } from "@/features/notifications/types";
 import {
   ArchiveIcon,
   CalendarIcon,
@@ -26,6 +28,8 @@ type NavItem = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   /** For items that share a page and differ only by ?tab=. */
   tab?: string;
+  /** Shows a count of unread notifications about this kind of record. */
+  badgeFor?: CuratorNotification["recordType"];
 };
 
 // Grouped as in the SRS information architecture (section 3.1.3), with
@@ -43,8 +47,14 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
   {
     label: "Visitors",
     items: [
-      { label: "General Inquiries", href: "/public-website", icon: MailIcon, tab: "inquiries" },
-      { label: "Visit Requests", href: "/public-website?tab=visits", icon: CalendarIcon, tab: "visits" },
+      { label: "General Inquiries", href: "/public-website", icon: MailIcon, tab: "inquiries", badgeFor: "inquiry" },
+      {
+        label: "Visit Requests",
+        href: "/public-website?tab=visits",
+        icon: CalendarIcon,
+        tab: "visits",
+        badgeFor: "visit_request",
+      },
       { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon },
       { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon },
     ],
@@ -71,6 +81,8 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Shared with the bell: marking alerts read or clearing them updates these counts too.
+  const { feed } = useNotificationFeed();
   const isActive = (item: NavItem) => {
     const path = item.href.split("?")[0];
     if (!pathname.startsWith(path)) return false;
@@ -113,6 +125,8 @@ function SidebarContent({
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const active = isActive(item);
+                const unread = item.badgeFor ? attentionCount(feed, item.badgeFor) : 0;
+                const badge = notificationBadge(unread);
                 return (
                   <li key={item.label}>
                     <Link
@@ -120,7 +134,7 @@ function SidebarContent({
                       onClick={onNavigate}
                       title={collapsed ? item.label : undefined}
                       aria-current={active ? "page" : undefined}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-forest-600 ${
+                      className={`relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-forest-600 ${
                         active
                           ? "bg-forest-100 font-semibold text-forest-900"
                           : "font-medium text-zinc-700 hover:bg-sage-100 hover:text-forest-800"
@@ -128,6 +142,22 @@ function SidebarContent({
                     >
                       <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "text-forest-700" : "text-zinc-500"}`} />
                       <span className={collapsed ? "lg:hidden" : ""}>{item.label}</span>
+                      {badge && (
+                        <>
+                          {/* Beside the label; on the collapsed rail it sits on the icon's corner. */}
+                          <span
+                            aria-hidden="true"
+                            className={`ml-auto min-w-5 rounded-full bg-red-600 px-1.5 text-center text-[0.6875rem] font-semibold leading-5 text-white tabular-nums ${
+                              collapsed ? "lg:absolute lg:top-0 lg:right-2 lg:min-w-4 lg:px-1 lg:text-[0.625rem] lg:leading-4" : ""
+                            }`}
+                          >
+                            {badge}
+                          </span>
+                          <span className="sr-only">
+                            , {unread} unread {unread === 1 ? "notification" : "notifications"}
+                          </span>
+                        </>
+                      )}
                     </Link>
                   </li>
                 );

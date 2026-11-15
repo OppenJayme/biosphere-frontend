@@ -7,6 +7,7 @@ import {
   getSpecimenCoverPreview,
   type CoverPreviewResult,
 } from "@/features/specimens/cover-preview-action";
+import { ZoomableImage } from "@/components/ui/ImageViewer";
 
 export function CoverPreviewContent({
   result,
@@ -20,16 +21,13 @@ export function CoverPreviewContent({
   onImageError: () => void;
 }) {
   return (
-    <div className="flex aspect-4/3 flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-sage-100 text-forest-700">
+    <div className="relative flex aspect-4/3 flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-sage-100 text-forest-700">
       {result?.kind === "image" ? (
         // Private signed links bypass image optimization and its shared cache.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={result.signedUrl}
-          alt={result.caption?.trim() || alt}
+        <ZoomableImage
+          image={{ src: result.signedUrl, alt: result.caption?.trim() || alt, caption: result.caption }}
+          fit="contain"
           onError={onImageError}
-          referrerPolicy="no-referrer"
-          className="h-full w-full object-contain"
         />
       ) : (
         <>

@@ -2,12 +2,18 @@ import { SearchIcon, PlusIcon } from "@/components/icons";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { EXHIBIT_STATUSES, EXHIBIT_STATUS_LABELS, type ExhibitStatus } from "@/features/exhibits-qr/types";
 
+/** "" shows every exhibit; "with" and "without" filter on whether an AR model has been uploaded. */
+export type ArFilter = "" | "with" | "without";
+
 export function ExhibitToolbar({
   search,
   onSearchChange,
   status,
   onStatusChange,
   counts,
+  ar,
+  onArChange,
+  arCounts,
   onAddClick,
 }: {
   search: string;
@@ -16,6 +22,10 @@ export function ExhibitToolbar({
   onStatusChange: (value: ExhibitStatus | "") => void;
   /** Exhibits per status, shown on the filter chips. */
   counts: Record<ExhibitStatus, number>;
+  ar: ArFilter;
+  onArChange: (value: ArFilter) => void;
+  /** Exhibits with and without an uploaded AR model, shown on the filter chips. */
+  arCounts: { with: number; without: number };
   onAddClick: () => void;
 }) {
   const total = EXHIBIT_STATUSES.reduce((sum, value) => sum + counts[value], 0);
@@ -42,6 +52,24 @@ export function ExhibitToolbar({
           <PlusIcon className="h-4 w-4" />
           Create exhibit
         </button>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-xs font-medium text-zinc-500">
+          Has AR
+        </span>
+        <FilterChips
+          label="Filter by AR model"
+          chips={[
+            { label: "All", count: total, active: ar === "", onClick: () => onArChange("") },
+            { label: "With AR", count: arCounts.with, active: ar === "with", onClick: () => onArChange("with") },
+            {
+              label: "Without AR",
+              count: arCounts.without,
+              active: ar === "without",
+              onClick: () => onArChange("without"),
+            },
+          ]}
+        />
       </div>
       <div className="relative">
         <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />

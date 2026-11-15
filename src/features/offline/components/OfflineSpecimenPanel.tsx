@@ -144,14 +144,17 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
         </div>
 
         <div className="ml-auto flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => void synchronizeAll()}
-            disabled={!online || isSynchronizing}
+          <ConfirmButton
+            label="Sync now"
+            question="Sync this device with BioSphere now?"
+            detail="Drafts waiting on this device are sent to BioSphere, and the cached records are refreshed."
+            confirmLabel="Sync now"
+            pending={isSynchronizing}
+            pendingLabel="Synchronizing…"
+            disabled={!online}
+            onConfirm={() => void synchronizeAll()}
             className="rounded-lg border border-forest-700 px-3.5 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSynchronizing ? "Synchronizing…" : "Sync now"}
-          </button>
+          />
           <button
             type="button"
             onClick={openNewDraft}
@@ -224,14 +227,15 @@ export function OfflineSpecimenPanel({ ownerId }: { ownerId: string }) {
                       </button>
                     )}
                     {(draft.syncState === "PENDING_SYNC" || draft.syncState === "SYNC_FAILED") && (
-                      <button
-                        type="button"
-                        onClick={() => void retryDraft(draft.clientDraftId)}
+                      <ConfirmButton
+                        label="Retry"
+                        question="Send this draft to BioSphere again?"
+                        confirmLabel="Retry sync"
+                        pending={false}
                         disabled={!canRetry}
+                        onConfirm={() => void retryDraft(draft.clientDraftId)}
                         className="text-xs font-semibold text-forest-800 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline"
-                      >
-                        Retry
-                      </button>
+                      />
                     )}
                     <ConfirmButton
                       label="Remove locally"

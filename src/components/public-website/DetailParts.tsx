@@ -4,7 +4,6 @@
 
 import { useActionState, useId, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
-import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { AlertTriangleIcon, ChatIcon, CheckIcon, ClockIcon, MailIcon, RefreshIcon } from "@/components/icons";
 import type { CuratorActionState } from "@/features/public-submissions/email-form";
 import { formatTimestamp } from "@/features/public-submissions/format";
@@ -42,6 +41,22 @@ export const dangerButtonClasses =
   "inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 disabled:opacity-60";
 export const secondaryButtonClasses =
   "inline-flex w-full items-center justify-center gap-2 rounded-lg border border-forest-700 py-2.5 text-sm font-semibold text-forest-700 hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
+
+/** Compact buttons for a record's action row; each opens a modal. */
+export const actionButtonClasses =
+  "inline-flex items-center justify-center gap-1.5 rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
+export const actionButtonSecondaryClasses =
+  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-forest-700 bg-white px-3.5 py-2 text-sm font-semibold text-forest-700 hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
+
+/** The row of action buttons at the bottom of a record's summary card. */
+export function ActionRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="border-t border-black/5 pt-3">
+      <p className="mb-2 text-xs font-medium text-zinc-500">Actions</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
 
 export function PanelHeading({
   icon: Icon,
@@ -168,16 +183,17 @@ export function VisitorEmailFields({
 
 export type StatusOption = { value: string; label: string; description: string; destructive?: boolean };
 
-/** Changes the workflow status to one of the transitions the backend allows from the current status. */
+/**
+ * Changes the workflow status to one of the transitions the backend allows from the current status.
+ * Shown inside a modal, which supplies the heading.
+ */
 export function StatusChangeForm({
   action,
   options,
-  recordLabel,
   visitorEmail,
 }: {
   action: NoteAction;
   options: StatusOption[];
-  recordLabel: string;
   /** When set, the statuses it accepts email the visitor, and the form offers the email fields. */
   visitorEmail?: { recipient: string; sendsFor: (status: string) => boolean };
 }) {
@@ -191,13 +207,7 @@ export function StatusChangeForm({
   const emailing = visitorEmail?.sendsFor(selected.value) ?? false;
 
   return (
-    <form action={formAction} className={`${panelClasses} space-y-3`}>
-      <PanelHeading
-        icon={RefreshIcon}
-        title="Change status"
-        description={`Move this ${recordLabel} to its next workflow stage.`}
-      />
-
+    <form action={formAction} className="space-y-3">
       {options.length === 1 ? (
         <>
           <input type="hidden" name="status" value={selected.value} />
@@ -269,26 +279,24 @@ export function StatusChangeForm({
   );
 }
 
-/** A curator-written email to the visitor (an inquiry reply or a visit-request message). */
+/**
+ * A curator-written email to the visitor (an inquiry reply or a visit-request message). Shown
+ * inside a modal, which supplies the heading; sending asks for confirmation first.
+ */
 export function EmailVisitorForm({
   action,
   recipient,
-  title,
-  description,
   placeholder,
 }: {
   action: NoteAction;
   recipient: string;
-  title: string;
-  description: string;
   placeholder: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const id = useId();
 
   return (
-    <form action={formAction} className={`${panelClasses} space-y-3`}>
-      <PanelHeading icon={MailIcon} title={title} description={description} />
+    <form action={formAction} className="space-y-3">
       <p className="text-xs text-zinc-600">
         To: <span className="break-all font-medium text-zinc-900">{recipient}</span>
       </p>
@@ -329,31 +337,34 @@ export function EmailVisitorForm({
             Send email
           </>
         }
-        question="Send this email?"
-        detail={`It goes to ${recipient} and is recorded on the timeline. Emails cannot be recalled.`}
-        confirmLabel="Yes, send email"
+        question={`Send this email to ${recipient}?`}
+        detail="It is recorded in the history. Emails cannot be recalled."
+        confirmLabel="Send email"
         pending={pending}
         pendingLabel="Sending email…"
-        className={secondaryButtonClasses}
+        className={primaryButtonClasses}
       />
     </form>
   );
 }
 
-/** Adds an internal curator note (e.g. what a visitor said by phone or in the museum's mailbox). */
+/**
+ * Adds an internal curator note (e.g. what a visitor said by phone or in the museum's mailbox).
+ * Shown inside a modal; saving asks for confirmation first.
+ */
 export function NoteForm({ action }: { action: NoteAction }) {
   const [state, formAction, pending] = useActionState(action, {});
   const id = useId();
 
   return (
-    <form action={formAction} className="space-y-2">
+    <form action={formAction} className="space-y-3">
       <label htmlFor={id} className="text-xs font-medium text-zinc-700">
-        Add an internal note
+        Internal note
       </label>
       <textarea
         id={id}
         name="note"
-        rows={3}
+        rows={4}
         required
         maxLength={NOTE_MAX}
         defaultValue={state.note}
@@ -361,11 +372,20 @@ export function NoteForm({ action }: { action: NoteAction }) {
         className={textareaClasses}
       />
       <ActionError message={state.message} />
-      <button type="submit" disabled={pending} className={secondaryButtonClasses}>
-        <ChatIcon className="h-4 w-4" />
-        {pending ? "Saving note…" : "Save note"}
-      </button>
-      <PendingOverlay pending={pending} label="Saving note…" />
+      <ConfirmButton
+        label={
+          <>
+            <ChatIcon className="h-4 w-4" />
+            Save note
+          </>
+        }
+        question="Add this note?"
+        detail="It is saved to the notes and history for curators only, and is never emailed to the visitor."
+        confirmLabel="Add note"
+        pending={pending}
+        pendingLabel="Saving note…"
+        className={primaryButtonClasses}
+      />
     </form>
   );
 }
@@ -532,7 +552,7 @@ export function MessageThread({
         </h3>
         <p className="mt-1 text-xs text-zinc-500">
           What the visitor wrote and every email to and from them, oldest first. Notes and status changes are
-          under Notes and history.
+          under Notes and History below.
         </p>
       </div>
       <ol className="space-y-2.5">
@@ -624,7 +644,7 @@ function ReplyCheck({ status }: { status: MailboxSyncStatus | null }) {
   }
 
   return (
-    <div className="mt-2 rounded-lg bg-sage-50 px-3 py-2">
+    <div className="rounded-lg bg-sage-50 px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="min-w-0 flex-1 text-[0.6875rem] text-zinc-600">{summary}</p>
         {active && (
@@ -650,7 +670,52 @@ function ReplyCheck({ status }: { status: MailboxSyncStatus | null }) {
   );
 }
 
-/** The record's timeline, oldest first, opened by the visitor's own submission. */
+/** Internal curator notes only, oldest first. History lists them in order with everything else. */
+export function NotesList({
+  entries,
+  currentAccountId,
+}: {
+  entries: CommunicationEntry[] | null;
+  currentAccountId: string | null;
+}) {
+  if (entries === null) {
+    return (
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        Notes could not be loaded. Reload the page to try again.
+      </p>
+    );
+  }
+  const notes = internalNotes(entries);
+  if (notes.length === 0) {
+    return <p className="text-xs text-zinc-500">No notes yet. Record calls and other contact as a note.</p>;
+  }
+  return (
+    <ul className="space-y-2">
+      {notes.map((entry) => (
+        <li key={entry.id} className="rounded-lg bg-sky-50/70 px-3 py-2 ring-1 ring-sky-200">
+          <p className="whitespace-pre-line break-words text-xs text-zinc-800">{entry.message}</p>
+          <p className="mt-1 text-[0.6875rem] text-zinc-500">
+            {entryAuthor(entry, currentAccountId)} · {formatTimestamp(entry.createdAt)}
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** How many internal notes a record has, for the Notes section's summary. */
+export function noteCount(entries: CommunicationEntry[] | null) {
+  return entries ? internalNotes(entries).length : 0;
+}
+
+function internalNotes(entries: CommunicationEntry[]) {
+  return entries.filter((entry) => entry.type === "NOTE");
+}
+
+/**
+ * The record's timeline, oldest first, opened by the visitor's own submission. Shown inside a
+ * collapsible section, which supplies the heading.
+ */
 export function HistoryTimeline({
   submittedAt,
   referredFrom = null,
@@ -670,10 +735,6 @@ export function HistoryTimeline({
 }) {
   return (
     <div>
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-900">
-        <ClockIcon className="h-3.5 w-3.5 text-forest-700" />
-        History
-      </p>
       <ReplyCheck status={mailboxStatus} />
       {entries === null && (
         <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">

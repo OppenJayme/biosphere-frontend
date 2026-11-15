@@ -32,6 +32,7 @@ import { hasCampusEntrySummary, isUpcomingVisit } from "@/features/visit-request
 import { ApiError } from "@/lib/api-client";
 import { getAccountInfo, verifySession } from "@/lib/session";
 import { PageHeader } from "@/components/curator/PageHeader";
+import { FlashToast } from "@/components/ui/toast";
 
 // The page serves two menu items, so the browser tab follows the section shown.
 export async function generateMetadata({ searchParams }: PublicWebsitePageProps): Promise<Metadata> {
@@ -255,18 +256,12 @@ export default async function PublicWebsitePage({ searchParams }: PublicWebsiteP
         />
       )}
 
-      {notice !== undefined && (notice || emailNotice) && (
-        <div
-          role={emailNotice && !emailNotice.ok ? "alert" : "status"}
-          className={`rounded-lg border px-4 py-3 text-sm font-medium ${
-            emailNotice && !emailNotice.ok
-              ? "border-amber-300 bg-amber-50 text-amber-950"
-              : "border-emerald-200 bg-emerald-50 text-emerald-900"
-          }`}
-        >
-          {[notice, emailNotice?.text].filter(Boolean).join(" ")}
-        </div>
-      )}
+      {/* The outcome of the last action, shown once as a toast and then removed from the URL. */}
+      <FlashToast
+        message={notice !== undefined ? [notice, emailNotice?.text].filter(Boolean).join(" ") || null : null}
+        tone={emailNotice && !emailNotice.ok ? "warning" : "success"}
+        params="notice,email"
+      />
 
       <PublicWebsiteWorkspace
         key={listFilterKey(query)}

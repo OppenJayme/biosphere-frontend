@@ -24,6 +24,7 @@ import {
 } from "@/features/specimens/import-types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
 import { CATALOGING_FILE_FEEDBACK_CLASSES } from "@/features/specimens/control-styles";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 function rowIdentity(row: SpecimenImportPreviewRow) {
   return (
@@ -363,15 +364,17 @@ export function SpecimenImportWorkspace() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4">
             <p className="text-xs text-zinc-500">{selected.size} row{selected.size === 1 ? "" : "s"} selected</p>
-            <button
-              type="button"
-              onClick={handleCommit}
-              disabled={isCommitting || isPreviewing || selected.size === 0 || (selectedWarnings > 0 && !warningsAcknowledged)}
+            <ConfirmButton
+              label={commitResult?.failedCount ? "Retry failed rows" : "Import selected rows"}
+              question={`Import ${selected.size} selected row${selected.size === 1 ? "" : "s"}?`}
+              detail="A specimen record is created for each selected row."
+              confirmLabel="Import rows"
+              pending={isCommitting}
+              pendingLabel="Importing specimens…"
+              disabled={isPreviewing || selected.size === 0 || (selectedWarnings > 0 && !warningsAcknowledged)}
+              onConfirm={() => void handleCommit()}
               className="rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:pointer-events-none disabled:opacity-50"
-            >
-              {commitResult?.failedCount ? "Retry failed rows" : "Import selected rows"}
-            </button>
-            <PendingOverlay pending={isCommitting} label="Importing specimens…" />
+            />
           </div>
         </section>
       )}

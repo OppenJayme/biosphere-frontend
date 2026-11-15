@@ -42,6 +42,7 @@ import {
   type ExhibitMedia,
   type ExhibitRow,
 } from "@/features/exhibits-qr/types";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 type Tab = "Public Content" | "Images";
 
@@ -271,14 +272,15 @@ function MediaDetailsEditor({
       <div className="flex items-center justify-between gap-3">
         <p className="text-[0.6875rem] text-zinc-500">Lower order numbers show first, after the cover photo.</p>
         <span className="flex shrink-0 gap-2 text-xs">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={save}
+          <ConfirmButton
+            label="Save"
+            question="Save these image details?"
+            confirmLabel="Save details"
+            pending={pending}
+            pendingLabel="Saving image details…"
+            onConfirm={save}
             className="rounded-lg bg-forest-700 px-3 py-1.5 font-semibold text-white hover:bg-forest-800 disabled:opacity-50"
-          >
-            {pending ? "Saving…" : "Save"}
-          </button>
+          />
           <button type="button" disabled={pending} onClick={onCancel} className="px-1 text-zinc-500 hover:underline">
             Cancel
           </button>
@@ -294,7 +296,6 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
   const [media, setMedia] = useState<ExhibitMediaResult | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [removing, startRemove] = useTransition();
   const [saving, startSave] = useTransition();
@@ -353,7 +354,6 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
     startRemove(async () => {
       const result = await removeExhibitMediaAction(exhibit.id, mediaId, exhibit.publicSlug);
       setNotice({ ok: Boolean(result.ok), message: result.message ?? "The image could not be removed." });
-      setConfirmId(null);
       if (result.ok) setReloadKey((key) => key + 1);
     });
   }
@@ -387,15 +387,21 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
         </label>
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-zinc-500">JPEG, PNG, or WebP, up to 15 MB.</p>
-          <button
-            type="button"
-            onClick={upload}
-            disabled={uploading}
+          <ConfirmButton
+            label={
+              <>
+                <UploadIcon className="h-3.5 w-3.5" />
+                Upload
+              </>
+            }
+            question="Upload this image?"
+            detail="It is added to the exhibit. If the exhibit is published, visitors can see it."
+            confirmLabel="Upload image"
+            pending={uploading}
+            pendingLabel="Uploading image…"
+            onConfirm={() => void upload()}
             className="inline-flex items-center gap-1.5 rounded-lg border border-black/15 px-3.5 py-2 text-xs font-semibold text-zinc-700 hover:bg-sage-100 disabled:opacity-50"
-          >
-            <UploadIcon className="h-3.5 w-3.5" />
-            {uploading ? "Uploading…" : "Upload"}
-          </button>
+          />
         </div>
       </div>
 
@@ -439,51 +445,42 @@ function ImagesTab({ exhibit }: { exhibit: ExhibitRow }) {
                       Cover photo
                     </span>
                   ) : (
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => saveMedia(item.id, { isCover: true })}
+                    <ConfirmButton
+                      label={
+                        <>
+                          <StarIcon className="h-3 w-3" />
+                          Make cover
+                        </>
+                      }
+                      question="Make this the cover image?"
+                      detail="It replaces the current cover and shows first on the exhibit page."
+                      confirmLabel="Make cover"
+                      pending={saving}
+                      pendingLabel="Saving cover image…"
+                      onConfirm={() => saveMedia(item.id, { isCover: true })}
                       className="flex shrink-0 items-center gap-1 rounded-full border border-black/10 px-2.5 py-1 text-[0.6875rem] font-medium text-zinc-600 hover:bg-sage-100 disabled:opacity-50"
-                    >
-                      <StarIcon className="h-3 w-3" />
-                      Make cover
-                    </button>
+                    />
                   )}
                   <button
                     type="button"
-                    onClick={() => {
-                      setConfirmId(null);
-                      setEditingId(item.id);
-                    }}
+                    onClick={() => setEditingId(item.id)}
                     aria-label={`Edit ${mediaName(item)}`}
                     className="shrink-0 text-zinc-400 hover:text-forest-700"
                   >
                     <PencilIcon className="h-4 w-4" />
                   </button>
-                  {confirmId === item.id ? (
-                    <span className="flex shrink-0 items-center gap-2 text-[0.6875rem]">
-                      <button
-                        type="button"
-                        disabled={removing}
-                        onClick={() => remove(item.id)}
-                        className="font-semibold text-red-600 hover:underline disabled:opacity-50"
-                      >
-                        {removing ? "Removing…" : "Remove"}
-                      </button>
-                      <button type="button" onClick={() => setConfirmId(null)} className="text-zinc-500 hover:underline">
-                        Cancel
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmId(item.id)}
-                      aria-label={`Remove ${mediaName(item)}`}
-                      className="shrink-0 text-zinc-400 hover:text-red-600"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  )}
+                  <ConfirmButton
+                    ariaLabel={`Remove ${mediaName(item)}`}
+                    label={<TrashIcon className="h-4 w-4" />}
+                    question="Remove this image?"
+                    detail={`${mediaName(item)} is removed from the exhibit and its public page. This cannot be undone.`}
+                    confirmLabel="Remove image"
+                    tone="danger"
+                    pending={removing}
+                    pendingLabel="Removing image…"
+                    onConfirm={() => remove(item.id)}
+                    className="shrink-0 text-zinc-400 hover:text-red-600 disabled:opacity-50"
+                  />
                 </div>
               ),
             )}
@@ -556,11 +553,21 @@ export function CreateExhibitModal({
   }
 
   const canSave = editing || specimen !== null;
+  const formRef = useRef<HTMLFormElement>(null);
+  const intentRef = useRef<HTMLInputElement>(null);
+
+  /** Runs after the confirmation: submits the exhibit form, validating it like a normal submit. */
+  function submitExhibit(intent?: "draft" | "publish") {
+    if (intent && intentRef.current) intentRef.current.value = intent;
+    formRef.current?.requestSubmit();
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8 sm:items-center">
       <div role="dialog" aria-modal="true" aria-labelledby="exhibit-modal-title" className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
-        <form action={editing ? updateAction : createAction}>
+        <form ref={formRef} action={editing ? updateAction : createAction}>
+          {/* Set by the confirmed button just before it submits: "draft" or "publish". */}
+          {!editing && <input ref={intentRef} type="hidden" name="intent" defaultValue="draft" />}
           <div className="flex items-start justify-between gap-4 border-b border-black/10 px-6 py-4">
             <div>
               <h2 id="exhibit-modal-title" className="text-base font-semibold text-zinc-900">
@@ -765,33 +772,40 @@ export function CreateExhibitModal({
                 Cancel
               </button>
               {editing ? (
-                <button
-                  type="submit"
-                  disabled={pending}
+                <ConfirmButton
+                  label="Save Changes"
+                  question="Save changes to this exhibit?"
+                  detail="If the exhibit is published, visitors see the changes on its public page straight away."
+                  confirmLabel="Save changes"
+                  pending={pending}
+                  pendingLabel="Saving exhibit…"
+                  onConfirm={() => submitExhibit()}
                   className="rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {pending ? "Saving…" : "Save Changes"}
-                </button>
+                />
               ) : (
                 <>
-                  <button
-                    type="submit"
-                    name="intent"
-                    value="draft"
-                    disabled={!canSave || pending}
+                  <ConfirmButton
+                    label="Save as Unpublished"
+                    question="Save this exhibit as unpublished?"
+                    detail="It is created but not visible to visitors until you publish it."
+                    confirmLabel="Save exhibit"
+                    pending={pending}
+                    pendingLabel="Saving exhibit…"
+                    disabled={!canSave}
+                    onConfirm={() => submitExhibit("draft")}
                     className="rounded-lg border border-forest-700 px-3.5 py-2 text-sm font-semibold text-forest-700 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {pending ? "Saving…" : "Save as Unpublished"}
-                  </button>
-                  <button
-                    type="submit"
-                    name="intent"
-                    value="publish"
-                    disabled={!canSave || pending}
+                  />
+                  <ConfirmButton
+                    label="Create & Publish"
+                    question="Create and publish this exhibit?"
+                    detail="Its public page and QR code start working for visitors straight away."
+                    confirmLabel="Create and publish"
+                    pending={pending}
+                    pendingLabel="Publishing exhibit…"
+                    disabled={!canSave}
+                    onConfirm={() => submitExhibit("publish")}
                     className="rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Create &amp; Publish
-                  </button>
+                  />
                 </>
               )}
             </div>
