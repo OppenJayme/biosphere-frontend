@@ -119,9 +119,9 @@ self.addEventListener("push", (event) => {
     (async () => {
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of windows) client.postMessage({ type: "BIOSPHERE_NOTIFICATIONS_CHANGED" });
-      // A curator looking at BioSphere sees the bell update; no system alert needed.
-      if (windows.some((client) => client.visibilityState === "visible" && client.focused)) return;
-
+      // Always show a notification, even with BioSphere in front: Safari (and
+      // iOS Home Screen apps) can revoke a subscription after silent pushes.
+      // The tag below replaces an earlier alert for the same item.
       const item = await newestPushAlert();
       await self.registration.showNotification("BioSphere", {
         body: item

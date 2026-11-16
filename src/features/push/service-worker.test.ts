@@ -99,12 +99,12 @@ describe("service worker push", () => {
     }
   });
 
-  it("skips the system alert while a BioSphere tab is in front", async () => {
+  it("still shows the system alert while a BioSphere tab is in front, so Safari never sees a silent push", async () => {
     const tab = client({ visibilityState: "visible", focused: true });
     const sw = load([tab], feed([replyAlert]));
     await sw.dispatch("push");
     expect(tab.postMessage).toHaveBeenCalled();
-    expect(sw.showNotification).not.toHaveBeenCalled();
+    expect(sw.showNotification).toHaveBeenCalledTimes(1);
   });
 
   it("opens the record in an existing tab, or a new one", async () => {
