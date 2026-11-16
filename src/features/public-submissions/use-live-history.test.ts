@@ -39,6 +39,8 @@ let doc: EventTarget & { visibilityState: string };
 let browser: EventTarget & { setInterval: typeof setInterval; clearInterval: typeof clearInterval };
 
 function activate(kind: "visit" | "inquiry", id: string, initial: History) {
+  // React is mocked above, so this helper drives the hook directly rather than rendering it.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const value = useLiveHistory(kind, id, initial);
   const dispose = hook.effect?.();
   if (typeof dispose !== "function") throw new Error("Polling effect was not installed");
