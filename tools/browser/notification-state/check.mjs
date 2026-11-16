@@ -44,7 +44,11 @@ export async function checkBell(page, bundle) {
   await page.context().route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (url.origin !== origin || url.search) return route.abort();
+    // The feed read asks for ?limit=N; any other query string is unexpected.
+    const feedRead =
+      url.pathname === "/api/notifications" &&
+      [...url.searchParams.keys()].every((key) => key === "limit");
+    if (url.origin !== origin || (url.search && !feedRead)) return route.abort();
     if (url.pathname === "/" && request.method() === "GET") {
       return route.fulfill({
         contentType: "text/html",
@@ -110,25 +114,42 @@ export async function checkBell(page, bundle) {
     await page.goto(origin);
     await page.addScriptTag({ path: bundle });
   }
+  // Per-card actions live in each card's "..." menu (portalled outside the panel).
+  const menuButton = (title, reference) =>
+    page.getByRole("button", {
+      name: `More actions: ${title} (${reference})`,
+      exact: true,
+    });
+  const menuItem = (label) =>
+    page.getByRole("menuitem", { name: label, exact: true });
+  async function choose(title, reference, label) {
+    await menuButton(title, reference).click();
+    await menuItem(label).click();
+  }
+  const readA = () => choose("New general inquiry", "55555555", "Mark as read");
+
   await mount();
   await page
     .getByRole("button", { name: "Notifications, 2 unread", exact: true })
     .click();
-  await page
-    .getByRole("button", {
-      name: "Mark as read: New general inquiry (55555555)",
-      exact: true,
-    })
-    .click();
+  await readA();
   await page
     .getByRole("button", { name: "Notifications, 1 unread", exact: true })
     .waitFor();
-  await page
-    .getByRole("button", {
-      name: "Dismiss: New visit request (66666666)",
-      exact: true,
-    })
-    .click();
+  // Choosing from a card menu must leave the panel open, and a read card's
+  // menu offers only Dismiss.
+  await menuButton("New general inquiry", "55555555").click();
+  if (
+    (await menuItem("Mark as read").count()) ||
+    !(await menuItem("Dismiss").isVisible())
+  ) {
+    throw new Error("Read card menu offered the wrong actions");
+  }
+  await page.keyboard.press("Escape");
+  if (!(await page.getByRole("region", { name: "Notifications" }).isVisible())) {
+    throw new Error("Escape in a card menu closed the whole panel");
+  }
+  await choose("New visit request", "66666666", "Dismiss");
   await page
     .getByRole("button", { name: "Notifications", exact: true })
     .waitFor();
@@ -152,17 +173,14 @@ export async function checkBell(page, bundle) {
     await page
       .getByRole("button", { name: "Notifications, 2 unread", exact: true })
       .click();
-    const read = page.getByRole("button", {
-      name: "Mark as read: New general inquiry (55555555)",
-      exact: true,
-    });
-    await read.click();
+    await readA();
     await page
       .getByRole("alert")
       .filter({ hasText: "could not be confirmed" })
       .waitFor();
+    await menuButton("New general inquiry", "55555555").click();
     if (
-      !(await read.isEnabled()) ||
+      (await menuItem("Mark as read").getAttribute("data-disabled")) !== null ||
       writes !== 1 ||
       (await page
         .getByText("INTERNAL_SYNTHETIC_MARKER", { exact: false })
@@ -172,11 +190,12 @@ export async function checkBell(page, bundle) {
         "Failed update lost controls, leaked internals or replayed automatically",
       );
     }
+    await page.keyboard.press("Escape");
     await page
       .getByRole("button", { name: "Notifications, 2 unread", exact: true })
       .waitFor();
     mode = "success";
-    await read.click();
+    await readA();
     await page
       .getByRole("button", { name: "Notifications, 1 unread", exact: true })
       .waitFor();
@@ -186,21 +205,20 @@ export async function checkBell(page, bundle) {
   await page
     .getByRole("button", { name: "Notifications, 2 unread", exact: true })
     .click();
-  const pendingRead = page.getByRole("button", {
-    name: "Mark as read: New general inquiry (55555555)",
-    exact: true,
-  });
-  await pendingRead.click();
+  await readA();
   await page
     .getByRole("status")
     .filter({ hasText: "Updating notification" })
     .waitFor();
-  if (await pendingRead.isEnabled())
+  await menuButton("New general inquiry", "55555555").click();
+  const pendingRead = menuItem("Mark as read");
+  if ((await pendingRead.getAttribute("data-disabled")) === null)
     throw new Error("Pending mutation was still enabled");
-  await pendingRead.evaluate((button) => {
-    button.click();
-    button.click();
+  await pendingRead.evaluate((item) => {
+    item.click();
+    item.click();
   });
+  await page.keyboard.press("Escape");
   releaseWrite();
   await page
     .getByRole("button", { name: "Notifications, 1 unread", exact: true })
@@ -218,12 +236,7 @@ export async function checkBell(page, bundle) {
   await page
     .getByRole("button", { name: "Notifications, 2 unread", exact: true })
     .click();
-  await page
-    .getByRole("button", {
-      name: "Mark as read: New general inquiry (55555555)",
-      exact: true,
-    })
-    .click();
+  await readA();
   await page
     .getByRole("button", { name: "Notifications, 1 unread", exact: true })
     .waitFor();
@@ -251,9 +264,7 @@ export async function checkBell(page, bundle) {
       exact: true,
     })
     .click();
-  if (
-    await page.getByRole("button", { name: /^(Mark as read|Dismiss):/ }).count()
-  ) {
+  if (await page.getByRole("button", { name: /^More actions:/ }).count()) {
     throw new Error("State controls appeared for a legacy/disabled backend");
   }
   if (errors.length)

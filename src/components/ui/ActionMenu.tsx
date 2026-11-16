@@ -32,6 +32,7 @@ export function ActionMenu({
   className,
   align = "end",
   disabled = false,
+  onOpenChange,
 }: {
   /** Content of the button that opens the menu. */
   trigger: ReactNode;
@@ -42,10 +43,16 @@ export function ActionMenu({
   className: string;
   align?: "start" | "center" | "end";
   disabled?: boolean;
+  /**
+   * Called when the menu opens or closes. A popover that hosts this menu needs it: the menu is
+   * portalled outside the popover, so its own outside-click and Escape handling must stand down
+   * while the menu is open.
+   */
+  onOpenChange?: (open: boolean) => void;
 }) {
   const chosen = useRef<(() => void) | null>(null);
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root onOpenChange={onOpenChange}>
       <DropdownMenu.Trigger aria-label={label} disabled={disabled} className={className}>
         {trigger}
       </DropdownMenu.Trigger>
