@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { applicationServerKey, pushConfigSchema } from "./types";
+import { applicationServerKey, pushConfigSchema, usesServerKey } from "./types";
 
 export type PushDeviceState =
   /** Server push is off, or the check has not finished: show nothing. */
@@ -67,12 +67,24 @@ export function usePushDevice() {
           setState({ status: "blocked" });
           return;
         }
-        const subscription = await registration.pushManager.getSubscription();
+        let subscription = await registration.pushManager.getSubscription();
         if (!active) return;
         if (subscription && Notification.permission === "granted") {
+          const currentKey = config.data.publicKey;
+          if (!usesServerKey(subscription.options.applicationServerKey, currentKey)) {
+            // The server's VAPID keys were rotated: the old subscription can never receive a
+            // push again. Permission is already granted, so re-subscribe with the new key.
+            const stale = subscription.endpoint;
+            await subscription.unsubscribe();
+            await send("DELETE", stale);
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: applicationServerKey(currentKey),
+            });
+          }
           // Keep the server copy current (and owned by whoever is signed in now).
-          await send("POST", subscription.endpoint);
-          if (active) setState({ status: "on" });
+          const message = await send("POST", subscription.endpoint);
+          if (active) setState(message ? { status: "off" } : { status: "on" });
         } else {
           setState({ status: "off" });
         }

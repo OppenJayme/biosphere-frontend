@@ -25,3 +25,15 @@ export function applicationServerKey(base64url: string): Uint8Array<ArrayBuffer>
   for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
   return bytes;
 }
+
+/**
+ * Whether a browser subscription was made with the server's current VAPID public key. After a
+ * key rotation the old subscription can never receive a push, so the page re-subscribes.
+ * A browser that does not report the key is assumed to match rather than churned on every load.
+ */
+export function usesServerKey(subscriptionKey: ArrayBuffer | null, serverKey: string): boolean {
+  if (!subscriptionKey) return true;
+  const current = applicationServerKey(serverKey);
+  const existing = new Uint8Array(subscriptionKey);
+  return existing.length === current.length && existing.every((byte, index) => byte === current[index]);
+}
