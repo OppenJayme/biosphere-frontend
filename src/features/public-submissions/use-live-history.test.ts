@@ -38,8 +38,10 @@ const fetcher = vi.fn<typeof fetch>();
 let doc: EventTarget & { visibilityState: string };
 let browser: EventTarget & { setInterval: typeof setInterval; clearInterval: typeof clearInterval };
 
-function activate(kind: "visit" | "inquiry", id: string, initial: History) {
-  const value = useLiveHistory(kind, id, initial);
+function activate(kind: "visit" | "inquiry", id: string, initial: History, expectedEntryIds: string[] = []) {
+  // React is mocked above, so this helper drives the hook directly rather than rendering it.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const value = useLiveHistory(kind, id, initial, expectedEntryIds);
   const dispose = hook.effect?.();
   if (typeof dispose !== "function") throw new Error("Polling effect was not installed");
   return { value, dispose };
@@ -154,5 +156,33 @@ describe("automatic curator history refresh", () => {
     resolve(Response.json([reply]));
     await vi.advanceTimersByTimeAsync(0);
     expect(useLiveHistory("visit", visitId, initial)).toBe(initial);
+  });
+});
+
+describe("bell-driven conversation refresh", () => {
+  it("fetches at once when the bell lists a reply the open conversation does not show yet", async () => {
+    const initial: History = [];
+    fetcher.mockResolvedValueOnce(Response.json([reply]));
+    const { dispose } = activate("visit", visitId, initial, [reply.id]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][0]).toBe("/api/public-submissions/history/visit/" + visitId);
+    expect(useLiveHistory("visit", visitId, initial, [reply.id])).toEqual([reply]);
+    dispose();
+  });
+
+  it("waits for the normal poll when the listed reply is already on screen", async () => {
+    const { dispose } = activate("visit", visitId, [reply], [reply.id]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).not.toHaveBeenCalled();
+    dispose();
+  });
+
+  it("does not fetch at once for a hidden tab", async () => {
+    doc.visibilityState = "hidden";
+    const { dispose } = activate("visit", visitId, [], [reply.id]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).not.toHaveBeenCalled();
+    dispose();
   });
 });
