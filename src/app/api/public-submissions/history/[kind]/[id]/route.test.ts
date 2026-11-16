@@ -49,7 +49,8 @@ describe("curator conversation refresh route", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await response.json()).toEqual([entry]);
-    expect(selected).toHaveBeenCalledExactlyOnceWith(id);
+    expect(selected).toHaveBeenCalledTimes(1);
+    expect(selected).toHaveBeenCalledWith(id);
     expect(other).not.toHaveBeenCalled();
   });
 
