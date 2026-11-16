@@ -8,9 +8,13 @@ import {
   BellIcon,
   CalendarIcon,
   ChatIcon,
+  CheckIcon,
   ClipboardIcon,
+  CloseIcon,
+  DotsIcon,
   MoveIcon,
 } from "@/components/icons";
+import { ActionMenu, type ActionMenuItem } from "@/components/ui/ActionMenu";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { notify } from "@/components/ui/toast";
 import { useNotificationFeed } from "@/features/notifications/notification-feed";
@@ -62,6 +66,13 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
     useNotificationFeed();
   const [open, setOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  // True while a card's "..." menu is open. The menu is portalled outside the panel, so the
+  // panel's own Escape and outside-click handling must wait until it closes. A ref, not state:
+  // the menu closes during the same key or pointer event the panel's listeners then see.
+  const cardMenuOpen = useRef(false);
+  const setCardMenuOpen = (next: boolean) => {
+    cardMenuOpen.current = next;
+  };
   const panelId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -89,13 +100,16 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      // While the "Clear all" confirmation is open, Escape belongs to that dialog.
-      if (event.key === "Escape" && !confirmClear) {
+      // While the "Clear all" confirmation or a card menu is open, Escape closes that first.
+      // Radix marks the Escape it used to close a menu as handled (defaultPrevented).
+      if (event.key === "Escape" && !event.defaultPrevented && !confirmClear && !cardMenuOpen.current) {
         setOpen(false);
         buttonRef.current?.focus();
       }
     };
     const onPointerDown = (event: PointerEvent) => {
+      // A click on (or away from) an open card menu only closes the menu.
+      if (cardMenuOpen.current) return;
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
@@ -256,61 +270,102 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
           )}
           {feed && feed.items.length > 0 && (
             <ul className="max-h-96 divide-y divide-black/5 overflow-y-auto">
-              {feed.items.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={notificationHref(item)}
-                    onClick={() => setOpen(false)}
-                    className={`flex gap-3 px-4 py-3 text-sm hover:bg-sage-50 focus-visible:bg-sage-50 focus-visible:outline-none ${
-                      isFailureNotification(item.type)
-                        ? "bg-amber-50/60"
-                        : ""
-                    }`}
+              {feed.items.map((item) => {
+                // Read state exists only when per-curator state is on; without it every
+                // item is simply pending work, so nothing is highlighted and there is no menu.
+                const managed = feed.stateManagementEnabled;
+                const unread = managed && !item.readAt;
+                const failure = isFailureNotification(item.type);
+                const menuItems: ActionMenuItem[] = [
+                  ...(unread
+                    ? [
+                        {
+                          label: "Mark as read",
+                          icon: CheckIcon,
+                          disabled: updating !== null,
+                          onSelect: () => void markOne(item, "READ"),
+                        },
+                      ]
+                    : []),
+                  {
+                    label: "Dismiss",
+                    icon: CloseIcon,
+                    disabled: updating !== null,
+                    onSelect: () => void markOne(item, "DISMISSED"),
+                  },
+                ];
+                // Unread cards are tinted (amber for failures) and keep it on hover; read cards
+                // are plain, with failures still faintly amber.
+                const tone = unread
+                  ? failure
+                    ? "bg-amber-50 hover:bg-amber-100/70 focus-visible:bg-amber-100/70"
+                    : "bg-forest-50 hover:bg-forest-100/70 focus-visible:bg-forest-100/70"
+                  : `${failure ? "bg-amber-50/40" : ""} hover:bg-sage-50 focus-visible:bg-sage-50`;
+                return (
+                  <li
+                    key={item.id}
+                    className={`group relative ${updating === item.id ? "opacity-60" : ""}`}
                   >
-                    <span className="mt-0.5 shrink-0">
-                      <ItemIcon item={item} />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-medium text-zinc-900">
-                        {item.title}
+                    <Link
+                      href={notificationHref(item)}
+                      onClick={() => setOpen(false)}
+                      className={`flex gap-3 py-3 pl-4 text-sm focus-visible:outline-none ${
+                        managed ? "pr-[4.5rem]" : "pr-4"
+                      } ${tone}`}
+                    >
+                      <span className="mt-0.5 shrink-0">
+                        <ItemIcon item={item} />
                       </span>
-                      <span className="block text-xs text-zinc-500">
-                        {notificationTypeLabel(item.type)} · {formatTimestamp(item.createdAt)}
-                      </span>
-                    </span>
-                  </Link>
-                  {feed.stateManagementEnabled && (
-                    <div className="flex items-center gap-3 px-4 pb-3 text-xs">
-                      {item.readAt ? (
-                        <span className="text-zinc-500">Read</span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={updating !== null}
-                          // The reference stays in the accessible name only, to tell same-titled alerts apart.
-                          aria-label={`Mark as read: ${item.title} (${item.referenceCode})`}
-                          onClick={() => void markOne(item, "READ")}
-                          className="rounded px-2 py-1 font-semibold text-forest-800 hover:bg-sage-100 focus-visible:outline-2 disabled:opacity-50"
+                      <span className="min-w-0">
+                        <span
+                          className={`block ${
+                            !managed
+                              ? "font-medium text-zinc-900"
+                              : unread
+                                ? "font-semibold text-zinc-900"
+                                : "text-zinc-700"
+                          }`}
                         >
-                          Mark as read
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        disabled={updating !== null}
-                        aria-label={`Dismiss: ${item.title} (${item.referenceCode})`}
-                        onClick={() => void markOne(item, "DISMISSED")}
-                        className="rounded px-2 py-1 font-semibold text-zinc-700 hover:bg-sage-100 focus-visible:outline-2 disabled:opacity-50"
-                      >
-                        Dismiss
-                      </button>
-                      {updating === item.id && (
-                        <span role="status">Updating notification…</span>
-                      )}
-                    </div>
-                  )}
-                </li>
-              ))}
+                          {unread && <span className="sr-only">Unread: </span>}
+                          {item.title}
+                        </span>
+                        <span
+                          className={`block text-xs ${
+                            unread ? "font-semibold text-forest-700" : "text-zinc-500"
+                          }`}
+                        >
+                          {notificationTypeLabel(item.type)} · {formatTimestamp(item.createdAt)}
+                        </span>
+                      </span>
+                    </Link>
+                    {managed && (
+                      // Sits over the card's right edge; only the menu button takes clicks, so
+                      // the rest of the card still opens the record.
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2">
+                        <ActionMenu
+                          trigger={<DotsIcon className="h-4 w-4 rotate-90" />}
+                          // The reference stays in the accessible name only, to tell same-titled alerts apart.
+                          label={`More actions: ${item.title} (${item.referenceCode})`}
+                          items={menuItems}
+                          onOpenChange={setCardMenuOpen}
+                          // Shown on hover or keyboard focus, like a social feed; always shown
+                          // on touch screens, which have no hover.
+                          className="pointer-events-auto rounded-full border border-black/10 bg-white p-1.5 text-zinc-600 opacity-0 shadow-sm transition-opacity hover:bg-sage-100 hover:text-forest-800 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-forest-700 group-hover:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+                        />
+                        <span
+                          aria-hidden="true"
+                          className={`h-2.5 w-2.5 rounded-full ${unread ? "bg-forest-700" : ""}`}
+                        />
+                      </div>
+                    )}
+                    {updating === item.id && (
+                      <span role="status" className="sr-only">
+                        Updating notification…
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
           {actionError && (
