@@ -16,9 +16,24 @@ type Snapshot = {
  * Refresh only the selected curator conversation, not the entire dashboard.
  * Mailbox import runs independently on the NestJS backend. Failed polls retain
  * the last known history; changing records never displays another record's mail.
+ *
+ * `expectedEntryIds` are reply entries the bell already lists for this record. When one is not
+ * on screen yet, the conversation is fetched at once instead of waiting for the next poll. A
+ * reply that still does not appear is not refetched in a loop: the effect only reruns when the
+ * set of missing ids changes.
  */
-export function useLiveHistory(kind: Kind | null, id: string | null, initial: CommunicationEntry[] | null) {
+export function useLiveHistory(
+  kind: Kind | null,
+  id: string | null,
+  initial: CommunicationEntry[] | null,
+  expectedEntryIds: readonly string[] = [],
+) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+
+  // A new server-rendered history wins over any snapshot from a previous render.
+  const shown =
+    snapshot?.kind === kind && snapshot.id === id && snapshot.baseline === initial ? snapshot.history : initial;
+  const missing = expectedEntryIds.filter((entryId) => !shown?.some((entry) => entry.id === entryId)).join(",");
 
   useEffect(() => {
     if (!kind || !id) return;
@@ -55,6 +70,7 @@ export function useLiveHistory(kind: Kind | null, id: string | null, initial: Co
       }
     };
 
+    if (missing) void refresh();
     const timer = window.setInterval(() => void refresh(), REFRESH_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") void refresh();
@@ -68,10 +84,7 @@ export function useLiveHistory(kind: Kind | null, id: string | null, initial: Co
       window.removeEventListener("online", onVisible);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [kind, id, initial]);
+  }, [kind, id, initial, missing]);
 
-  // A new server-rendered history wins over any snapshot from a previous render.
-  return snapshot?.kind === kind && snapshot.id === id && snapshot.baseline === initial
-    ? snapshot.history
-    : initial;
+  return shown;
 }

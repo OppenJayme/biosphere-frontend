@@ -197,3 +197,8 @@ export function useNotificationFeed() {
   if (!value) throw new Error("useNotificationFeed must be used inside NotificationFeedProvider.");
   return value;
 }
+
+/** For components that can also render outside the curator chrome: null when there is no feed. */
+export function useOptionalNotificationFeed() {
+  return useContext(NotificationFeedContext);
+}

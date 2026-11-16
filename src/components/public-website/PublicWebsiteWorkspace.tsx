@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from "@/components/icons";
 import type { Inquiry } from "@/features/inquiries/types";
 import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
+import { useOptionalNotificationFeed } from "@/features/notifications/notification-feed";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
+import { historySignature, replyEntryIdsFor } from "@/features/public-submissions/reply-alerts";
 import { useLiveHistory } from "@/features/public-submissions/use-live-history";
 import { hasListFilters, publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
 import type { CampusEntrySummary, VisitRequest } from "@/features/visit-requests/types";
@@ -95,7 +97,30 @@ export function PublicWebsiteWorkspace({
   // curator where they are.
   const managementRef = useRef<HTMLElement>(null);
   const selectedId = selection?.record.id;
-  const liveHistory = useLiveHistory(selection?.kind ?? null, selectedId ?? null, selection?.history ?? null);
+  const selectedKind = selection?.kind ?? null;
+
+  // The bell and the open conversation keep each other current: a reply the bell lists for this
+  // record is fetched at once, and a change in this conversation (a new reply, or a curator
+  // answering one) refreshes the bell instead of waiting for its next poll.
+  const notificationFeed = useOptionalNotificationFeed();
+  const refreshNotifications = notificationFeed?.refresh;
+  const liveHistory = useLiveHistory(
+    selectedKind,
+    selectedId ?? null,
+    selection?.history ?? null,
+    replyEntryIdsFor(notificationFeed?.feed?.items, selectedKind, selectedId ?? null),
+  );
+  const conversationKey = selectedId ? `${selectedKind}:${selectedId}` : null;
+  const conversationSignature = historySignature(liveHistory);
+  const seenConversation = useRef({ key: conversationKey, signature: conversationSignature });
+  useEffect(() => {
+    const seen = seenConversation.current;
+    seenConversation.current = { key: conversationKey, signature: conversationSignature };
+    if (conversationKey && seen.key === conversationKey && seen.signature !== conversationSignature) {
+      void refreshNotifications?.();
+    }
+  }, [conversationKey, conversationSignature, refreshNotifications]);
+
   const previousSelectedId = useRef(selectedId);
   const showManagement = useCallback(() => {
     managementRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
