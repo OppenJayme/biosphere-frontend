@@ -154,12 +154,14 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
           aria-label="Notifications"
           className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg"
         >
-          <div className="flex items-baseline justify-between border-b border-black/10 px-4 py-3">
+          {/* Summary sits under the title: it grows with each alert kind and
+              wraps, so side by side it ran into the title. */}
+          <div className="border-b border-black/10 px-4 py-3">
             <p className="text-sm font-semibold text-forest-900">
               Notifications
             </p>
             {feed && (
-              <p className="text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs leading-snug text-zinc-500">
                 {feed.pendingInquiries} inquiries · {feed.pendingVisitRequests}{" "}
                 visit requests pending
                 {feed.operationalAlerts > 0 &&
