@@ -11,6 +11,7 @@ import {
   ClipboardIcon,
   MoveIcon,
 } from "@/components/icons";
+import { PushDeviceToggle } from "@/components/curator/PushDeviceToggle";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { notify } from "@/components/ui/toast";
 import { useNotificationFeed } from "@/features/notifications/notification-feed";
@@ -336,6 +337,7 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
               Showing the {feed.items.length} newest of {feed.total}.
             </p>
           )}
+          <PushDeviceToggle />
           <p className="border-t border-black/10 px-4 py-2 text-xs text-zinc-500">
             {feed?.stateManagementEnabled
               ? "Read and dismissed alerts affect only your account. Pending work is unchanged."
