@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } fro
 import type { Inquiry } from "@/features/inquiries/types";
 import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
+import { useLiveHistory } from "@/features/public-submissions/use-live-history";
 import { hasListFilters, publicWebsiteHref, type PublicWebsiteQuery } from "@/features/public-submissions/query";
 import type { CampusEntrySummary, VisitRequest } from "@/features/visit-requests/types";
 import { InquiryDetail } from "./InquiryDetail";
@@ -94,6 +95,7 @@ export function PublicWebsiteWorkspace({
   // curator where they are.
   const managementRef = useRef<HTMLElement>(null);
   const selectedId = selection?.record.id;
+  const liveHistory = useLiveHistory(selection?.kind ?? null, selectedId ?? null, selection?.history ?? null);
   const previousSelectedId = useRef(selectedId);
   const showManagement = useCallback(() => {
     managementRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -221,7 +223,7 @@ export function PublicWebsiteWorkspace({
           ) : selection?.kind === "inquiry" ? (
             <InquiryDetail
               inquiry={selection.record}
-              history={selection.history}
+              history={liveHistory}
               returnQuery={returnQuery}
               currentAccountId={currentAccountId}
               mailboxStatus={mailboxStatus}
@@ -229,7 +231,7 @@ export function PublicWebsiteWorkspace({
           ) : selection?.kind === "visit" ? (
             <VisitRequestDetail
               request={selection.record}
-              history={selection.history}
+              history={liveHistory}
               campusEntry={selection.campusEntry}
               returnQuery={returnQuery}
               currentAccountId={currentAccountId}
