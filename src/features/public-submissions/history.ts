@@ -34,6 +34,9 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   STATUS_CHANGE: "Status change",
   REFERRAL: "Referral",
   NOTE: "Internal note",
+  // Pointer BioSphere leaves on an inquiry when a visitor reply to it is filed on the visit
+  // request it was turned into (backend PR #327). Never has a curator.
+  SYSTEM_NOTE: "System note",
   STATUS_UPDATE_EMAIL: "Decision emailed to visitor",
   MESSAGE_EMAIL: "Email to visitor",
   VISITOR_REPLY: "Visitor reply",
