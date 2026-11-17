@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
+import { NAV_ACCENTS, type NavAccent } from "@/components/curator/nav-accents";
 import { useNotificationFeed } from "@/features/notifications/notification-feed";
 import { attentionCount, notificationBadge, type CuratorNotification } from "@/features/notifications/types";
 import {
@@ -34,35 +35,16 @@ type NavItem = {
   accent: NavAccent;
 };
 
-// Full class names (not built from the hue) so Tailwind finds them. Each hue
-// is at least 3:1 against white, sage-100 (hover) and forest-100 (selected),
-// the WCAG minimum for icons; the 600 step is used only where it passes.
-const ACCENTS = {
-  emerald: { selected: "text-emerald-700", hover: "group-hover:text-emerald-700 group-focus-visible:text-emerald-700" },
-  amber: { selected: "text-amber-700", hover: "group-hover:text-amber-700 group-focus-visible:text-amber-700" },
-  sky: { selected: "text-sky-700", hover: "group-hover:text-sky-700 group-focus-visible:text-sky-700" },
-  rose: { selected: "text-rose-600", hover: "group-hover:text-rose-600 group-focus-visible:text-rose-600" },
-  blue: { selected: "text-blue-600", hover: "group-hover:text-blue-600 group-focus-visible:text-blue-600" },
-  violet: { selected: "text-violet-600", hover: "group-hover:text-violet-600 group-focus-visible:text-violet-600" },
-  teal: { selected: "text-teal-700", hover: "group-hover:text-teal-700 group-focus-visible:text-teal-700" },
-  fuchsia: { selected: "text-fuchsia-600", hover: "group-hover:text-fuchsia-600 group-focus-visible:text-fuchsia-600" },
-  orange: { selected: "text-orange-700", hover: "group-hover:text-orange-700 group-focus-visible:text-orange-700" },
-  indigo: { selected: "text-indigo-600", hover: "group-hover:text-indigo-600 group-focus-visible:text-indigo-600" },
-  cyan: { selected: "text-cyan-700", hover: "group-hover:text-cyan-700 group-focus-visible:text-cyan-700" },
-  pink: { selected: "text-pink-600", hover: "group-hover:text-pink-600 group-focus-visible:text-pink-600" },
-} as const;
-type NavAccent = (typeof ACCENTS)[keyof typeof ACCENTS];
-
 // Grouped as in the SRS information architecture (section 3.1.3), with
 // General Inquiries and Visit Requests as separate entries.
 const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
-  { label: null, items: [{ label: "Dashboard", href: "/dashboard", icon: HierarchyIcon, accent: ACCENTS.emerald }] },
+  { label: null, items: [{ label: "Dashboard", href: "/dashboard", icon: HierarchyIcon, accent: NAV_ACCENTS.dashboard }] },
   {
     label: "Collection",
     items: [
-      { label: "Specimens", href: "/specimens", icon: PawIcon, accent: ACCENTS.amber },
-      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon, accent: ACCENTS.sky },
-      { label: "Locations", href: "/storage", icon: MapPinIcon, accent: ACCENTS.rose },
+      { label: "Specimens", href: "/specimens", icon: PawIcon, accent: NAV_ACCENTS.specimens },
+      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon, accent: NAV_ACCENTS.cataloging },
+      { label: "Locations", href: "/storage", icon: MapPinIcon, accent: NAV_ACCENTS.locations },
     ],
   },
   {
@@ -74,7 +56,7 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
         icon: MailIcon,
         tab: "inquiries",
         badgeFor: "inquiry",
-        accent: ACCENTS.blue,
+        accent: NAV_ACCENTS.inquiries,
       },
       {
         label: "Visit Requests",
@@ -82,21 +64,21 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
         icon: CalendarIcon,
         tab: "visits",
         badgeFor: "visit_request",
-        accent: ACCENTS.violet,
+        accent: NAV_ACCENTS.visits,
       },
-      { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon, accent: ACCENTS.teal },
-      { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon, accent: ACCENTS.fuchsia },
+      { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon, accent: NAV_ACCENTS.exhibits },
+      { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon, accent: NAV_ACCENTS.faq },
     ],
   },
   {
     label: "Records",
     items: [
-      { label: "Reports", href: "/reports", icon: ChartBarIcon, accent: ACCENTS.orange },
-      { label: "Audit Log", href: "/audit-logs", icon: ClipboardIcon, accent: ACCENTS.indigo },
-      { label: "Backups", href: "/backup-history", icon: ArchiveIcon, accent: ACCENTS.cyan },
+      { label: "Reports", href: "/reports", icon: ChartBarIcon, accent: NAV_ACCENTS.reports },
+      { label: "Audit Log", href: "/audit-logs", icon: ClipboardIcon, accent: NAV_ACCENTS.audit },
+      { label: "Backups", href: "/backup-history", icon: ArchiveIcon, accent: NAV_ACCENTS.backups },
     ],
   },
-  { label: "Admin", items: [{ label: "Users", href: "/users", icon: UsersIcon, accent: ACCENTS.pink }] },
+  { label: "Admin", items: [{ label: "Users", href: "/users", icon: UsersIcon, accent: NAV_ACCENTS.users }] },
 ];
 
 function SidebarContent({

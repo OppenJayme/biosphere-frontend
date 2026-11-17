@@ -57,12 +57,14 @@ app: reuse the existing card, badge, button, and timeline patterns before invent
   "selected" state. Do not use it as decoration on large areas in the curator app.
 - Hover in the curator app is `bg-sage-100` or `bg-forest-100`; selected is
   `bg-forest-50` plus forest text or a forest left edge.
-- Curator sidebar icons are the one exception to forest-only selection: each nav item
-  has its own hue (`ACCENTS` in `CuratorSidebar.tsx`), shown on its icon while the item
-  is selected, hovered or keyboard-focused; zinc-500 otherwise. The pill and label stay
-  forest. A new item gets an unused hue at the lightest step that is at least 3:1 on
-  white, sage-100 and forest-100 (the 700 step passes for every hue; 600 for rose,
-  pink, fuchsia, violet, indigo, blue, purple, red, sky).
+- Curator nav colours are the one exception to forest-only selection: each sidebar
+  destination has its own hue (`NAV_ACCENTS` in `src/components/curator/nav-accents.ts`),
+  shown on its icon while the item is selected, hovered or keyboard-focused; zinc-500
+  otherwise. The pill and label stay forest. A link elsewhere that leads to the same
+  destination, such as a dashboard quick action, reuses that destination's hue on hover
+  and focus (its circle stays forest-100). A new item gets an unused hue at the lightest
+  step that is at least 3:1 on white, sage-100 and forest-100 (the 700 step passes for
+  every hue; 600 for rose, pink, fuchsia, violet, indigo, blue, purple, red, sky).
 - Status colour always comes from `StatusBadge` (`VISIT_STYLES`/`INQUIRY_STYLES`); reuse it,
   and reuse the same colour family when a status appears as a calendar chip or dot.
 - Elevation is hairline borders, not shadows. Shadows only on overlays (menus, dialogs).
