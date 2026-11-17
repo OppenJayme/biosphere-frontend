@@ -258,15 +258,23 @@ export default function AboutPage() {
           </h2>
           <p className="reveal mt-6 max-w-[52ch] text-lg leading-relaxed text-ink-muted">
             BioSphere is the museum&apos;s digital home. Curators use it to catalog specimens, track
-            where they are kept, and answer visit requests and inquiries, while visitors explore
-            the collection here, through QR-linked exhibits, and with the museum assistant. It was
-            built as a capstone project at the University of San Carlos.
+            where they are kept, and answer visit requests and inquiries. Visitors explore the
+            collection in person at the museum, where the gallery&apos;s QR-linked exhibits open more
+            about each display, and can ask the museum assistant here anytime. It was built as a
+            capstone project at the University of San Carlos.
           </p>
           <aside className="reveal mt-8 rounded-2xl border border-line bg-surface p-6">
+            <p className="font-mono text-xs tracking-wide text-brand">What&apos;s next</p>
+            <p className="mt-2 leading-relaxed text-ink">
+              A public specimen catalog for students, so they can look up the museum&apos;s
+              specimens for their classes and research.
+            </p>
+          </aside>
+          <aside className="reveal mt-4 rounded-2xl border border-line bg-surface p-6">
             <p className="font-mono text-xs tracking-wide text-gold-700">Fun fact</p>
             <p className="mt-2 leading-relaxed text-ink">
-              Most of the pictures on this website were first part of a separate project for
-              GE-Art Appreciation.
+              Most of the pictures on this website were first used by the developers as part of
+              their separate project for their Art Appreciation subject.
             </p>
           </aside>
         </div>
