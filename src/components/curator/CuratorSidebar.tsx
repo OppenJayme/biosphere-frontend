@@ -30,44 +30,73 @@ type NavItem = {
   tab?: string;
   /** Shows a count of unread notifications about this kind of record. */
   badgeFor?: CuratorNotification["recordType"];
+  /** The item's own icon colour, shown while it is selected, hovered or focused. */
+  accent: NavAccent;
 };
+
+// Full class names (not built from the hue) so Tailwind finds them. Each hue
+// is at least 3:1 against white, sage-100 (hover) and forest-100 (selected),
+// the WCAG minimum for icons; the 600 step is used only where it passes.
+const ACCENTS = {
+  emerald: { selected: "text-emerald-700", hover: "group-hover:text-emerald-700 group-focus-visible:text-emerald-700" },
+  amber: { selected: "text-amber-700", hover: "group-hover:text-amber-700 group-focus-visible:text-amber-700" },
+  sky: { selected: "text-sky-700", hover: "group-hover:text-sky-700 group-focus-visible:text-sky-700" },
+  rose: { selected: "text-rose-600", hover: "group-hover:text-rose-600 group-focus-visible:text-rose-600" },
+  blue: { selected: "text-blue-600", hover: "group-hover:text-blue-600 group-focus-visible:text-blue-600" },
+  violet: { selected: "text-violet-600", hover: "group-hover:text-violet-600 group-focus-visible:text-violet-600" },
+  teal: { selected: "text-teal-700", hover: "group-hover:text-teal-700 group-focus-visible:text-teal-700" },
+  fuchsia: { selected: "text-fuchsia-600", hover: "group-hover:text-fuchsia-600 group-focus-visible:text-fuchsia-600" },
+  orange: { selected: "text-orange-700", hover: "group-hover:text-orange-700 group-focus-visible:text-orange-700" },
+  indigo: { selected: "text-indigo-600", hover: "group-hover:text-indigo-600 group-focus-visible:text-indigo-600" },
+  cyan: { selected: "text-cyan-700", hover: "group-hover:text-cyan-700 group-focus-visible:text-cyan-700" },
+  pink: { selected: "text-pink-600", hover: "group-hover:text-pink-600 group-focus-visible:text-pink-600" },
+} as const;
+type NavAccent = (typeof ACCENTS)[keyof typeof ACCENTS];
 
 // Grouped as in the SRS information architecture (section 3.1.3), with
 // General Inquiries and Visit Requests as separate entries.
 const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
-  { label: null, items: [{ label: "Dashboard", href: "/dashboard", icon: HierarchyIcon }] },
+  { label: null, items: [{ label: "Dashboard", href: "/dashboard", icon: HierarchyIcon, accent: ACCENTS.emerald }] },
   {
     label: "Collection",
     items: [
-      { label: "Specimens", href: "/specimens", icon: PawIcon },
-      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon },
-      { label: "Locations", href: "/storage", icon: MapPinIcon },
+      { label: "Specimens", href: "/specimens", icon: PawIcon, accent: ACCENTS.amber },
+      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon, accent: ACCENTS.sky },
+      { label: "Locations", href: "/storage", icon: MapPinIcon, accent: ACCENTS.rose },
     ],
   },
   {
     label: "Visitors",
     items: [
-      { label: "General Inquiries", href: "/public-website", icon: MailIcon, tab: "inquiries", badgeFor: "inquiry" },
+      {
+        label: "General Inquiries",
+        href: "/public-website",
+        icon: MailIcon,
+        tab: "inquiries",
+        badgeFor: "inquiry",
+        accent: ACCENTS.blue,
+      },
       {
         label: "Visit Requests",
         href: "/public-website?tab=visits",
         icon: CalendarIcon,
         tab: "visits",
         badgeFor: "visit_request",
+        accent: ACCENTS.violet,
       },
-      { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon },
-      { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon },
+      { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon, accent: ACCENTS.teal },
+      { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon, accent: ACCENTS.fuchsia },
     ],
   },
   {
     label: "Records",
     items: [
-      { label: "Reports", href: "/reports", icon: ChartBarIcon },
-      { label: "Audit Log", href: "/audit-logs", icon: ClipboardIcon },
-      { label: "Backups", href: "/backup-history", icon: ArchiveIcon },
+      { label: "Reports", href: "/reports", icon: ChartBarIcon, accent: ACCENTS.orange },
+      { label: "Audit Log", href: "/audit-logs", icon: ClipboardIcon, accent: ACCENTS.indigo },
+      { label: "Backups", href: "/backup-history", icon: ArchiveIcon, accent: ACCENTS.cyan },
     ],
   },
-  { label: "Admin", items: [{ label: "Users", href: "/users", icon: UsersIcon }] },
+  { label: "Admin", items: [{ label: "Users", href: "/users", icon: UsersIcon, accent: ACCENTS.pink }] },
 ];
 
 function SidebarContent({
@@ -134,13 +163,17 @@ function SidebarContent({
                       onClick={onNavigate}
                       title={collapsed ? item.label : undefined}
                       aria-current={active ? "page" : undefined}
-                      className={`relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-forest-600 ${
+                      className={`group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-forest-600 ${
                         active
                           ? "bg-forest-100 font-semibold text-forest-900"
                           : "font-medium text-zinc-700 hover:bg-sage-100 hover:text-forest-800"
                       } ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
                     >
-                      <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "text-forest-700" : "text-zinc-500"}`} />
+                      <item.icon
+                        className={`h-[18px] w-[18px] shrink-0 transition-colors ${
+                          active ? item.accent.selected : `text-zinc-500 ${item.accent.hover}`
+                        }`}
+                      />
                       <span className={collapsed ? "lg:hidden" : ""}>{item.label}</span>
                       {badge && (
                         <>
