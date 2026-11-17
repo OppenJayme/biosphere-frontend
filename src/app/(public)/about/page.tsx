@@ -264,13 +264,6 @@ export default function AboutPage() {
             capstone project at the University of San Carlos.
           </p>
           <aside className="reveal mt-8 rounded-2xl border border-line bg-surface p-6">
-            <p className="font-mono text-xs tracking-wide text-brand">What&apos;s next</p>
-            <p className="mt-2 leading-relaxed text-ink">
-              A public specimen catalog for students, so they can look up the museum&apos;s
-              specimens for their classes and research.
-            </p>
-          </aside>
-          <aside className="reveal mt-4 rounded-2xl border border-line bg-surface p-6">
             <p className="font-mono text-xs tracking-wide text-gold-700">Fun fact</p>
             <p className="mt-2 leading-relaxed text-ink">
               Most of the pictures on this website were first used by the developers as part of
