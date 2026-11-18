@@ -29,10 +29,11 @@ export function PublicHeader() {
         <Link href="/" className="group flex items-center gap-3" onClick={() => setMobileOpen(false)}>
           <LogoMark className="h-9 w-9 transition-transform duration-500 group-hover:rotate-[-8deg]" />
           <span className="flex flex-col leading-none">
-            <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
+            {/* Each size is the previous one plus 2px, kept in rem so a larger browser default still scales it. */}
+            <span className="font-helvetica text-[calc(1.0625rem_+_2px)] font-semibold tracking-tight text-ink">
               USC Biological Museum
             </span>
-            <span className="mt-1 font-mono text-[0.65625rem] tracking-wide text-ink-muted">
+            <span className="mt-1 font-helvetica text-[calc(0.65625rem_+_2px)] tracking-wide text-ink-muted">
               University of San Carlos
             </span>
           </span>
