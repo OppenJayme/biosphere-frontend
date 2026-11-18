@@ -54,6 +54,8 @@ export async function checkRecovery(page, { origin, bundle }) {
     await target.getByLabel("Gender", { exact: true }).selectOption("UNKNOWN");
     await target.getByRole("textbox", { name: "Remarks", exact: true }).fill("Synthetic recovery fixture only");
     await target.getByRole("button", { name: "Save on this device", exact: true }).click();
+    // Saving asks for confirmation first (data-changing actions are confirmed).
+    await target.getByRole("button", { name: "Save draft", exact: true }).click();
     try {
       await target.getByText("Pending Sync", { exact: true }).waitFor({ timeout: 5000 });
     } catch {

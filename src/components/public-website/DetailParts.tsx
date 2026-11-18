@@ -602,7 +602,7 @@ export function MessageThread({
 function entryDotClasses(entry: CommunicationEntry) {
   if (isInboundReply(entry)) return "bg-violet-500";
   if (isOutboundEmail(entry)) return "bg-amber-500";
-  return entry.type === "NOTE" ? "bg-sky-500" : "bg-forest-600";
+  return entry.type === "NOTE" || entry.type === "SYSTEM_NOTE" ? "bg-sky-500" : "bg-forest-600";
 }
 
 /** Who recorded a curator-side entry; BioSphere itself records receipts and reply pointers. */
@@ -708,6 +708,7 @@ export function noteCount(entries: CommunicationEntry[] | null) {
   return entries ? internalNotes(entries).length : 0;
 }
 
+/** Curator-written notes only; BioSphere's SYSTEM_NOTE pointers stay on the timeline. */
 function internalNotes(entries: CommunicationEntry[]) {
   return entries.filter((entry) => entry.type === "NOTE");
 }

@@ -77,6 +77,11 @@ describe("communication history with visitor replies", () => {
   it("labels a reply for curators", () => {
     expect(entryTypeLabel("VISITOR_REPLY")).toBe("Visitor reply");
   });
+
+  it("labels BioSphere's reply pointer apart from a curator's note", () => {
+    expect(entryTypeLabel("SYSTEM_NOTE")).toBe("System note");
+    expect(entryTypeLabel("NOTE")).toBe("Internal note");
+  });
 });
 
 describe("delivery tracking (backend Brevo webhook)", () => {

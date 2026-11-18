@@ -158,6 +158,16 @@ export function NotificationFeedProvider({ children }: { children: ReactNode }) 
     [update],
   );
 
+  // The service worker announces a push (public/sw.js); refresh at once instead of at the next poll.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if ((event.data as { type?: unknown } | null)?.type === "BIOSPHERE_NOTIFICATIONS_CHANGED") void refresh();
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [refresh]);
+
   // Poll while the tab is visible, and refresh when the curator comes back to it.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load from an external source
@@ -196,4 +206,9 @@ export function useNotificationFeed() {
   const value = useContext(NotificationFeedContext);
   if (!value) throw new Error("useNotificationFeed must be used inside NotificationFeedProvider.");
   return value;
+}
+
+/** For components that can also render outside the curator chrome: null when there is no feed. */
+export function useOptionalNotificationFeed() {
+  return useContext(NotificationFeedContext);
 }

@@ -43,6 +43,9 @@
   --font-serif: var(--font-playfair, var(--font-bricolage));
   --font-display: var(--font-bricolage, var(--font-playfair));
   --font-mono: var(--font-geist-mono, ui-monospace, monospace);
+  /* The public header's museum name (requested 18 Nov 2026). A system face,
+     not loaded: Windows and Android fall back to Arial. */
+  --font-helvetica: "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   --color-paper: var(--paper);
   --color-surface: var(--surface);
