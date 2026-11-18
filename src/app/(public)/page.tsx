@@ -5,6 +5,25 @@ import { COLLECTIONS } from "@/lib/collections-data";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { ArrowRightIcon } from "@/components/icons";
 import { stagger } from "@/lib/stagger";
+import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
+
+// Home hero slideshow: the rainforest opener, then a wide view of each exhibit area.
+const HERO_SLIDES: HeroSlide[] = [
+  {
+    image: PLACEHOLDER_IMAGES.heroHome,
+    alt: "Mist rising over a tropical rainforest canopy",
+    eyebrow: "Since 1952",
+    title: "Philippine biodiversity",
+    href: "/gallery",
+  },
+  ...COLLECTIONS.map((collection) => ({
+    image: collection.imageWide,
+    alt: collection.imageWideAlt,
+    eyebrow: collection.taxon,
+    title: collection.name,
+    href: `/gallery#${collection.slug}`,
+  })),
+];
 
 const WAYS_TO_CONNECT = [
   {
@@ -75,16 +94,11 @@ export default function HomePage() {
         </div>
 
         <div className="rise relative lg:col-span-5" style={stagger(2)}>
-          <div className="relative aspect-4/3 overflow-hidden rounded-2xl lg:aspect-5/4">
-            <Image
-              src={PLACEHOLDER_IMAGES.heroHome}
-              alt="Mist rising over a tropical rainforest canopy"
-              fill
-              priority
-              sizes="(min-width: 1024px) 42vw, 100vw"
-              className="object-cover"
-            />
-          </div>
+          <HeroCarousel
+            label="Featured from the museum"
+            slides={HERO_SLIDES}
+            sizes="(min-width: 1024px) 42vw, 100vw"
+          />
         </div>
       </section>
 
@@ -106,7 +120,7 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 sm:px-8 lg:grid-cols-12 lg:items-center">
-        <div className="reveal relative aspect-4/5 overflow-hidden rounded-2xl sm:aspect-4/3 lg:col-span-5 lg:aspect-4/5">
+        <div className="reveal-media parallax relative aspect-4/5 overflow-hidden rounded-2xl sm:aspect-4/3 lg:col-span-5 lg:aspect-4/5">
           <Image
             src={PLACEHOLDER_IMAGES.homeScience}
             alt="A pressed plant specimen from a herbarium collection"

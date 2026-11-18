@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { COLLECTIONS } from "@/lib/collections-data";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { stagger } from "@/lib/stagger";
+import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
 import { ArrowRightIcon, LeafIcon, ShieldIcon, SparkleIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
@@ -32,6 +33,29 @@ const WHY_VISIT = [
 
 type Collection = (typeof COLLECTIONS)[number];
 
+const GALLERY_SLIDES: HeroSlide[] = [
+  {
+    image: PLACEHOLDER_IMAGES.heroGallery,
+    alt: "The USC Biological Museum exhibit hall with display cases of mounted animals and insects",
+    focus: "center 40%",
+    eyebrow: "The exhibit hall",
+    title: "Life, up close",
+    description:
+      "Decades of specimens gathered across the Philippines, preserved for teaching, research, and anyone curious.",
+    href: "#entomology",
+    cta: "Start the tour",
+  },
+  ...COLLECTIONS.map((collection) => ({
+    image: collection.image,
+    alt: collection.imageAlt,
+    eyebrow: collection.taxon,
+    title: collection.name,
+    description: collection.shortDescription,
+    href: `#${collection.slug}`,
+    cta: `Explore ${collection.name}`,
+  })),
+];
+
 export default function GalleryPage() {
   return (
     <>
@@ -56,21 +80,18 @@ export default function GalleryPage() {
             </div>
           </div>
         </div>
-
-        <div
-          className="rise relative mt-12 aspect-4/3 overflow-hidden rounded-2xl sm:aspect-21/9"
-          style={stagger(3)}
-        >
-          <Image
-            src={PLACEHOLDER_IMAGES.heroGallery}
-            alt="The USC Biological Museum exhibit hall with display cases of mounted animals and insects"
-            fill
-            priority
-            sizes="(min-width: 1240px) 1176px, 100vw"
-            className="object-cover object-[center_40%]"
-          />
-        </div>
       </section>
+
+      {/* Full-bleed cinematic slideshow: the hall, then a close-up from each exhibit area. */}
+      <div className="rise mt-12 lg:mt-16" style={stagger(3)}>
+        <HeroCarousel
+          variant="cinematic"
+          label="Exhibit highlights"
+          slides={GALLERY_SLIDES}
+          sizes="100vw"
+          delay={7000}
+        />
+      </div>
 
       <section className="mx-auto grid max-w-[1240px] gap-12 px-5 py-24 sm:px-8 lg:grid-cols-12">
         {/* Sticky index: jump between exhibit areas without a zigzag of image rows. */}
@@ -151,7 +172,7 @@ export default function GalleryPage() {
 function ExhibitArea({ collection, priority }: { collection: Collection; priority: boolean }) {
   return (
     <article id={collection.slug} className="scroll-mt-28">
-      <div className="reveal relative aspect-16/10 overflow-hidden rounded-2xl">
+      <div className="reveal-media parallax relative aspect-16/10 overflow-hidden rounded-2xl">
         <Image
           src={collection.imageWide}
           alt={collection.imageWideAlt}
