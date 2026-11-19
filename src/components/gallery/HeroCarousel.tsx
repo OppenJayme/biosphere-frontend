@@ -2,9 +2,10 @@
 
 // Full-bleed, auto-advancing, crossfading photo carousel for the Gallery hero (Embla +
 // Fade + Autoplay): each slide has an oversized title, counter, description and CTA.
-// Controls are the progress dots only (plus Left/Right arrow keys while focus is inside).
-// Autoplay never starts under prefers-reduced-motion, hovering or keyboard-focusing the
-// carousel holds it, and slides are announced only while it is held.
+// Controls are the progress dots and a pause/play toggle (WCAG 2.2.2), plus Left/Right
+// arrow keys while focus is inside. Autoplay never starts under prefers-reduced-motion,
+// hovering or keyboard-focusing the carousel holds it, and slides are announced only
+// while it is held.
 // Only the first slide's image is `priority`, so the carousel does not slow LCP.
 
 import Image, { type StaticImageData } from "next/image";
@@ -13,7 +14,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CS
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import Fade from "embla-carousel-fade";
-import { ArrowRightIcon } from "@/components/icons";
+import { ArrowRightIcon, PauseIcon, PlayIcon } from "@/components/icons";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 function subscribeReducedMotion(onChange: () => void) {
@@ -60,11 +61,13 @@ export function HeroCarousel({
     Autoplay({ delay, playOnInit: false, stopOnInteraction: true, stopOnMouseEnter: false, stopOnFocusIn: false }),
   ]);
   const [selected, setSelected] = useState(0);
-  // Autoplay runs unless reduced motion is on; `hovered` and `focused` hold it
-  // temporarily. `timerKey` restarts the progress bar each time the autoplay timer is
-  // armed; `timerRunning` shows a full bar while it is held.
+  // `playing` is the visitor's choice from the pause/play toggle, defaulting to on unless
+  // reduced motion is set; `hovered` and `focused` hold it temporarily. `timerKey`
+  // restarts the progress bar each time the autoplay timer is armed; `timerRunning`
+  // shows a full bar while it is held.
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => true);
-  const playing = !reducedMotion;
+  const [userPlaying, setUserPlaying] = useState<boolean | null>(null);
+  const playing = userPlaying ?? !reducedMotion;
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -181,8 +184,8 @@ export function HeroCarousel({
         </div>
       </div>
 
-      {/* Progress dots, bottom-left and aligned with the copy, so the floating FAQ
-          button never covers them. */}
+      {/* Progress dots and the pause/play toggle, bottom-left and aligned with the copy,
+          so the floating FAQ button never covers them. */}
       <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-[1240px] items-center gap-2 px-5 pb-8 sm:px-8 sm:pb-10">
         <div className="flex items-center gap-1.5" role="group" aria-label="Choose slide">
           {slides.map((slide, index) => {
@@ -216,6 +219,14 @@ export function HeroCarousel({
           })}
         </div>
 
+        <button
+          type="button"
+          onClick={() => setUserPlaying(!playing)}
+          aria-label={playing ? "Pause slideshow" : "Play slideshow"}
+          className="ml-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white backdrop-blur-md transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          {playing ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-3.5 w-3.5" />}
+        </button>
       </div>
     </section>
   );
