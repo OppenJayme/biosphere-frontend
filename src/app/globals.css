@@ -43,6 +43,9 @@
   --font-serif: var(--font-playfair, var(--font-bricolage));
   --font-display: var(--font-bricolage, var(--font-playfair));
   --font-mono: var(--font-geist-mono, ui-monospace, monospace);
+  /* The public header's museum name (requested 18 Nov 2026). A system face,
+     not loaded: Windows and Android fall back to Arial. */
+  --font-helvetica: "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   --color-paper: var(--paper);
   --color-surface: var(--surface);
@@ -142,6 +145,102 @@ html:has(> body.site) {
       animation-timeline: view();
       animation-range: entry 0% entry 35%;
     }
+
+    /* Photo frames: the image wipes open from the bottom instead of fading. */
+    .reveal-media {
+      animation: unmask linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+
+    /* Slow parallax drift for an image inside an overflow-hidden frame. */
+    .parallax > img {
+      scale: 1.14;
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes unmask {
+  from {
+    clip-path: inset(18% 6% 0 6% round 1rem);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 1rem);
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  from {
+    translate: 0 -6%;
+  }
+  to {
+    translate: 0 6%;
+  }
+}
+
+/* HeroCarousel (src/components/gallery/HeroCarousel.tsx): Ken Burns zoom on the active
+   photo, a staggered entrance for its caption, and the autoplay progress bar.
+   Under reduced motion the slides still crossfade but nothing zooms or rises. */
+@keyframes hero-kenburns {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.hero-progress {
+  animation: hero-progress var(--hero-delay, 6500ms) linear both;
+}
+
+.hero-carousel .hero-copy > * {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.hero-carousel .is-active .hero-copy > * {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Home hero: the same slow zoom-out, once, on its single still photo. */
+  .hero-still {
+    animation: hero-kenburns 14s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  .hero-carousel .is-active .hero-media {
+    animation: hero-kenburns 9s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  .hero-carousel .is-active .hero-copy > * {
+    animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .hero-carousel .is-active .hero-copy > :nth-child(2) {
+    animation-delay: 120ms;
+  }
+
+  .hero-carousel .is-active .hero-copy > :nth-child(3) {
+    animation-delay: 240ms;
+  }
+
+  .hero-carousel .is-active .hero-copy > :nth-child(4) {
+    animation-delay: 360ms;
   }
 }
 

@@ -101,21 +101,25 @@ export default function VisitPage() {
           <VisitOptionsSection />
         </div>
 
-        <h3 className="reveal mt-20 font-display text-2xl font-semibold tracking-tight text-ink">
+        <h3 className="reveal mt-20 font-display text-2xl font-semibold tracking-tight text-ink md:text-center">
           What happens next?
         </h3>
-        <ol className="mt-8 grid gap-6 md:grid-cols-3 md:gap-0">
+        {/* From md up, each step is centred in its column; the connector runs from
+            just right of this step's circle to just left of the next one (circle
+            radius 1.375rem + 1rem gap on each side). */}
+        <ol className="mt-8 grid gap-6 md:mt-10 md:grid-cols-3 md:gap-0">
           {NEXT_STEPS.map((step, index) => (
-            <li key={step} className="reveal relative flex items-center gap-4 md:flex-col md:items-start md:gap-5">
-              <div className="flex items-center md:w-full">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brand/40 bg-surface font-mono text-sm text-brand">
-                  {index + 1}
-                </span>
-                {index < NEXT_STEPS.length - 1 && (
-                  <span aria-hidden className="ml-4 hidden h-px flex-1 bg-line md:block" />
-                )}
-              </div>
-              <p className="font-medium text-ink md:pr-10">{step}</p>
+            <li key={step} className="reveal relative flex items-center gap-4 md:flex-col md:gap-5 md:text-center">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brand/40 bg-surface font-mono text-sm text-brand">
+                {index + 1}
+              </span>
+              {index < NEXT_STEPS.length - 1 && (
+                <span
+                  aria-hidden
+                  className="absolute top-[1.375rem] right-[calc(2.375rem-50%)] left-[calc(50%+2.375rem)] hidden h-px bg-line md:block"
+                />
+              )}
+              <p className="font-medium text-ink md:px-6">{step}</p>
             </li>
           ))}
         </ol>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import { LogoMark } from "@/components/layout/LogoMark";
+import { NAV_ACCENTS, type NavAccent } from "@/components/curator/nav-accents";
 import { useNotificationFeed } from "@/features/notifications/notification-feed";
 import { attentionCount, notificationBadge, type CuratorNotification } from "@/features/notifications/types";
 import {
@@ -30,44 +31,54 @@ type NavItem = {
   tab?: string;
   /** Shows a count of unread notifications about this kind of record. */
   badgeFor?: CuratorNotification["recordType"];
+  /** The item's own icon colour, shown while it is selected, hovered or focused. */
+  accent: NavAccent;
 };
 
 // Grouped as in the SRS information architecture (section 3.1.3), with
 // General Inquiries and Visit Requests as separate entries.
 const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
-  { label: null, items: [{ label: "Dashboard", href: "/dashboard", icon: HierarchyIcon }] },
+  { label: null, items: [{ label: "Dashboard", href: "/dashboard", icon: HierarchyIcon, accent: NAV_ACCENTS.dashboard }] },
   {
     label: "Collection",
     items: [
-      { label: "Specimens", href: "/specimens", icon: PawIcon },
-      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon },
-      { label: "Locations", href: "/storage", icon: MapPinIcon },
+      { label: "Specimens", href: "/specimens", icon: PawIcon, accent: NAV_ACCENTS.specimens },
+      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon, accent: NAV_ACCENTS.cataloging },
+      { label: "Locations", href: "/storage", icon: MapPinIcon, accent: NAV_ACCENTS.locations },
     ],
   },
   {
     label: "Visitors",
     items: [
-      { label: "General Inquiries", href: "/public-website", icon: MailIcon, tab: "inquiries", badgeFor: "inquiry" },
+      {
+        label: "General Inquiries",
+        href: "/public-website",
+        icon: MailIcon,
+        tab: "inquiries",
+        badgeFor: "inquiry",
+        accent: NAV_ACCENTS.inquiries,
+      },
       {
         label: "Visit Requests",
         href: "/public-website?tab=visits",
         icon: CalendarIcon,
         tab: "visits",
         badgeFor: "visit_request",
+        accent: NAV_ACCENTS.visits,
       },
-      { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon },
-      { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon },
+      { label: "QR Exhibits", href: "/exhibits", icon: CubeIcon, accent: NAV_ACCENTS.exhibits },
+      { label: "FAQ Knowledge", href: "/faq-knowledge", icon: ChatIcon, accent: NAV_ACCENTS.faq },
     ],
   },
   {
     label: "Records",
     items: [
-      { label: "Reports", href: "/reports", icon: ChartBarIcon },
-      { label: "Audit Log", href: "/audit-logs", icon: ClipboardIcon },
-      { label: "Backups", href: "/backup-history", icon: ArchiveIcon },
+      { label: "Reports", href: "/reports", icon: ChartBarIcon, accent: NAV_ACCENTS.reports },
+      { label: "Audit Log", href: "/audit-logs", icon: ClipboardIcon, accent: NAV_ACCENTS.audit },
+      { label: "Backups", href: "/backup-history", icon: ArchiveIcon, accent: NAV_ACCENTS.backups },
     ],
   },
-  { label: "Admin", items: [{ label: "Users", href: "/users", icon: UsersIcon }] },
+  { label: "Admin", items: [{ label: "Users", href: "/users", icon: UsersIcon, accent: NAV_ACCENTS.users }] },
 ];
 
 function SidebarContent({
@@ -134,13 +145,17 @@ function SidebarContent({
                       onClick={onNavigate}
                       title={collapsed ? item.label : undefined}
                       aria-current={active ? "page" : undefined}
-                      className={`relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-forest-600 ${
+                      className={`group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-forest-600 ${
                         active
                           ? "bg-forest-100 font-semibold text-forest-900"
                           : "font-medium text-zinc-700 hover:bg-sage-100 hover:text-forest-800"
                       } ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
                     >
-                      <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "text-forest-700" : "text-zinc-500"}`} />
+                      <item.icon
+                        className={`h-[18px] w-[18px] shrink-0 transition-colors ${
+                          active ? item.accent.selected : `text-zinc-500 ${item.accent.hover}`
+                        }`}
+                      />
                       <span className={collapsed ? "lg:hidden" : ""}>{item.label}</span>
                       {badge && (
                         <>
