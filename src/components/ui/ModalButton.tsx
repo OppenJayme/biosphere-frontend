@@ -18,15 +18,30 @@ import { onActionDone } from "@/components/ui/toast";
 
 const WIDTHS = { md: "max-w-lg", lg: "max-w-2xl" } as const;
 
+// "drawer" slides the same dialog in from the right at full height, for a record's detail panel.
+const PLACEMENTS = {
+  center: {
+    dialog: "m-auto w-[calc(100%-2rem)] rounded-2xl",
+    body: "max-h-[85vh]",
+  },
+  drawer: {
+    dialog: "my-0 mr-0 ml-auto h-dvh max-h-dvh w-full rounded-none sm:rounded-l-2xl",
+    body: "h-full",
+  },
+} as const;
+
 export function ModalButton({
   label,
   title,
   description,
   className,
   size = "md",
+  placement = "center",
   disabled = false,
+  onOpenChange,
   children,
 }: {
+  placement?: keyof typeof PLACEMENTS;
   /** Content of the button that opens the modal. */
   label: ReactNode;
   title: string;
@@ -35,18 +50,26 @@ export function ModalButton({
   className: string;
   size?: keyof typeof WIDTHS;
   disabled?: boolean;
+  /** Told when the modal opens or closes, e.g. to keep its record in a filtered list. */
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  const onOpenChangeRef = useRef(onOpenChange);
+
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  });
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+    onOpenChangeRef.current?.(open);
   }, [open]);
 
   useEffect(() => {
@@ -80,9 +103,9 @@ export function ModalButton({
           // Escape inside a nested confirmation belongs to that dialog, not this one.
           if (event.target === event.currentTarget) close();
         }}
-        className={`m-auto w-[calc(100%-2rem)] ${WIDTHS[size]} rounded-2xl border border-black/10 bg-white p-0 text-left text-zinc-900 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] backdrop:bg-forest-900/50 backdrop:backdrop-blur-sm motion-safe:open:animate-[confirm-in_160ms_ease-out]`}
+        className={`${PLACEMENTS[placement].dialog} ${WIDTHS[size]} border border-black/10 bg-white p-0 text-left text-zinc-900 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] backdrop:bg-forest-900/50 backdrop:backdrop-blur-sm motion-safe:open:animate-[confirm-in_160ms_ease-out]`}
       >
-        <div className="max-h-[85vh] overflow-y-auto p-6">
+        <div className={`${PLACEMENTS[placement].body} overflow-y-auto p-6`}>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h2 id={titleId} className="font-serif text-xl font-semibold text-forest-900">

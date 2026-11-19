@@ -46,7 +46,7 @@ export default async function DeveloperLayout({ children }: { children: ReactNod
         <InactivityGuard />
         <AppToaster />
         <header className="border-b border-black/10 bg-white">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-6">
+          <div className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-8">
             <div className="flex items-center gap-3">
               <LogoMark className="h-9 w-9" />
               <div>
@@ -81,7 +81,7 @@ export default async function DeveloperLayout({ children }: { children: ReactNod
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-5 py-6 lg:px-6">
+        <main className="w-full px-5 py-6 lg:px-8">
           {access.state === "developer" ? (
             children
           ) : (

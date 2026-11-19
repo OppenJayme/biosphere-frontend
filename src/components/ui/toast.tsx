@@ -47,6 +47,14 @@ export function onActionDone(listener: () => void) {
 }
 
 /**
+ * Reports that an action submitted from a modal finished without a redirect, so an open
+ * ModalButton closes. Call it once per finished action, after its outcome is known.
+ */
+export function reportActionDone() {
+  for (const listener of [...doneListeners]) listener();
+}
+
+/**
  * Shows the result of an action that finished with a redirect and described its outcome in URL
  * parameters (e.g. ?notice=note-added). The server page turns those parameters into `message`;
  * this shows it once and removes the parameters, so a reload or a shared link does not repeat it.
