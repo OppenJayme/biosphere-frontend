@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { COLLECTIONS } from "@/lib/collections-data";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { stagger } from "@/lib/stagger";
-import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
+import { HeroCarousel, type HeroSlide } from "@/components/gallery/HeroCarousel";
 import { ArrowRightIcon, LeafIcon, ShieldIcon, SparkleIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
@@ -59,17 +59,27 @@ const GALLERY_SLIDES: HeroSlide[] = [
 export default function GalleryPage() {
   return (
     <>
-      <section className="mx-auto max-w-[1240px] px-5 pt-12 sm:px-8 lg:pt-20">
-        <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
-          <h1 className="rise font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink sm:text-6xl lg:col-span-7">
+      {/* Full-bleed cinematic slideshow opens the page: the hall, then a close-up
+          from each exhibit area. */}
+      <div className="rise">
+        <HeroCarousel label="Exhibit highlights" slides={GALLERY_SLIDES} sizes="100vw" />
+      </div>
+
+      {/* Intro below the slideshow; the title and the copy share a top edge. */}
+      <section className="mx-auto max-w-[1240px] px-5 pt-16 sm:px-8 lg:pt-20">
+        <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
+          <h1
+            className="rise font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink sm:text-6xl lg:col-span-7"
+            style={stagger(1)}
+          >
             Explore our exhibits
           </h1>
-          <div className="lg:col-span-5">
-            <p className="rise text-lg leading-relaxed text-ink-muted" style={stagger(1)}>
+          <div className="lg:col-span-5 lg:pt-1.5">
+            <p className="rise text-lg leading-relaxed text-ink-muted" style={stagger(2)}>
               Three exhibit areas trace the richness of life in the Philippines.
               There&apos;s even more to discover in person.
             </p>
-            <div className="rise mt-7 flex flex-wrap gap-3" style={stagger(2)}>
+            <div className="rise mt-7 flex flex-wrap gap-3" style={stagger(3)}>
               <Button href="#entomology">
                 View exhibit areas
                 <ArrowRightIcon className="h-4 w-4" />
@@ -81,17 +91,6 @@ export default function GalleryPage() {
           </div>
         </div>
       </section>
-
-      {/* Full-bleed cinematic slideshow: the hall, then a close-up from each exhibit area. */}
-      <div className="rise mt-12 lg:mt-16" style={stagger(3)}>
-        <HeroCarousel
-          variant="cinematic"
-          label="Exhibit highlights"
-          slides={GALLERY_SLIDES}
-          sizes="100vw"
-          delay={7000}
-        />
-      </div>
 
       <section className="mx-auto grid max-w-[1240px] gap-12 px-5 py-24 sm:px-8 lg:grid-cols-12">
         {/* Sticky index: jump between exhibit areas without a zigzag of image rows. */}

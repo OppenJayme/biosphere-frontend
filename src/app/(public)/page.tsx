@@ -5,25 +5,6 @@ import { COLLECTIONS } from "@/lib/collections-data";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholder-images";
 import { ArrowRightIcon } from "@/components/icons";
 import { stagger } from "@/lib/stagger";
-import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
-
-// Home hero slideshow: the rainforest opener, then a wide view of each exhibit area.
-const HERO_SLIDES: HeroSlide[] = [
-  {
-    image: PLACEHOLDER_IMAGES.heroHome,
-    alt: "Mist rising over a tropical rainforest canopy",
-    eyebrow: "Since 1952",
-    title: "Philippine biodiversity",
-    href: "/gallery",
-  },
-  ...COLLECTIONS.map((collection) => ({
-    image: collection.imageWide,
-    alt: collection.imageWideAlt,
-    eyebrow: collection.taxon,
-    title: collection.name,
-    href: `/gallery#${collection.slug}`,
-  })),
-];
 
 const WAYS_TO_CONNECT = [
   {
@@ -64,45 +45,55 @@ const TILE_LAYOUT: Record<Collection["slug"], string> = {
 export default function HomePage() {
   return (
     <>
-      <section className="mx-auto grid max-w-[1240px] gap-10 px-5 pt-10 pb-20 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-12 lg:pt-16 lg:pb-28">
-        <div className="lg:col-span-7">
-          <p className="rise font-mono text-xs tracking-wide text-brand">
+      {/* Full-bleed hero, matching the Gallery slideshow's look: one still photo with a
+          slow zoom, scrims for legibility, and the page copy over it. */}
+      <section className="relative isolate flex h-[min(86svh,52rem)] min-h-[34rem] overflow-hidden bg-forest-900">
+        <div className="hero-still absolute inset-0 -z-10">
+          <Image
+            src={PLACEHOLDER_IMAGES.heroHome}
+            alt="Mist rising over a tropical rainforest canopy"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+        <div className="absolute inset-0 -z-10 bg-linear-to-r from-forest-900/90 via-forest-900/45 to-transparent" />
+        <div className="absolute inset-0 -z-10 bg-linear-to-t from-forest-900/70 via-transparent to-forest-900/25" />
+
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col justify-end px-5 pb-16 text-white sm:px-8 sm:pb-20 lg:justify-center lg:pb-0">
+          <p className="rise font-mono text-xs tracking-[0.2em] text-white/70 uppercase">
             USC Talamban Campus, Cebu City
           </p>
           <h1
-            className="rise mt-5 font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink lg:text-[3.6rem]"
+            className="rise mt-5 max-w-[14ch] font-display text-[clamp(3rem,7vw,6.25rem)] leading-[0.95] font-semibold tracking-tight text-balance"
             style={stagger(1)}
           >
             Philippine life, preserved since 1952.
           </h1>
           <p
-            className="rise mt-6 max-w-[46ch] text-lg leading-relaxed text-ink-muted"
+            className="rise mt-6 max-w-[46ch] text-base leading-relaxed text-white/80 sm:text-lg"
             style={stagger(2)}
           >
             Explore the specimens behind decades of teaching and research at the
             USC Biological Museum, then come see them up close.
           </p>
-          <div className="rise mt-9 flex flex-wrap gap-3" style={stagger(3)}>
-            <Button href="/gallery">
+          <div className="rise mt-8 flex flex-wrap gap-3" style={stagger(3)}>
+            <Link
+              href="/gallery"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-forest-900 transition-colors hover:bg-forest-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
               Explore the gallery
               <ArrowRightIcon className="h-4 w-4" />
-            </Button>
-            <Button href="/visit" variant="outline-forest">
+            </Link>
+            <Button href="/visit" variant="outline-white">
               Plan a visit
             </Button>
           </div>
         </div>
-
-        <div className="rise relative lg:col-span-5" style={stagger(2)}>
-          <HeroCarousel
-            label="Featured from the museum"
-            slides={HERO_SLIDES}
-            sizes="(min-width: 1024px) 42vw, 100vw"
-          />
-        </div>
       </section>
 
-      <section className="mx-auto max-w-[1240px] px-5 pb-24 sm:px-8">
+      <section className="mx-auto max-w-[1240px] px-5 pt-20 pb-24 sm:px-8 lg:pt-28">
         <h2 className="reveal max-w-2xl font-display text-4xl font-semibold tracking-tight text-balance text-ink sm:text-5xl">
           Explore our collections
         </h2>

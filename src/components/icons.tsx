@@ -688,19 +688,3 @@ export function RotateCcwIcon(props: IconProps) {
     </svg>
   );
 }
-
-export function PauseIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M9 5v14M15 5v14" />
-    </svg>
-  );
-}
-
-export function PlayIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M7 4.5v15l12-7.5z" />
-    </svg>
-  );
-}
