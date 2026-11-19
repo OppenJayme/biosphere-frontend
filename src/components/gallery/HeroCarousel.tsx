@@ -9,7 +9,7 @@
 
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import Fade from "embla-carousel-fade";
@@ -115,8 +115,17 @@ export function HeroCarousel({
     },
     [emblaApi],
   );
-  const goPrev = useCallback(() => goTo((selected - 1 + slides.length) % slides.length), [goTo, selected, slides.length]);
-  const goNext = useCallback(() => goTo((selected + 1) % slides.length), [goTo, selected, slides.length]);
+  // Arrow keys move focus to the new slide's dot: the slide that had focus (e.g. its CTA)
+  // becomes inert, which would otherwise drop focus to <body> and restart autoplay.
+  const dotRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const step = useCallback(
+    (offset: number) => {
+      const next = (selected + offset + slides.length) % slides.length;
+      goTo(next);
+      dotRefs.current[next]?.focus();
+    },
+    [goTo, selected, slides.length],
+  );
 
   const progressStyle = { "--hero-delay": `${delay}ms` } as CSSProperties;
 
@@ -135,8 +144,8 @@ export function HeroCarousel({
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
       onKeyDown={(event) => {
-        if (event.key === "ArrowLeft") goPrev();
-        if (event.key === "ArrowRight") goNext();
+        if (event.key === "ArrowLeft") step(-1);
+        if (event.key === "ArrowRight") step(1);
       }}
     >
       <div ref={emblaRef} className="h-full overflow-hidden">
@@ -182,6 +191,9 @@ export function HeroCarousel({
               <button
                 key={slide.title}
                 type="button"
+                ref={(node) => {
+                  dotRefs.current[index] = node;
+                }}
                 onClick={() => goTo(index)}
                 aria-label={`Show slide ${index + 1}: ${slide.title}`}
                 aria-current={active ? "true" : undefined}
