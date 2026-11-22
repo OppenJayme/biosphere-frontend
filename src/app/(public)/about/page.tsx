@@ -12,23 +12,35 @@ export const metadata: Metadata = {
     "The mission and history of the University of San Carlos Biological Museum.",
 };
 
+// Dates follow the USC Department of Biology and Museums pages (checked 2026-11-22). 1952 is
+// the department's founding and the start of collecting; 1967 is the USC Museum's inauguration.
 const HISTORY = [
   {
     year: "1952",
     text: (
       <>
-        Founded by the German priest and entomologist{" "}
-        <strong className="font-semibold text-ink">Enrique Schoenig</strong>.
+        The Department of Biology was founded, and the university began building the collections
+        that would later fill the USC Museum.
       </>
     ),
   },
   {
     year: "1967",
-    text: <>Formally inaugurated as part of the University of San Carlos on April 23, 1967.</>,
+    text: (
+      <>
+        The University of San Carlos Museum was formally inaugurated on April 23, with biodiversity
+        as one of its three original galleries.
+      </>
+    ),
   },
   {
     year: "Today",
-    text: <>Its collections are maintained in collaboration with the university&apos;s Department of Biology.</>,
+    text: (
+      <>
+        The Department of Biology maintains the Entomological and Marine Biology Collections, each
+        with its own curator, in collaboration with the USC Museum.
+      </>
+    ),
   },
 ];
 
@@ -50,43 +62,35 @@ const PURPOSE = [
   },
 ];
 
-// Contact details supplied by the museum (2026-11-07). The landline is the USC trunk line
+// Titles, degrees and research interests follow each curator's USC profile (2026-11-22).
+// Phone numbers were supplied by the museum (2026-11-07). The landline is the USC trunk line
 // plus local 122; the comma in its tel: link makes phones pause before dialing the local.
 const CURATORIAL_TEAM = [
   {
     name: "Fidel E. Bendanillo, MSc",
     initials: "FB",
-    role: "Curator",
+    role: "Curator, Entomological Collection",
+    degrees: [
+      { title: "B.S. Agriculture-Entomology", school: "Central Mindanao University", year: 1992 },
+      { title: "M.S. Biology", school: "University of San Carlos", year: 2013 },
+    ],
+    researchInterests:
+      "Insect taxonomy, insect ecology, forest entomology, post-harvest entomology, medical entomology",
     email: "febendanillo@usc.edu.ph",
     phones: [
       { label: "032-230-0100-122", href: "tel:+63322300100,122" },
       { label: "+63 956 689 2497", href: "tel:+639566892497" },
     ],
   },
-];
-
-// The team that built BioSphere (supplied by Marq, 2026-11-18). Each focus line
-// follows the module ownership register in the repository guidance.
-const DEVELOPERS = [
   {
-    name: "Charles Benedict “Boki” Boquecosa",
-    initials: "CB",
-    focus: "Dashboard, inquiries, visit requests and the public website",
-  },
-  {
-    name: "John Mark “Marq” Gerozaga",
-    initials: "JG",
-    focus: "Specimen inventory, dashboard and reports",
-  },
-  {
-    name: "Kyer Ivan Jayme",
-    initials: "KJ",
-    focus: "Cataloging, storage locations, the FAQ assistant, audit and backups",
-  },
-  {
-    name: "Voltaire Raul “V” Ratilla",
-    initials: "VR",
-    focus: "Sign-in and access control, QR exhibits and augmented reality",
+    name: "Dave Anthony P. Valles",
+    initials: "DV",
+    role: "Curator, Marine Collection",
+    degrees: [{ title: "B.S. Marine Biology", school: "University of San Carlos", year: 1992 }],
+    researchInterests:
+      "Marine biodiversity, reef assessment and monitoring, molluscan and scleractinian coral taxonomy",
+    email: null, // left off the public site for now (Marq, 2026-11-22)
+    phones: [],
   },
 ];
 
@@ -107,7 +111,7 @@ export default function AboutPage() {
 
         <div className="lg:col-span-7">
           <p className="rise font-mono text-xs tracking-wide text-brand" style={stagger(1)}>
-            Est. 1952
+            Collecting since 1952
           </p>
           <h1
             className="rise mt-5 font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink sm:text-6xl"
@@ -126,6 +130,53 @@ export default function AboutPage() {
             </Button>
           </div>
         </div>
+      </section>
+
+      {/* Sources: the USC Department of Biology (Overview) and Museums pages on usc.edu.ph,
+          and the museum's plaque quoting The Philippine Scientist 19 (1982): 1-2. "German priest
+          and entomologist" comes from this site's earlier copy, kept at Marq's request. */}
+      <section
+        id="overview"
+        aria-labelledby="overview-heading"
+        className="mx-auto grid max-w-[1240px] scroll-mt-24 gap-10 px-5 pb-24 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-14"
+      >
+        <div className="lg:col-span-7">
+          <h2
+            id="overview-heading"
+            className="reveal font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl"
+          >
+            Overview
+          </h2>
+          <p className="reveal mt-6 max-w-[60ch] text-lg leading-relaxed text-ink-muted">
+            Our biological collection grew up with the university&apos;s Department of Biology,
+            established in 1952. In the department&apos;s early years,{" "}
+            <strong className="font-semibold text-ink">Fr. Enrique (Heinrich) Schoenig, SVD</strong>,
+            a German priest and entomologist, led many expeditions into the field, and the plants
+            and animals gathered on them became a substantial collection.
+          </p>
+          <p className="reveal mt-5 max-w-[60ch] text-lg leading-relaxed text-ink-muted">
+            Visitors can still see that legacy in the USC Museum&apos;s Biological Collection. Today
+            the museum works with the Department of Biology, which cares for the Entomological and
+            Marine Biology Collections.
+          </p>
+        </div>
+
+        <figure className="reveal rounded-2xl bg-brand-soft p-7 sm:p-10 lg:col-span-5">
+          <p className="font-mono text-xs tracking-wide text-brand">Remembering Fr. Schoenig</p>
+          <blockquote className="mt-4 font-display text-2xl leading-snug font-semibold text-balance text-ink sm:text-3xl">
+            <p>&ldquo;A model of patience, industry, efficiency, dedication and faith in God&rdquo;</p>
+          </blockquote>
+          <figcaption className="mt-6 leading-relaxed text-ink-muted">
+            <p>
+              Fr. Josef Baumgartner paid this tribute to Fr. Schoenig, describing a singular person
+              who made God&apos;s love for humanity visible by revealing nature&apos;s mystery and
+              beauty through science.
+            </p>
+            <p className="mt-4 text-sm">
+              <cite>The Philippine Scientist</cite>, Vol. 19 (1982): 1&ndash;2
+            </p>
+          </figcaption>
+        </figure>
       </section>
 
       <section className="mx-auto grid max-w-[1240px] gap-14 px-5 pb-24 sm:px-8 lg:grid-cols-12">
@@ -205,38 +256,63 @@ export default function AboutPage() {
           </h2>
           <ul className="mt-10 grid gap-5 md:grid-cols-2">
             {CURATORIAL_TEAM.map((member) => (
-              <li key={member.name} className="reveal rounded-2xl bg-surface p-7">
+              <li key={member.name} className="reveal flex flex-col rounded-2xl bg-surface p-7">
                 <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                   <span aria-hidden className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-solid font-display text-lg font-semibold text-white">
                     {member.initials}
                   </span>
                   <div>
-                    <p className="font-display text-xl font-semibold text-ink">{member.name}</p>
+                    <h3 className="font-display text-xl font-semibold text-ink">{member.name}</h3>
                     <p className="font-mono text-xs text-ink-muted">{member.role}</p>
                   </div>
                 </div>
-                <ul className="mt-5 space-y-2">
-                  {member.phones.map((phone) => (
-                    <li key={phone.href}>
-                      <a
-                        href={phone.href}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
-                      >
-                        <PhoneIcon className="h-4 w-4" />
-                        {phone.label}
-                      </a>
-                    </li>
-                  ))}
-                  <li>
-                    <a
-                      href={`mailto:${member.email}`}
-                      className="inline-flex items-center gap-2 text-sm font-medium break-all text-brand hover:underline"
-                    >
-                      <MailIcon className="h-4 w-4 shrink-0" />
-                      {member.email}
-                    </a>
-                  </li>
-                </ul>
+                <dl className="mt-6 mb-6 space-y-5 text-sm leading-relaxed last:mb-0">
+                  <div>
+                    <dt className="font-semibold text-ink">
+                      {member.degrees.length === 1 ? "Degree" : "Degrees"}
+                    </dt>
+                    {member.degrees.map((degree) => (
+                      <dd key={degree.title} className="mt-1.5 text-ink-muted">
+                        <span className="block text-ink">{degree.title}</span>
+                        {degree.school}, {degree.year}
+                      </dd>
+                    ))}
+                  </div>
+                  <div>
+                    <dt className="font-semibold text-ink">Research interests</dt>
+                    <dd className="mt-1.5 text-ink-muted">{member.researchInterests}</dd>
+                  </div>
+                </dl>
+                {(member.email || member.phones.length > 0) && (
+                  <ul className="mt-auto space-y-2 border-t border-line pt-5">
+                    {member.phones.map((phone) => (
+                      <li key={phone.href}>
+                        <a
+                          href={phone.href}
+                          className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
+                        >
+                          <PhoneIcon className="h-4 w-4" />
+                          {phone.label}
+                        </a>
+                      </li>
+                    ))}
+                    {member.email && (
+                      <li>
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
+                        >
+                          <MailIcon className="h-4 w-4 shrink-0" />
+                          {/* A long address wraps before the @, and mid-word only as a last resort. */}
+                          <span className="min-w-0 wrap-anywhere">
+                            {member.email.split("@")[0]}
+                            <wbr />@{member.email.split("@")[1]}
+                          </span>
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
@@ -246,53 +322,21 @@ export default function AboutPage() {
       <section
         id="about-biosphere"
         aria-labelledby="about-biosphere-heading"
-        className="mx-auto grid max-w-[1240px] scroll-mt-24 gap-12 px-5 pt-24 sm:px-8 lg:grid-cols-12 lg:gap-14"
+        className="mx-auto grid max-w-[1240px] scroll-mt-24 gap-5 px-5 pt-24 sm:px-8 md:grid-cols-12 md:gap-8"
       >
-        <div className="lg:col-span-5">
-          <p className="reveal font-mono text-xs tracking-wide text-brand">Behind this website</p>
-          <h2
-            id="about-biosphere-heading"
-            className="reveal mt-4 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl"
-          >
-            About BioSphere
-          </h2>
-          <p className="reveal mt-6 max-w-[52ch] text-lg leading-relaxed text-ink-muted">
-            BioSphere is the museum&apos;s digital home. Curators use it to catalog specimens, track
-            where they are kept, and answer visit requests and inquiries. Visitors explore the
-            collection in person at the museum, where the gallery&apos;s QR-linked exhibits open more
-            about each display, and can ask the museum assistant here anytime. It was built as a
-            capstone project at the University of San Carlos.
-          </p>
-          <aside className="reveal mt-8 rounded-2xl border border-line bg-surface p-6">
-            <p className="font-mono text-xs tracking-wide text-gold-700">Fun fact</p>
-            <p className="mt-2 leading-relaxed text-ink">
-              Most of the pictures on this website were first used by the developers as part of
-              their separate project for their Art Appreciation subject.
-            </p>
-          </aside>
-        </div>
-
-        <div className="lg:col-span-7">
-          <h3 className="reveal font-display text-2xl font-semibold tracking-tight text-ink">
-            The developers
-          </h3>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-            {DEVELOPERS.map((developer) => (
-              <li key={developer.name} className="reveal rounded-2xl border border-line bg-surface p-6">
-                <div className="flex items-center gap-4">
-                  <span
-                    aria-hidden
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-soft font-display text-base font-semibold text-brand"
-                  >
-                    {developer.initials}
-                  </span>
-                  <p className="font-display text-lg leading-snug font-semibold text-ink">{developer.name}</p>
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-ink-muted">{developer.focus}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <h2
+          id="about-biosphere-heading"
+          className="reveal font-display text-3xl font-semibold tracking-tight text-ink md:col-span-4"
+        >
+          About BioSphere
+        </h2>
+        <p className="reveal max-w-[60ch] text-lg leading-relaxed text-ink-muted md:col-span-8">
+          BioSphere is the museum&apos;s digital home. Curators use it to catalog specimens, track
+          where they are kept, and answer visit requests and inquiries. Visitors explore the
+          collection in person at the museum, where the gallery&apos;s QR-linked exhibits open more
+          about each display, and can ask the museum assistant here anytime. It was built as a
+          capstone project at the University of San Carlos.
+        </p>
       </section>
     </>
   );
