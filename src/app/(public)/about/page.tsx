@@ -89,7 +89,7 @@ const CURATORIAL_TEAM = [
     degrees: [{ title: "B.S. Marine Biology", school: "University of San Carlos", year: 1992 }],
     researchInterests:
       "Marine biodiversity, reef assessment and monitoring, molluscan and scleractinian coral taxonomy",
-    email: "daveanthony.valles@usc.edu.ph",
+    email: null, // left off the public site for now (Marq, 2026-11-22)
     phones: [],
   },
 ];
@@ -133,7 +133,8 @@ export default function AboutPage() {
       </section>
 
       {/* Sources: the USC Department of Biology (Overview) and Museums pages on usc.edu.ph,
-          and the museum's plaque quoting The Philippine Scientist 19 (1982): 1-2. */}
+          and the museum's plaque quoting The Philippine Scientist 19 (1982): 1-2. "German priest
+          and entomologist" comes from this site's earlier copy, kept at Marq's request. */}
       <section
         id="overview"
         aria-labelledby="overview-heading"
@@ -150,8 +151,8 @@ export default function AboutPage() {
             Our biological collection grew up with the university&apos;s Department of Biology,
             established in 1952. In the department&apos;s early years,{" "}
             <strong className="font-semibold text-ink">Fr. Enrique (Heinrich) Schoenig, SVD</strong>,
-            led many expeditions into the field, and the plants and animals gathered on them became
-            a substantial collection.
+            a German priest and entomologist, led many expeditions into the field, and the plants
+            and animals gathered on them became a substantial collection.
           </p>
           <p className="reveal mt-5 max-w-[60ch] text-lg leading-relaxed text-ink-muted">
             Visitors can still see that legacy in the USC Museum&apos;s Biological Collection. Today
@@ -265,7 +266,7 @@ export default function AboutPage() {
                     <p className="font-mono text-xs text-ink-muted">{member.role}</p>
                   </div>
                 </div>
-                <dl className="mt-6 mb-6 space-y-5 text-sm leading-relaxed">
+                <dl className="mt-6 mb-6 space-y-5 text-sm leading-relaxed last:mb-0">
                   <div>
                     <dt className="font-semibold text-ink">
                       {member.degrees.length === 1 ? "Degree" : "Degrees"}
@@ -282,32 +283,36 @@ export default function AboutPage() {
                     <dd className="mt-1.5 text-ink-muted">{member.researchInterests}</dd>
                   </div>
                 </dl>
-                <ul className="mt-auto space-y-2 border-t border-line pt-5">
-                  {member.phones.map((phone) => (
-                    <li key={phone.href}>
-                      <a
-                        href={phone.href}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
-                      >
-                        <PhoneIcon className="h-4 w-4" />
-                        {phone.label}
-                      </a>
-                    </li>
-                  ))}
-                  <li>
-                    <a
-                      href={`mailto:${member.email}`}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
-                    >
-                      <MailIcon className="h-4 w-4 shrink-0" />
-                      {/* A long address wraps before the @, and mid-word only as a last resort. */}
-                      <span className="min-w-0 wrap-anywhere">
-                        {member.email.split("@")[0]}
-                        <wbr />@{member.email.split("@")[1]}
-                      </span>
-                    </a>
-                  </li>
-                </ul>
+                {(member.email || member.phones.length > 0) && (
+                  <ul className="mt-auto space-y-2 border-t border-line pt-5">
+                    {member.phones.map((phone) => (
+                      <li key={phone.href}>
+                        <a
+                          href={phone.href}
+                          className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
+                        >
+                          <PhoneIcon className="h-4 w-4" />
+                          {phone.label}
+                        </a>
+                      </li>
+                    ))}
+                    {member.email && (
+                      <li>
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
+                        >
+                          <MailIcon className="h-4 w-4 shrink-0" />
+                          {/* A long address wraps before the @, and mid-word only as a last resort. */}
+                          <span className="min-w-0 wrap-anywhere">
+                            {member.email.split("@")[0]}
+                            <wbr />@{member.email.split("@")[1]}
+                          </span>
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
