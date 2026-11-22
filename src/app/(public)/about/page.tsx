@@ -65,31 +65,6 @@ const CURATORIAL_TEAM = [
   },
 ];
 
-// The team that built BioSphere (supplied by Marq, 2026-11-18). Each focus line
-// follows the module ownership register in the repository guidance.
-const DEVELOPERS = [
-  {
-    name: "Charles Benedict “Boki” Boquecosa",
-    initials: "CB",
-    focus: "Dashboard, inquiries, visit requests and the public website",
-  },
-  {
-    name: "John Mark “Marq” Gerozaga",
-    initials: "JG",
-    focus: "Specimen inventory, dashboard and reports",
-  },
-  {
-    name: "Kyer Ivan Jayme",
-    initials: "KJ",
-    focus: "Cataloging, storage locations, the FAQ assistant, audit and backups",
-  },
-  {
-    name: "Voltaire Raul “V” Ratilla",
-    initials: "VR",
-    focus: "Sign-in and access control, QR exhibits and augmented reality",
-  },
-];
-
 export default function AboutPage() {
   return (
     <>
@@ -126,6 +101,52 @@ export default function AboutPage() {
             </Button>
           </div>
         </div>
+      </section>
+
+      {/* Sources: the USC Department of Biology (Overview) and Museums pages on usc.edu.ph,
+          and the museum's plaque quoting The Philippine Scientist 19 (1982): 1-2. */}
+      <section
+        id="overview"
+        aria-labelledby="overview-heading"
+        className="mx-auto grid max-w-[1240px] scroll-mt-24 gap-10 px-5 pb-24 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-14"
+      >
+        <div className="lg:col-span-7">
+          <h2
+            id="overview-heading"
+            className="reveal font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl"
+          >
+            Overview
+          </h2>
+          <p className="reveal mt-6 max-w-[60ch] text-lg leading-relaxed text-ink-muted">
+            Our biological collection grew up with the university&apos;s Department of Biology,
+            established in 1952. In the department&apos;s early years,{" "}
+            <strong className="font-semibold text-ink">Fr. Enrique (Heinrich) Schoenig, SVD</strong>,
+            led many expeditions into the field, and the plants and animals gathered on them became
+            a substantial collection.
+          </p>
+          <p className="reveal mt-5 max-w-[60ch] text-lg leading-relaxed text-ink-muted">
+            Visitors can still see that legacy in the USC Museum&apos;s Biological Collection. Today
+            the museum works with the Department of Biology, which cares for the Entomological and
+            Marine Biology Collections.
+          </p>
+        </div>
+
+        <figure className="reveal rounded-2xl bg-brand-soft p-7 sm:p-10 lg:col-span-5">
+          <p className="font-mono text-xs tracking-wide text-brand">Remembering Fr. Schoenig</p>
+          <blockquote className="mt-4 font-display text-2xl leading-snug font-semibold text-balance text-ink sm:text-3xl">
+            <p>&ldquo;A model of patience, industry, efficiency, dedication and faith in God&rdquo;</p>
+          </blockquote>
+          <figcaption className="mt-6 leading-relaxed text-ink-muted">
+            <p>
+              Fr. Josef Baumgartner paid this tribute to Fr. Schoenig, describing a singular person
+              who made God&apos;s love for humanity visible by revealing nature&apos;s mystery and
+              beauty through science.
+            </p>
+            <p className="mt-4 text-sm">
+              <cite>The Philippine Scientist</cite>, Vol. 19 (1982): 1&ndash;2
+            </p>
+          </figcaption>
+        </figure>
       </section>
 
       <section className="mx-auto grid max-w-[1240px] gap-14 px-5 pb-24 sm:px-8 lg:grid-cols-12">
@@ -246,53 +267,21 @@ export default function AboutPage() {
       <section
         id="about-biosphere"
         aria-labelledby="about-biosphere-heading"
-        className="mx-auto grid max-w-[1240px] scroll-mt-24 gap-12 px-5 pt-24 sm:px-8 lg:grid-cols-12 lg:gap-14"
+        className="mx-auto grid max-w-[1240px] scroll-mt-24 gap-5 px-5 pt-24 sm:px-8 md:grid-cols-12 md:gap-8"
       >
-        <div className="lg:col-span-5">
-          <p className="reveal font-mono text-xs tracking-wide text-brand">Behind this website</p>
-          <h2
-            id="about-biosphere-heading"
-            className="reveal mt-4 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl"
-          >
-            About BioSphere
-          </h2>
-          <p className="reveal mt-6 max-w-[52ch] text-lg leading-relaxed text-ink-muted">
-            BioSphere is the museum&apos;s digital home. Curators use it to catalog specimens, track
-            where they are kept, and answer visit requests and inquiries. Visitors explore the
-            collection in person at the museum, where the gallery&apos;s QR-linked exhibits open more
-            about each display, and can ask the museum assistant here anytime. It was built as a
-            capstone project at the University of San Carlos.
-          </p>
-          <aside className="reveal mt-8 rounded-2xl border border-line bg-surface p-6">
-            <p className="font-mono text-xs tracking-wide text-gold-700">Fun fact</p>
-            <p className="mt-2 leading-relaxed text-ink">
-              Most of the pictures on this website were first used by the developers as part of
-              their separate project for their Art Appreciation subject.
-            </p>
-          </aside>
-        </div>
-
-        <div className="lg:col-span-7">
-          <h3 className="reveal font-display text-2xl font-semibold tracking-tight text-ink">
-            The developers
-          </h3>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-            {DEVELOPERS.map((developer) => (
-              <li key={developer.name} className="reveal rounded-2xl border border-line bg-surface p-6">
-                <div className="flex items-center gap-4">
-                  <span
-                    aria-hidden
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-soft font-display text-base font-semibold text-brand"
-                  >
-                    {developer.initials}
-                  </span>
-                  <p className="font-display text-lg leading-snug font-semibold text-ink">{developer.name}</p>
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-ink-muted">{developer.focus}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <h2
+          id="about-biosphere-heading"
+          className="reveal font-display text-3xl font-semibold tracking-tight text-ink md:col-span-4"
+        >
+          About BioSphere
+        </h2>
+        <p className="reveal max-w-[60ch] text-lg leading-relaxed text-ink-muted md:col-span-8">
+          BioSphere is the museum&apos;s digital home. Curators use it to catalog specimens, track
+          where they are kept, and answer visit requests and inquiries. Visitors explore the
+          collection in person at the museum, where the gallery&apos;s QR-linked exhibits open more
+          about each display, and can ask the museum assistant here anytime. It was built as a
+          capstone project at the University of San Carlos.
+        </p>
       </section>
     </>
   );
