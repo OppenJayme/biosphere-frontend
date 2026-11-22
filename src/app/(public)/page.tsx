@@ -18,7 +18,7 @@ const WAYS_TO_CONNECT = [
     href: "/gallery",
   },
   {
-    title: "Meet the curator",
+    title: "Meet the curators",
     description: "Schedule a consultation for research, collection, or collaboration.",
     href: "/about#curatorial-team",
   },
