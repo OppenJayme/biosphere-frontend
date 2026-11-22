@@ -12,23 +12,35 @@ export const metadata: Metadata = {
     "The mission and history of the University of San Carlos Biological Museum.",
 };
 
+// Dates follow the USC Department of Biology and Museums pages (checked 2026-11-22). 1952 is
+// the department's founding and the start of collecting; 1967 is the USC Museum's inauguration.
 const HISTORY = [
   {
     year: "1952",
     text: (
       <>
-        Founded by the German priest and entomologist{" "}
-        <strong className="font-semibold text-ink">Enrique Schoenig</strong>.
+        The Department of Biology was founded, and the university began building the collections
+        that would later fill the USC Museum.
       </>
     ),
   },
   {
     year: "1967",
-    text: <>Formally inaugurated as part of the University of San Carlos on April 23, 1967.</>,
+    text: (
+      <>
+        The University of San Carlos Museum was formally inaugurated on April 23, with biodiversity
+        as one of its three original galleries.
+      </>
+    ),
   },
   {
     year: "Today",
-    text: <>Its collections are maintained in collaboration with the university&apos;s Department of Biology.</>,
+    text: (
+      <>
+        The Department of Biology maintains the Entomological and Marine Biology Collections, each
+        with its own curator, in collaboration with the USC Museum.
+      </>
+    ),
   },
 ];
 
@@ -50,18 +62,35 @@ const PURPOSE = [
   },
 ];
 
-// Contact details supplied by the museum (2026-11-07). The landline is the USC trunk line
+// Titles, degrees and research interests follow each curator's USC profile (2026-11-22).
+// Phone numbers were supplied by the museum (2026-11-07). The landline is the USC trunk line
 // plus local 122; the comma in its tel: link makes phones pause before dialing the local.
 const CURATORIAL_TEAM = [
   {
     name: "Fidel E. Bendanillo, MSc",
     initials: "FB",
-    role: "Curator",
+    role: "Curator, Entomological Collection",
+    degrees: [
+      { title: "B.S. Agriculture-Entomology", school: "Central Mindanao University", year: 1992 },
+      { title: "M.S. Biology", school: "University of San Carlos", year: 2013 },
+    ],
+    researchInterests:
+      "Insect taxonomy, insect ecology, forest entomology, post-harvest entomology, medical entomology",
     email: "febendanillo@usc.edu.ph",
     phones: [
       { label: "032-230-0100-122", href: "tel:+63322300100,122" },
       { label: "+63 956 689 2497", href: "tel:+639566892497" },
     ],
+  },
+  {
+    name: "Dave Anthony P. Valles",
+    initials: "DV",
+    role: "Curator, Marine Collection",
+    degrees: [{ title: "B.S. Marine Biology", school: "University of San Carlos", year: 1992 }],
+    researchInterests:
+      "Marine biodiversity, reef assessment and monitoring, molluscan and scleractinian coral taxonomy",
+    email: "daveanthony.valles@usc.edu.ph",
+    phones: [],
   },
 ];
 
@@ -82,7 +111,7 @@ export default function AboutPage() {
 
         <div className="lg:col-span-7">
           <p className="rise font-mono text-xs tracking-wide text-brand" style={stagger(1)}>
-            Est. 1952
+            Collecting since 1952
           </p>
           <h1
             className="rise mt-5 font-display text-5xl font-semibold leading-[1.02] tracking-tight text-balance text-ink sm:text-6xl"
@@ -226,17 +255,34 @@ export default function AboutPage() {
           </h2>
           <ul className="mt-10 grid gap-5 md:grid-cols-2">
             {CURATORIAL_TEAM.map((member) => (
-              <li key={member.name} className="reveal rounded-2xl bg-surface p-7">
+              <li key={member.name} className="reveal flex flex-col rounded-2xl bg-surface p-7">
                 <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                   <span aria-hidden className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-solid font-display text-lg font-semibold text-white">
                     {member.initials}
                   </span>
                   <div>
-                    <p className="font-display text-xl font-semibold text-ink">{member.name}</p>
+                    <h3 className="font-display text-xl font-semibold text-ink">{member.name}</h3>
                     <p className="font-mono text-xs text-ink-muted">{member.role}</p>
                   </div>
                 </div>
-                <ul className="mt-5 space-y-2">
+                <dl className="mt-6 mb-6 space-y-5 text-sm leading-relaxed">
+                  <div>
+                    <dt className="font-semibold text-ink">
+                      {member.degrees.length === 1 ? "Degree" : "Degrees"}
+                    </dt>
+                    {member.degrees.map((degree) => (
+                      <dd key={degree.title} className="mt-1.5 text-ink-muted">
+                        <span className="block text-ink">{degree.title}</span>
+                        {degree.school}, {degree.year}
+                      </dd>
+                    ))}
+                  </div>
+                  <div>
+                    <dt className="font-semibold text-ink">Research interests</dt>
+                    <dd className="mt-1.5 text-ink-muted">{member.researchInterests}</dd>
+                  </div>
+                </dl>
+                <ul className="mt-auto space-y-2 border-t border-line pt-5">
                   {member.phones.map((phone) => (
                     <li key={phone.href}>
                       <a
@@ -251,10 +297,14 @@ export default function AboutPage() {
                   <li>
                     <a
                       href={`mailto:${member.email}`}
-                      className="inline-flex items-center gap-2 text-sm font-medium break-all text-brand hover:underline"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline"
                     >
                       <MailIcon className="h-4 w-4 shrink-0" />
-                      {member.email}
+                      {/* A long address wraps before the @, and mid-word only as a last resort. */}
+                      <span className="min-w-0 wrap-anywhere">
+                        {member.email.split("@")[0]}
+                        <wbr />@{member.email.split("@")[1]}
+                      </span>
                     </a>
                   </li>
                 </ul>
