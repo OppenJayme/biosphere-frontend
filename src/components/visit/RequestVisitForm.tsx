@@ -37,7 +37,9 @@ import {
   type VehicleField,
   type VisitFormField,
 } from "@/features/visit-requests/form";
+import type { VisitorName } from "@/features/visit-requests/names-file";
 import { ScheduleDayHint } from "./ScheduleDayHint";
+import { VisitorNamesFile } from "./VisitorNamesFile";
 import { ScheduleTimeSelect } from "./ScheduleTimeSelect";
 import { useVisitAvailability } from "./useVisitAvailability";
 
@@ -89,6 +91,8 @@ export function RequestVisitForm({
   };
   const [scheduleRows, setScheduleRows] = useState<ScheduleRow[]>(() => [newScheduleRow()]);
   const [visitorRows, setVisitorRows] = useState<number[]>(() => [nextRowId()]);
+  // Starting values for rows added from a names file; typed rows have none.
+  const [visitorDefaults, setVisitorDefaults] = useState<Record<number, VisitorName>>({});
   const [visitorCount, setVisitorCount] = useState("1");
   const visitorCountCheck = visitorCountField.safeParse(visitorCount);
   const visitorLimit = visitorCountCheck.success ? visitorCountCheck.data : 0;
@@ -120,6 +124,7 @@ export function RequestVisitForm({
           setReceipt(null);
           setScheduleRows([newScheduleRow()]);
           setVisitorRows([nextRowId()]);
+          setVisitorDefaults({});
           setVisitorCount("1");
           setBringingVehicle(false);
           setVehicleRows([nextRowId()]);
@@ -185,6 +190,44 @@ export function RequestVisitForm({
         reloadAvailability();
       }
     }
+  }
+
+  /**
+   * Adds the names from a file as rows after any the visitor already filled in, dropping blank
+   * rows, and raises Number of Visitors to match when the list is longer. Returns the message
+   * shown under the file button.
+   */
+  function addNamesFromFile(names: VisitorName[], { fileName, skipped }: { fileName: string; skipped: number }) {
+    const typedRows = visitorRows.filter((rowId) => {
+      const first = formRef.current?.querySelector<HTMLInputElement>(`#visitor-first-${rowId}`)?.value.trim();
+      const last = formRef.current?.querySelector<HTMLInputElement>(`#visitor-last-${rowId}`)?.value.trim();
+      return Boolean(first || last);
+    });
+    const room = MAX_VISITOR_COUNT - typedRows.length;
+    if (room <= 0) {
+      return `No names were added: the list already has ${MAX_VISITOR_COUNT} visitors, the most a request can hold.`;
+    }
+    const added = names.slice(0, room).map((name) => ({ id: nextRowId(), name }));
+    setVisitorDefaults((current) => ({ ...current, ...Object.fromEntries(added.map(({ id, name }) => [id, name])) }));
+    setVisitorRows([...typedRows, ...added.map(({ id }) => id)]);
+    setVisitorErrors([]);
+    setErrors((current) => ({ ...current, visitors: undefined, visitorCount: undefined }));
+
+    const total = typedRows.length + added.length;
+    const raised = !visitorCountCheck.success || total > visitorLimit;
+    if (raised) setVisitorCount(String(total));
+
+    const needLastName = added.filter(({ name }) => !name.lastName).length;
+    return [
+      `Added ${added.length} name${added.length === 1 ? "" : "s"} from ${fileName}. Check each one before you send.`,
+      names.length > added.length &&
+        `Only the first ${added.length} were added: a request can have up to ${MAX_VISITOR_COUNT} visitors.`,
+      raised && `Number of Visitors is now ${total}.`,
+      needLastName > 0 && `${needLastName} need${needLastName === 1 ? "s" : ""} a last name.`,
+      skipped > 0 && `${skipped} line${skipped === 1 ? " was" : "s were"} not a name and ${skipped === 1 ? "was" : "were"} skipped.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   function updateScheduleRow(rowId: number, index: number, change: Partial<ScheduleInput>) {
@@ -451,6 +494,7 @@ export function RequestVisitForm({
               <p className="text-sm text-ink-muted">
                 Enter the first and last name of every visitor. The university needs the full list for campus entry.
               </p>
+              <VisitorNamesFile onNames={addNamesFromFile} />
               {visitorRows.map((rowId, index) => {
                 const rowError = visitorErrors[index];
                 const errorId = `visitor-${rowId}-error`;
@@ -474,6 +518,7 @@ export function RequestVisitForm({
                           type="text"
                           autoComplete="off"
                           placeholder="Juan"
+                          defaultValue={visitorDefaults[rowId]?.firstName}
                           required
                           maxLength={FIRST_NAME_MAX}
                           aria-label={`Visitor ${index + 1} first name`}
@@ -488,6 +533,7 @@ export function RequestVisitForm({
                           type="text"
                           autoComplete="off"
                           placeholder="Dela Cruz"
+                          defaultValue={visitorDefaults[rowId]?.lastName}
                           required
                           maxLength={LAST_NAME_MAX}
                           aria-label={`Visitor ${index + 1} last name`}
