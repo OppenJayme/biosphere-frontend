@@ -52,7 +52,17 @@ export type RecordContext = {
   mode: "create" | "complete";
   /** The record already has an active lot, so the storage section adds none. */
   hasActiveLot: boolean;
+  /**
+   * A blank accession number is assigned on save: always for a new record, and for a draft that
+   * has none yet (one saved before numbers were assigned automatically).
+   */
+  assignsAccessionNumber?: boolean;
 };
+
+/** Whether a blank accession number field gets the next number when the form is saved. */
+export function assignsAccessionOnSave(context: RecordContext) {
+  return context.mode === "create" || Boolean(context.assignsAccessionNumber);
+}
 
 export type RecordCheck = {
   key: string;
@@ -93,8 +103,8 @@ export function recordChecklist(values: Partial<RecordFormValues>, context: Reco
       key: "accessionNumber",
       label: "Accession number is assigned",
       section: "basic",
-      passed: Boolean(accession) || context.mode === "create",
-      note: !accession && context.mode === "create" ? "Assigned automatically when you save" : undefined,
+      passed: Boolean(accession) || assignsAccessionOnSave(context),
+      note: !accession && assignsAccessionOnSave(context) ? "Assigned automatically when you save" : undefined,
     },
     { key: "commonName", label: "Common name is recorded", section: "basic", passed: Boolean(text(values, "commonName")) },
     { key: "kingdom", label: "Taxonomic kingdom is recorded", section: "taxonomy", passed: Boolean(text(values, "kingdom")) },

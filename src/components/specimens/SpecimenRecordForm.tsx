@@ -103,7 +103,10 @@ export function SpecimenRecordForm({
   initialValues,
   activeLotCount = 0,
 }: SpecimenRecordFormProps) {
-  const context: RecordContext = { mode, hasActiveLot };
+  // A draft without an accession number gets the next one on save, like a new record. Judged from
+  // the record as loaded, not from what is typed, so clearing a number shows the usual rule.
+  const [assignsAccessionNumber] = useState(() => mode === "create" || !initialValues.accessionNumber.trim());
+  const context: RecordContext = { mode, hasActiveLot, assignsAccessionNumber };
   // Fixed for the life of the form. The page re-renders in the background (data refreshes), which
   // hands in new prop objects; nothing here may treat that as a reason to reset what was typed.
   const [initialState] = useState<RecordFormState>(() => ({ values: initialValues }));
@@ -224,7 +227,7 @@ export function SpecimenRecordForm({
               required
               errors={errorsFor("accessionNumber")}
               hint={
-                mode === "create"
+                assignsAccessionNumber
                   ? `Leave blank and BioSphere assigns the next number (USC-BM-${new Date().getFullYear()}-NNNN) when you save.`
                   : "Stays with the record. It can be corrected but not cleared."
               }
@@ -235,7 +238,7 @@ export function SpecimenRecordForm({
                 type="text"
                 maxLength={100}
                 defaultValue={defaults.accessionNumber}
-                placeholder={mode === "create" ? "Leave blank to assign automatically" : "e.g. USC-BM-2026-0001"}
+                placeholder={assignsAccessionNumber ? "Leave blank to assign automatically" : "e.g. USC-BM-2026-0001"}
                 {...aria(field("accessionNumber"))}
                 className={inputClasses}
               />

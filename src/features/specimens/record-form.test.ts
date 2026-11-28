@@ -52,9 +52,18 @@ describe("recordChecklist", () => {
     ]);
   });
 
-  it("needs an accession number when completing a draft that has none", () => {
+  it("still needs the number when a draft that had one is cleared", () => {
     const check = recordChecklist(complete, finish).find((item) => item.key === "accessionNumber");
     expect(check).toMatchObject({ passed: false, note: undefined });
+  });
+
+  // Curator report 2026-11-28: a draft saved before numbers were assigned automatically could
+  // not be cataloged without typing a number by hand.
+  it("assigns the next number on save for a draft that never had one", () => {
+    const check = recordChecklist(complete, { ...finish, assignsAccessionNumber: true }).find(
+      (item) => item.key === "accessionNumber",
+    );
+    expect(check).toMatchObject({ passed: true, note: "Assigned automatically when you save" });
   });
 
   it("rejects a future or malformed collection date", () => {
