@@ -12,8 +12,13 @@ export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
 /** Statuses a curator can set with PATCH. TURNED_TO_VISIT_REQUEST is set only by a referral. */
 export type CuratorSettableInquiryStatus = "REVIEWED" | "CLOSED";
 
+/**
+ * What the Change status dropdown offers. A curator can close a Pending inquiry directly (panel
+ * feedback: closing took two separate changes), but the backend still requires Reviewed before
+ * Closed (SRS B.3), so inquiryStatusSteps sends both and the history records the review.
+ */
 const NEXT_STATUSES: Record<InquiryStatus, CuratorSettableInquiryStatus[]> = {
-  PENDING: ["REVIEWED"],
+  PENDING: ["REVIEWED", "CLOSED"],
   REVIEWED: ["CLOSED"],
   TURNED_TO_VISIT_REQUEST: [],
   CLOSED: [],
@@ -21,6 +26,18 @@ const NEXT_STATUSES: Record<InquiryStatus, CuratorSettableInquiryStatus[]> = {
 
 export function nextInquiryStatuses(status: InquiryStatus) {
   return NEXT_STATUSES[status];
+}
+
+/**
+ * The backend status changes, in order, that move an inquiry from `from` to `to`. Closing a
+ * Pending inquiry is two: Reviewed, then Closed. Returns null when `to` is not offered from `from`.
+ */
+export function inquiryStatusSteps(
+  from: InquiryStatus,
+  to: CuratorSettableInquiryStatus,
+): CuratorSettableInquiryStatus[] | null {
+  if (!NEXT_STATUSES[from].includes(to)) return null;
+  return from === "PENDING" && to === "CLOSED" ? ["REVIEWED", "CLOSED"] : [to];
 }
 
 export function canReferInquiry(status: InquiryStatus) {

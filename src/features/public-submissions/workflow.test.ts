@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canReferInquiry, nextInquiryStatuses } from "../inquiries/workflow";
+import { canReferInquiry, inquiryStatusSteps, nextInquiryStatuses } from "../inquiries/workflow";
 import type { VisitRequest } from "../visit-requests/types";
 import { canApproveSchedule, isUpcomingVisit, nextVisitStatuses } from "../visit-requests/workflow";
 import { curatorActionError } from "./errors";
@@ -14,13 +14,23 @@ import {
 } from "./query";
 
 describe("status transitions (SRS B.3)", () => {
-  it("only offers the inquiry changes the backend allows", () => {
-    expect(nextInquiryStatuses("PENDING")).toEqual(["REVIEWED"]);
+  it("offers closing a Pending inquiry directly, and nothing after a final status", () => {
+    expect(nextInquiryStatuses("PENDING")).toEqual(["REVIEWED", "CLOSED"]);
     expect(nextInquiryStatuses("REVIEWED")).toEqual(["CLOSED"]);
     expect(nextInquiryStatuses("CLOSED")).toEqual([]);
     expect(nextInquiryStatuses("TURNED_TO_VISIT_REQUEST")).toEqual([]);
     expect(canReferInquiry("PENDING") && canReferInquiry("REVIEWED")).toBe(true);
     expect(canReferInquiry("CLOSED")).toBe(false);
+  });
+
+  it("closes a Pending inquiry through Reviewed, because the backend requires the review", () => {
+    expect(inquiryStatusSteps("PENDING", "CLOSED")).toEqual(["REVIEWED", "CLOSED"]);
+    expect(inquiryStatusSteps("PENDING", "REVIEWED")).toEqual(["REVIEWED"]);
+    expect(inquiryStatusSteps("REVIEWED", "CLOSED")).toEqual(["CLOSED"]);
+    // A stale page asking for a change the current status no longer allows gets no steps.
+    expect(inquiryStatusSteps("REVIEWED", "REVIEWED")).toBeNull();
+    expect(inquiryStatusSteps("CLOSED", "CLOSED")).toBeNull();
+    expect(inquiryStatusSteps("TURNED_TO_VISIT_REQUEST", "CLOSED")).toBeNull();
   });
 
   it("only offers the visit-request changes the backend allows", () => {

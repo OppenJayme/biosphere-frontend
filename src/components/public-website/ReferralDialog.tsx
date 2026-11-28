@@ -57,11 +57,14 @@ export function ReferralDialog({
   inquiry,
   action,
   triggerClassName = secondaryButtonClasses,
+  triggerLabel = "Turn into visit request",
 }: {
   inquiry: Inquiry;
   action: ReferralAction;
   /** Classes for the button that opens the dialog. */
   triggerClassName?: string;
+  /** Text of the button that opens the dialog. */
+  triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, {});
@@ -110,7 +113,7 @@ export function ReferralDialog({
         className={triggerClassName}
       >
         <CalendarIcon className="h-4 w-4" />
-        Turn into visit request
+        {triggerLabel}
       </button>
 
       <dialog
