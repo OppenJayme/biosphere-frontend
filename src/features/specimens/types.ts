@@ -85,6 +85,53 @@ const duplicateCheckFields = {
   duplicateCheckAvailable: z.boolean(),
 };
 
+const nullableText = z.string().nullable();
+
+/** GET /specimens/possible-duplicates: active records that match another, grouped for review. */
+export const duplicateReviewSchema = z.object({
+  recordCount: z.number().int().nonnegative(),
+  groupCount: z.number().int().nonnegative(),
+  groups: z.array(
+    z.object({
+      records: z
+        .array(
+          z.object({
+            specimenId: z.uuid(),
+            accessionNumber: nullableText,
+            commonName: nullableText,
+            scientificName: nullableText,
+            specimenCategory: nullableText,
+            status: z.enum(SPECIMEN_STATUSES),
+            collectionName: nullableText,
+            collector: nullableText,
+            donor: nullableText,
+            collectionLocation: nullableText,
+            collectionDate: nullableText,
+            activeLotCount: z.number().int().nonnegative(),
+            updatedAt: z.string(),
+          }),
+        )
+        .min(2),
+      matches: z
+        .array(
+          z.object({
+            firstSpecimenId: z.uuid(),
+            secondSpecimenId: z.uuid(),
+            confidence: z.enum(DUPLICATE_CONFIDENCES),
+            matchedFields: z.array(z.enum(DUPLICATE_MATCH_FIELDS)),
+            differingFields: z.array(z.enum(DUPLICATE_MATCH_FIELDS)),
+            message: z.string(),
+          }),
+        )
+        .min(1),
+    }),
+  ),
+});
+
+export type DuplicateReview = z.infer<typeof duplicateReviewSchema>;
+export type DuplicateReviewGroup = DuplicateReview["groups"][number];
+export type DuplicateReviewRecord = DuplicateReviewGroup["records"][number];
+
 /** POST /specimens/duplicate-check and GET /specimens/:id/possible-duplicates. */
 export const specimenDuplicateCheckResultSchema = z.object(duplicateCheckFields);
 

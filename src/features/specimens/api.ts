@@ -14,6 +14,7 @@ import {
   specimenCreateResultSchema,
   specimenDetailSchema,
   specimenDuplicateCheckResultSchema,
+  duplicateReviewSchema,
   specimenListSchema,
   specimenPageSchema,
   specimenProvenanceSchema,
@@ -520,6 +521,21 @@ export async function checkSpecimenDuplicates(input: DuplicateCheckInput) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid duplicate-check response.");
+  }
+
+  return result.data;
+}
+
+/** Every active record that matches another, grouped for the duplicate review page. */
+export async function getDuplicateReview() {
+  const response = await apiFetch<unknown>("/specimens/possible-duplicates", {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = duplicateReviewSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid duplicate review response.");
   }
 
   return result.data;

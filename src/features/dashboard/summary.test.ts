@@ -50,7 +50,7 @@ describe("dashboard summary mapping", () => {
       ["cataloged", "14", "/specimens?status=CATALOGED"],
       ["archived", "2", "/specimens?status=ARCHIVED"],
       ["pending", "3", "/public-website?status=PENDING"],
-      ["duplicates", "2", "/specimens?sortBy=scientificName&sortDirection=asc"],
+      ["duplicates", "2", "/specimens/duplicates"],
     ]);
     expect(stats[0].note).toBe("+3 this month");
     expect(stats[4].note).toBe("2 inquiries · 1 visit request");
