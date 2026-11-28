@@ -40,7 +40,7 @@ import { AR_SELECTION_NOTE_MAX_LENGTH, SLUG_MAX_LENGTH } from "@/features/exhibi
 import { EXHIBIT_STATUS_LABELS, exhibitDisplayName, type ExhibitRow } from "@/features/exhibits-qr/types";
 import { formatExhibitDate, layoutLabel, STATUS_STYLES } from "./exhibit-format";
 import type { ExhibitNotice } from "./ExhibitsWorkspace";
-import { ImageCarousel } from "@/components/ui/ImageViewer";
+import { ImageCarousel, PhotoLoading } from "@/components/ui/ImageViewer";
 
 function MediaPreview({ media, alt }: { media: ExhibitMediaResult | null; alt: string }) {
   if (media && media.previews.length > 0) {
@@ -55,10 +55,18 @@ function MediaPreview({ media, alt }: { media: ExhibitMediaResult | null; alt: s
     );
   }
 
-  let text = "Loading images…";
-  if (media?.message) text = media.message;
-  else if (media && media.media.length === 0) text = "No images uploaded yet.";
-  else if (media) {
+  if (!media) {
+    return (
+      <div className="relative aspect-4/3 overflow-hidden rounded-lg">
+        <PhotoLoading label="Loading images…" />
+      </div>
+    );
+  }
+
+  let text: string;
+  if (media.message) text = media.message;
+  else if (media.media.length === 0) text = "No images uploaded yet.";
+  else {
     text = `${media.media.length} image${media.media.length === 1 ? "" : "s"} uploaded. Images can be previewed here once the exhibit is published.`;
   }
 
@@ -440,7 +448,9 @@ export function ExhibitDetailPanel({
   onNotice: (notice: ExhibitNotice) => void;
   onArchived: () => void;
 }) {
-  const [media, setMedia] = useState<ExhibitMediaResult | null>(null);
+  // Tagged with the exhibit and status it was loaded for, so selecting another exhibit shows the
+  // loader instead of the previous exhibit's photos until its own response arrives.
+  const [loadedMedia, setLoadedMedia] = useState<{ key: string; result: ExhibitMediaResult } | null>(null);
   const [confirm, setConfirm] = useState<PanelConfirm | null>(null);
   // Kept after the dialog closes so the loading overlay can name the action that is running.
   const [running, setRunning] = useState<PanelConfirm | null>(null);
@@ -450,13 +460,15 @@ export function ExhibitDetailPanel({
   const [pending, startTransition] = useTransition();
   const exhibitId = exhibit?.id;
   const status = exhibit?.status;
+  const mediaKey = `${exhibitId}:${status}`;
+  const media = loadedMedia?.key === mediaKey ? loadedMedia.result : null;
 
   // Reload when the status changes too: preview links exist only while published.
   useEffect(() => {
     if (!exhibitId) return;
     let cancelled = false;
     loadExhibitMediaAction(exhibitId).then((result) => {
-      if (!cancelled) setMedia(result);
+      if (!cancelled) setLoadedMedia({ key: `${exhibitId}:${status}`, result });
     });
     return () => {
       cancelled = true;

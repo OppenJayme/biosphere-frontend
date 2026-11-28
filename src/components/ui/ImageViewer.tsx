@@ -2,8 +2,8 @@
  * The one image viewer for BioSphere, so every viewable photo opens, closes, switches and loads
  * the same way:
  *
- * - ImageFrame: a photo inside a fixed frame. It shows a soft skeleton (and the previous photo,
- *   blurred) until the new one has loaded, then fades or slides it in. No blank flash.
+ * - ImageFrame: a photo inside a fixed frame. It shows the BioSphere photo loader (over the
+ *   previous photo, blurred) until the new one has loaded, then fades or slides it in.
  * - ImageCarousel: previous/next over several photos, built on ImageFrame.
  * - ZoomableImage: a single photo. Both open the full-screen ImageViewer when clicked.
  * - ImageViewer: the full-screen lightbox. The backdrop fades in while the photo scales up from
@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, ExpandIcon, ImageIcon } from "@/components/icons";
+import { LogoMark } from "@/components/layout/LogoMark";
 
 export type ViewerImage = { src: string; alt: string; caption?: string | null };
 
@@ -32,6 +33,36 @@ const ENTER: Record<Direction, string> = {
 };
 
 const CLOSE_MS = 180;
+
+/**
+ * The BioSphere photo loader: the breathing logo, a label and a sliding bar. It matches the QR
+ * exhibit page's loading.tsx, so a scanned exhibit goes from page loader to photo loader without
+ * a visual jump. Covers its positioned frame.
+ */
+export function PhotoLoading({
+  label = "Loading photo…",
+  dark = false,
+  translucent = false,
+}: {
+  label?: string;
+  dark?: boolean;
+  /** Lets a blurred previous photo show through while the next one downloads. */
+  translucent?: boolean;
+}) {
+  const background = dark ? "bg-forest-900/80" : translucent ? "bg-sage-100/80" : "bg-sage-100";
+  return (
+    <div
+      role="status"
+      className={`absolute inset-0 flex flex-col items-center justify-center px-6 text-center ${background}`}
+    >
+      <LogoMark className="h-10 w-10 motion-safe:animate-[loading-breathe_1.8s_ease-in-out_infinite]" />
+      <p className={`mt-2 text-xs font-semibold ${dark ? "text-white/80" : "text-forest-900"}`}>{label}</p>
+      <div className="mt-2 h-1 w-full max-w-32 overflow-hidden rounded-full bg-forest-100">
+        <div className="h-full w-2/5 rounded-full bg-forest-700 motion-safe:animate-[loading-bar_1.2s_ease-in-out_infinite] motion-reduce:w-full motion-reduce:animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 /**
  * One photo in a positioned frame with a fixed size or aspect ratio. Remembers which photos have
@@ -72,21 +103,6 @@ export function ImageFrame({
 
   return (
     <>
-      {!current && (
-        <div
-          role="status"
-          aria-label="Loading photo"
-          className={`absolute inset-0 overflow-hidden ${dark ? "bg-white/10" : "bg-sage-100"}`}
-        >
-          <div
-            className={`absolute inset-0 motion-safe:animate-[viewer-shimmer_1.4s_ease-in-out_infinite] motion-reduce:animate-pulse ${
-              dark
-                ? "bg-linear-to-r from-transparent via-white/10 to-transparent"
-                : "bg-linear-to-r from-transparent via-white/70 to-transparent"
-            }`}
-          />
-        </div>
-      )}
       {shown.previous && !current && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -96,6 +112,8 @@ export function ImageFrame({
           className={`absolute inset-0 h-full w-full scale-105 opacity-60 blur-md ${fitClass}`}
         />
       )}
+      {/* Above the blurred previous photo, so the swap shows the museum loader rather than a blank frame. */}
+      {!current && <PhotoLoading dark={dark} translucent={Boolean(shown.previous)} />}
       {/* The key replaces the element, so each photo runs its own entrance once it has loaded. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

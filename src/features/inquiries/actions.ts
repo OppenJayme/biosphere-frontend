@@ -14,7 +14,8 @@ import type { ReturnQuery } from "../public-submissions/query";
 import { stringValue } from "../public-submissions/form-fields";
 import { NOTE_MAX } from "../public-submissions/history";
 import { emailOutcome, readVisitorEmail, type CuratorActionState } from "../public-submissions/email-form";
-import { addInquiryNote, referInquiry, sendInquiryReply, updateInquiryStatus } from "./api";
+import { addInquiryNote, getInquiry, referInquiry, sendInquiryReply, updateInquiryStatus } from "./api";
+import { inquiryStatusSteps, type CuratorSettableInquiryStatus } from "./workflow";
 import {
   readReferralForm,
   type ReferralFormField,
@@ -61,10 +62,33 @@ export async function updateInquiryStatusAction(
     return { note, message: parsed.error.issues[0]?.message ?? "Choose a valid status and try again." };
   }
 
+  // The current status comes from the backend, not the page, so a stale tab cannot pick the steps.
+  let steps: CuratorSettableInquiryStatus[] | null;
   try {
-    await updateInquiryStatus(parsed.data.id, { status: parsed.data.status, note: parsed.data.note });
+    const current = await getInquiry(parsed.data.id);
+    steps = inquiryStatusSteps(current.status, parsed.data.status);
   } catch (error) {
     return { note, message: actionErrorMessage(error, "inquiry-status") };
+  }
+  if (!steps) {
+    refreshPublicWebsiteConsumers();
+    return { note, message: "This inquiry's status has changed since the page loaded. Reload it and try again." };
+  }
+
+  // The curator's note belongs to the status they chose, so it goes with the last step only.
+  for (const [index, status] of steps.entries()) {
+    const last = index === steps.length - 1;
+    try {
+      await updateInquiryStatus(parsed.data.id, last ? { status, note: parsed.data.note } : { status });
+    } catch (error) {
+      if (index === 0) return { note, message: actionErrorMessage(error, "inquiry-status") };
+      // The review step went through, so the page must show Reviewed while the curator retries.
+      refreshPublicWebsiteConsumers();
+      return {
+        note,
+        message: `The inquiry was marked Reviewed, but closing it failed: ${actionErrorMessage(error, "inquiry-status")} Choose Closed to try again.`,
+      };
+    }
   }
 
   refreshPublicWebsiteConsumers();

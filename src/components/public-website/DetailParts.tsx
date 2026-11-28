@@ -42,18 +42,21 @@ export const dangerButtonClasses =
 export const secondaryButtonClasses =
   "inline-flex w-full items-center justify-center gap-2 rounded-lg border border-forest-700 py-2.5 text-sm font-semibold text-forest-700 hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
 
-/** Compact buttons for a record's action row; each opens a modal. */
-export const actionButtonClasses =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
-export const actionButtonSecondaryClasses =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-forest-700 bg-white px-3.5 py-2 text-sm font-semibold text-forest-700 hover:bg-forest-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
+/**
+ * Buttons for a record's action row; each opens a modal. Every button fills its grid cell at the
+ * same height, so the row reads as one even block whatever the labels are.
+ */
+const actionButtonBase =
+  "inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-center text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 focus-visible:ring-offset-2 disabled:opacity-60";
+export const actionButtonClasses = `${actionButtonBase} border border-forest-700 bg-forest-700 text-white hover:bg-forest-800`;
+export const actionButtonSecondaryClasses = `${actionButtonBase} border border-forest-700 bg-white text-forest-700 hover:bg-forest-50`;
 
-/** The row of action buttons at the bottom of a record's summary card. */
+/** The action buttons at the bottom of a record's summary card, in an even two-column grid. */
 export function ActionRow({ children }: { children: ReactNode }) {
   return (
     <div className="border-t border-black/5 pt-3">
       <p className="mb-2 text-xs font-medium text-zinc-500">Actions</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{children}</div>
     </div>
   );
 }
@@ -181,11 +184,22 @@ export function VisitorEmailFields({
   );
 }
 
-export type StatusOption = { value: string; label: string; description: string; destructive?: boolean };
+export type StatusOption = {
+  value: string;
+  label: string;
+  description: string;
+  destructive?: boolean;
+  /**
+   * Shown in place of the note and Set button when this option is chosen, for a change made by
+   * another flow (e.g. Turn into visit request opens the referral form). Never submitted as a status.
+   */
+  action?: ReactNode;
+};
 
 /**
- * Changes the workflow status to one of the transitions the backend allows from the current status.
- * Shown inside a modal, which supplies the heading.
+ * Changes the workflow status to one of the transitions offered from the current status, picked
+ * from a dropdown so inquiries and visit requests work the same way. Shown inside a modal, which
+ * supplies the heading.
  */
 export function StatusChangeForm({
   action,
@@ -200,7 +214,7 @@ export function StatusChangeForm({
   const [state, formAction, pending] = useActionState(action, {});
   const [choice, setChoice] = useState(options[0]?.value ?? "");
   const [notify, setNotify] = useState(state.notifyVisitor ?? true);
-  const groupId = useId();
+  const selectId = useId();
   const selected = options.find((option) => option.value === choice) ?? options[0];
 
   if (!selected) return null;
@@ -208,49 +222,78 @@ export function StatusChangeForm({
 
   return (
     <form action={formAction} className="space-y-3">
-      {options.length === 1 ? (
-        <>
-          <input type="hidden" name="status" value={selected.value} />
-          <p className="rounded-lg bg-sage-50 px-3 py-2 text-xs text-zinc-700">
-            <span className="font-semibold text-zinc-900">{selected.label}.</span> {selected.description}
-          </p>
-        </>
-      ) : (
-        <fieldset className="space-y-2">
-          <legend className="mb-1 text-xs font-medium text-zinc-700">New status</legend>
+      <div>
+        <label htmlFor={selectId} className="text-xs font-medium text-zinc-700">
+          New status
+        </label>
+        <select
+          id={selectId}
+          // An option with its own action is not a status this form can set.
+          name={selected.action ? undefined : "status"}
+          value={selected.value}
+          onChange={(event) => setChoice(event.target.value)}
+          aria-describedby={`${selectId}-description`}
+          className={`${textareaClasses} cursor-pointer`}
+        >
           {options.map((option) => (
-            <label
-              key={option.value}
-              htmlFor={`${groupId}-${option.value}`}
-              className="flex cursor-pointer gap-2.5 rounded-lg border border-black/10 px-3 py-2 text-xs has-checked:border-forest-700 has-checked:bg-forest-50"
-            >
-              <input
-                id={`${groupId}-${option.value}`}
-                type="radio"
-                name="status"
-                value={option.value}
-                checked={choice === option.value}
-                onChange={() => setChoice(option.value)}
-                className="mt-0.5 accent-forest-700"
-              />
-              <span>
-                <span className={`block font-semibold ${option.destructive ? "text-red-700" : "text-zinc-900"}`}>
-                  {option.label}
-                </span>
-                <span className="text-zinc-500">{option.description}</span>
-              </span>
-            </label>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
-        </fieldset>
-      )}
+        </select>
+        <p
+          id={`${selectId}-description`}
+          className={`mt-1.5 rounded-lg px-3 py-2 text-xs ${
+            selected.destructive ? "bg-red-50 text-red-800" : "bg-sage-50 text-zinc-700"
+          }`}
+        >
+          {selected.description}
+        </p>
+      </div>
 
+      {selected.action ? (
+        selected.action
+      ) : (
+        <StatusSubmit
+          state={state}
+          pending={pending}
+          selected={selected}
+          emailing={emailing}
+          visitorEmail={visitorEmail}
+          notify={notify}
+          onNotifyChange={setNotify}
+        />
+      )}
+    </form>
+  );
+}
+
+function StatusSubmit({
+  state,
+  pending,
+  selected,
+  emailing,
+  visitorEmail,
+  notify,
+  onNotifyChange,
+}: {
+  state: NoteState;
+  pending: boolean;
+  selected: StatusOption;
+  emailing: boolean;
+  visitorEmail?: { recipient: string; sendsFor: (status: string) => boolean };
+  notify: boolean;
+  onNotifyChange: (notify: boolean) => void;
+}) {
+  return (
+    <>
       <DecisionNote defaultValue={state.note} />
       {emailing && visitorEmail && (
         <VisitorEmailFields
           recipient={visitorEmail.recipient}
           defaultNotify={notify}
           defaultMessage={state.visitorMessage}
-          onNotifyChange={setNotify}
+          onNotifyChange={onNotifyChange}
         />
       )}
       <ActionError message={state.message} />
@@ -275,7 +318,7 @@ export function StatusChangeForm({
         pendingLabel="Updating status…"
         className={selected.destructive ? dangerButtonClasses : primaryButtonClasses}
       />
-    </form>
+    </>
   );
 }
 

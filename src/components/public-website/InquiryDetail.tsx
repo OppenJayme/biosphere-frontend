@@ -11,13 +11,14 @@ import {
   updateInquiryStatusAction,
 } from "@/features/inquiries/actions";
 import type { MailboxSyncStatus } from "@/features/mailbox-sync/types";
-import type { Inquiry } from "@/features/inquiries/types";
+import type { Inquiry, InquiryStatus } from "@/features/inquiries/types";
 import {
   INQUIRY_STATUS_LABELS,
   canReferInquiry,
   inquiryTypeLabel,
   isInquiryFinal,
   nextInquiryStatuses,
+  type CuratorSettableInquiryStatus,
 } from "@/features/inquiries/workflow";
 import { formatTimestamp } from "@/features/public-submissions/format";
 import type { CommunicationEntry } from "@/features/public-submissions/history";
@@ -38,6 +39,7 @@ import {
   messageCount,
   noteCount,
   panelClasses,
+  primaryButtonClasses,
   type StatusOption,
 } from "./DetailParts";
 import { ReferralDialog } from "./ReferralDialog";
@@ -46,19 +48,25 @@ import { InquiryStatusBadge } from "./StatusBadge";
 /** Anchor for the "Messages (N)" jump link; one inquiry is open at a time. */
 const MESSAGES_ID = "inquiry-messages";
 
-const STATUS_OPTIONS: Record<"REVIEWED" | "CLOSED", StatusOption> = {
-  REVIEWED: {
-    value: "REVIEWED",
-    label: "Reviewed",
-    description: "You have read the inquiry and are following it up.",
-  },
-  CLOSED: {
+/** The Change status choices for an inquiry. Closing a Pending one also records the review step. */
+function statusOption(status: CuratorSettableInquiryStatus, from: InquiryStatus): StatusOption {
+  if (status === "REVIEWED") {
+    return {
+      value: "REVIEWED",
+      label: "Reviewed",
+      description: "You have read the inquiry and are following it up.",
+    };
+  }
+  return {
     value: "CLOSED",
     label: "Closed",
-    description: "The inquiry needs no further action. It stays in the archive and history.",
+    description:
+      from === "PENDING"
+        ? "The inquiry needs no further action. It is marked Reviewed and then Closed in one step, and stays in the archive and history."
+        : "The inquiry needs no further action. It stays in the archive and history.",
     destructive: true,
-  },
-};
+  };
+}
 
 export function InquiryDetail({
   inquiry,
@@ -73,7 +81,34 @@ export function InquiryDetail({
   currentAccountId: string | null;
   mailboxStatus: MailboxSyncStatus | null;
 }) {
-  const statusOptions = nextInquiryStatuses(inquiry.status).map((status) => STATUS_OPTIONS[status]);
+  const referAction = referInquiryAction.bind(
+    null,
+    inquiry.id,
+    { phone: inquiry.phone === null, organization: inquiry.organization === null },
+    returnQuery,
+  );
+  const canRefer = !isInquiryFinal(inquiry.status) && canReferInquiry(inquiry.status);
+  const statusOptions: StatusOption[] = nextInquiryStatuses(inquiry.status).map((status) =>
+    statusOption(status, inquiry.status),
+  );
+  // Listed with the statuses so every way to move the inquiry on is in one place. It opens the
+  // referral form, which sets Turned to Visit Request when the visit request is created.
+  if (canRefer) {
+    statusOptions.push({
+      value: "TURNED_TO_VISIT_REQUEST",
+      label: "Turn into visit request",
+      description:
+        "Creates a visit request from this inquiry. Enter the visit details next; the inquiry changes only when the request is created.",
+      action: (
+        <ReferralDialog
+          inquiry={inquiry}
+          triggerClassName={primaryButtonClasses}
+          triggerLabel="Enter the visit details"
+          action={referAction}
+        />
+      ),
+    });
+  }
   const visitorMessage = { label: "Inquiry message", text: inquiry.message, receivedAt: inquiry.createdAt };
 
   return (
@@ -149,6 +184,15 @@ export function InquiryDetail({
               />
             </ModalButton>
 
+            {canRefer && (
+              <ReferralDialog
+                key={inquiry.id}
+                inquiry={inquiry}
+                triggerClassName={actionButtonClasses}
+                action={referAction}
+              />
+            )}
+
             {!isInquiryFinal(inquiry.status) && statusOptions.length > 0 && (
               <ModalButton
                 key={`status-${inquiry.id}-${inquiry.status}`}
@@ -159,7 +203,7 @@ export function InquiryDetail({
                   </>
                 }
                 title="Change status"
-                description="Move this inquiry to its next workflow stage."
+                description="Mark the inquiry Reviewed, close it, or turn it into a visit request."
                 className={actionButtonSecondaryClasses}
               >
                 <StatusChangeForm
@@ -167,20 +211,6 @@ export function InquiryDetail({
                   options={statusOptions}
                 />
               </ModalButton>
-            )}
-
-            {!isInquiryFinal(inquiry.status) && canReferInquiry(inquiry.status) && (
-              <ReferralDialog
-                key={inquiry.id}
-                inquiry={inquiry}
-                triggerClassName={actionButtonSecondaryClasses}
-                action={referInquiryAction.bind(
-                  null,
-                  inquiry.id,
-                  { phone: inquiry.phone === null, organization: inquiry.organization === null },
-                  returnQuery,
-                )}
-              />
             )}
 
             <ModalButton

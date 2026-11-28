@@ -35,6 +35,7 @@ import {
   fetchFaqSuggestions,
   isFaqFollowup,
   normalizeVisitorQuestion,
+  sameQuestion,
   type FaqAssistantRedirect,
   type PublicFaqQuestion,
 } from "@/features/faq/assistant";
@@ -204,7 +205,10 @@ export function FaqAssistantWidget() {
             from: "assistant",
             kind: "answer",
             text: data.answer.answer,
-            answeredQuestion: data.assisted ? undefined : data.answer.question,
+            // Repeating the visitor's own question above the answer reads as clutter (panel
+            // feedback); it is shown only when a differently worded question matched another FAQ.
+            answeredQuestion:
+              data.assisted || sameQuestion(question, data.answer.question) ? undefined : data.answer.question,
             assisted: data.assisted,
             sources: data.sources,
             related: data.related,
@@ -510,7 +514,7 @@ function AssistantReply({
           <span className="mb-1 block text-xs font-semibold text-brand">AI-assisted wording from approved FAQs</span>
         )}
         {message.answeredQuestion && (
-          <span className="mb-1 block text-xs font-semibold text-brand">{message.answeredQuestion}</span>
+          <span className="mb-1 block text-xs text-ink-muted">Answering &ldquo;{message.answeredQuestion}&rdquo;</span>
         )}
         {/* The live region reads the full reply once; the typed copy is visual only. */}
         <span className="sr-only">{message.text}</span>
