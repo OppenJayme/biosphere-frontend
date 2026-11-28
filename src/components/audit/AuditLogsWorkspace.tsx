@@ -14,12 +14,15 @@ export function AuditLogsWorkspace({
   auditPage,
   recordLabels = {},
   query,
+  recordFilterLabel = null,
   errorMessage,
 }: {
   auditPage: AuditLogPage | null;
   /** Record names keyed by `${recordType}:${recordId}`, from resolveAuditRecordLabels. */
   recordLabels?: Record<string, string>;
   query: AuditLogListQuery;
+  /** The name of the record a one-record filter shows, when it could be found. */
+  recordFilterLabel?: string | null;
   errorMessage?: string;
 }) {
   const logs = auditPage?.items ?? [];
@@ -28,7 +31,7 @@ export function AuditLogsWorkspace({
 
   return (
     <div className="space-y-4">
-      <AuditToolbar query={query} />
+      <AuditToolbar query={query} recordFilterLabel={recordFilterLabel} />
 
       {errorMessage ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">

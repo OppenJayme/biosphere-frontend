@@ -14,6 +14,7 @@ describe("audit-log query handling", () => {
       module: "  auth  ",
       action: " LOGIN ",
       affectedRecordType: " user_account ",
+      affectedRecordId: "5B59B17D-B6C0-4635-9353-973DB9A8F6CC",
       fromDate: "2026-09-01",
       toDate: "2026-09-24",
       page: "3",
@@ -26,13 +27,14 @@ describe("audit-log query handling", () => {
       module: "auth",
       action: "LOGIN",
       affectedRecordType: "user_account",
+      affectedRecordId: "5b59b17d-b6c0-4635-9353-973db9a8f6cc",
       fromDate: "2026-09-01",
       toDate: "2026-09-24",
       page: 3,
       limit: 50,
     });
     expect(auditLogListHref(query)).toBe(
-      "/audit-logs?search=curator&result=DENIED&module=auth&action=LOGIN&affectedRecordType=user_account&fromDate=2026-09-01&toDate=2026-09-24&limit=50&page=3",
+      "/audit-logs?search=curator&result=DENIED&module=auth&action=LOGIN&affectedRecordType=user_account&affectedRecordId=5b59b17d-b6c0-4635-9353-973db9a8f6cc&fromDate=2026-09-01&toDate=2026-09-24&limit=50&page=3",
     );
   });
 

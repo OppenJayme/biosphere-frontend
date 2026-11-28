@@ -10,6 +10,7 @@ import {
 } from "./types";
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MUSEUM_TIMEZONE_OFFSET = "+08:00";
 
 function firstValue(value: string | string[] | undefined) {
@@ -53,6 +54,7 @@ export function parseAuditLogListQuery(
     module: boundedText(params.module),
     action: boundedText(params.action),
     affectedRecordType: boundedText(params.affectedRecordType),
+    affectedRecordId: UUID_PATTERN.test(firstValue(params.affectedRecordId) ?? "") ? firstValue(params.affectedRecordId)!.toLowerCase() : "",
     fromDate: dateOnly(params.fromDate),
     toDate: dateOnly(params.toDate),
     page: Math.min(positiveInteger(params.page, 1), 1_000_000),
@@ -77,6 +79,7 @@ export function auditLogListHref(query: AuditLogListQuery, page = query.page) {
   if (query.affectedRecordType) {
     params.set("affectedRecordType", query.affectedRecordType);
   }
+  if (query.affectedRecordId) params.set("affectedRecordId", query.affectedRecordId);
   if (query.fromDate) params.set("fromDate", query.fromDate);
   if (query.toDate) params.set("toDate", query.toDate);
   if (query.limit !== DEFAULT_AUDIT_PAGE_SIZE) params.set("limit", String(query.limit));

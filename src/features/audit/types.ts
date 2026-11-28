@@ -43,6 +43,11 @@ export type AuditLogListQuery = {
   module: string;
   action: string;
   affectedRecordType: string;
+  /**
+   * One record's history (e.g. a storage location's "View full history" link). Kept out of the
+   * search box so an id is never shown on screen; the toolbar names the filter instead.
+   */
+  affectedRecordId: string;
   fromDate: string;
   toDate: string;
   page: number;

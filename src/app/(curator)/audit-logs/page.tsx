@@ -13,7 +13,7 @@ import type { AuditLogPage } from "@/features/audit/types";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { PageHeader } from "@/components/curator/PageHeader";
-import { resolveAuditRecordLabels, type RecordLabels } from "@/features/audit/record-labels";
+import { resolveAuditRecordLabel, resolveAuditRecordLabels, type RecordLabels } from "@/features/audit/record-labels";
 
 export const metadata: Metadata = {
   title: "Audit Log",
@@ -51,6 +51,12 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
     if (query.page > lastPage) redirect(auditLogListHref(query, lastPage));
   }
 
+  // Names the one record a "View audit log" link filtered to, so the banner never shows its id.
+  const recordFilterLabel =
+    query.affectedRecordId && query.affectedRecordType
+      ? await resolveAuditRecordLabel(query.affectedRecordType, query.affectedRecordId)
+      : null;
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -64,6 +70,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
         auditPage={auditPage}
         recordLabels={recordLabels}
         query={query}
+        recordFilterLabel={recordFilterLabel}
         errorMessage={errorMessage}
       />
     </div>

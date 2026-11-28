@@ -33,6 +33,7 @@ export async function listAuditLogs(params: ListAuditLogsParams): Promise<AuditL
   if (params.affectedRecordType) {
     query.set("affectedRecordType", params.affectedRecordType);
   }
+  if (params.affectedRecordId) query.set("affectedRecordId", params.affectedRecordId);
   if (params.actorId) query.set("actorId", params.actorId);
   if (from) query.set("from", from);
   if (to) query.set("to", to);

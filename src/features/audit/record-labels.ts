@@ -63,6 +63,17 @@ const LOOKUPS: Record<string, Lookup> = {
     new Map((await listVisitRequests()).map((request) => [request.id, request.organization])),
 };
 
+/** The name of one record, for the "history of one record" filter; null when it can't be found. */
+export async function resolveAuditRecordLabel(type: string, id: string): Promise<string | null> {
+  const lookup = LOOKUPS[type.toLowerCase()];
+  if (!lookup) return null;
+  try {
+    return (await lookup([id])).get(id) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveAuditRecordLabels(entries: AuditLogEntry[]): Promise<RecordLabels> {
   const idsByType = new Map<string, Set<string>>();
   for (const entry of entries) {
