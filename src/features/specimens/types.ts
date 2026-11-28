@@ -97,6 +97,16 @@ export const specimenSearchItemSchema = specimenSummarySchema.extend({
   collector: z.string().nullable(),
   totalQuantity: z.number().int().nonnegative(),
   conditionClasses: z.array(z.string()),
+  // Catalog checklist progress for the list (panel recommendation, 2026-11-28). Older backends
+  // omit it, and the list then shows the status alone.
+  catalogProgress: z
+    .object({
+      passed: z.number().int().nonnegative(),
+      total: z.number().int().positive(),
+      missing: z.array(z.string()),
+    })
+    .nullable()
+    .default(null),
   storageUnits: z.array(
     z.object({
       id: z.uuid(),

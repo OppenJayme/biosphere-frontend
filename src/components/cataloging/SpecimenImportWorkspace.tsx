@@ -13,6 +13,7 @@ import {
 } from "@/components/icons";
 import { requestSpecimenImportCommit } from "@/features/specimens/import-request";
 import {
+  importReadinessCounts,
   MAX_SPECIMEN_IMPORT_FILE_BYTES,
   selectedWarningCount,
   specimenImportPreviewSchema,
@@ -23,6 +24,7 @@ import {
   type SpecimenImportPreviewRow,
 } from "@/features/specimens/import-types";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
+import { shortRequirementLabel } from "@/features/specimens/lifecycle";
 import { CATALOGING_FILE_FEEDBACK_CLASSES } from "@/features/specimens/control-styles";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
@@ -64,6 +66,7 @@ export function SpecimenImportWorkspace() {
     () => (preview ? selectedWarningCount(preview, selected) : 0),
     [preview, selected],
   );
+  const readiness = preview ? importReadinessCounts(preview) : { ready: 0, needDetails: 0 };
   const validRows = preview?.rows.filter((row) => row.valid) ?? [];
   // "Select all" covers the default rows; archived backup rows are picked one by one.
   const defaultRows = validRows.filter((row) => !row.archivedInSource);
@@ -252,6 +255,31 @@ export function SpecimenImportWorkspace() {
             </div>
           </div>
 
+          {readiness.ready + readiness.needDetails > 0 && (
+            <p className="rounded-lg border border-black/10 bg-sage-50 p-3 text-xs text-zinc-700">
+              Every record is imported as Uncataloged.{" "}
+              {readiness.needDetails === 0 ? (
+                <strong className="font-semibold text-forest-800">
+                  All {plural(readiness.ready, "valid row")} have everything needed to catalog right after import.
+                </strong>
+              ) : (
+                <>
+                  {readiness.ready > 0 && (
+                    <>
+                      <strong className="font-semibold text-forest-800">{readiness.ready} could be cataloged right after import</strong>;{" "}
+                    </>
+                  )}
+                  <strong className="font-semibold text-amber-800">
+                    {readiness.ready === 0
+                      ? `None of the ${plural(readiness.needDetails, "valid row")} has everything needed to catalog yet`
+                      : `${readiness.needDetails} will need more details first`}
+                  </strong>
+                  . Missing details lists what each row lacks; after importing, Complete record fills it in.
+                </>
+              )}
+            </p>
+          )}
+
           {preview.restoreNotice && (
             <div role="note" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
               <p className="font-semibold">Specimen and lot re-import, not a full restore</p>
@@ -305,6 +333,7 @@ export function SpecimenImportWorkspace() {
                   <th className="px-3 py-3">Category</th>
                   <th className="px-3 py-3">Classification</th>
                   <th className="px-3 py-3">Review result</th>
+                  <th className="px-3 py-3">Missing details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
@@ -346,6 +375,9 @@ export function SpecimenImportWorkspace() {
                         </div>
                       )}
                       {row.valid && row.duplicateWarnings.length === 0 && row.fieldWarnings.length === 0 && <span className="inline-flex items-center gap-1 text-xs font-medium text-forest-700"><CheckIcon className="h-3.5 w-3.5" /> Ready</span>}
+                    </td>
+                    <td className="max-w-[300px] px-3 py-3 align-top text-xs">
+                      <ImportMissingDetails row={row} />
                     </td>
                   </tr>
                 ))}
@@ -408,6 +440,41 @@ export function SpecimenImportWorkspace() {
             </div>
           </div>
         </section>
+      )}
+    </div>
+  );
+}
+
+/**
+ * What a row will still lack after import, in two tiers: catalog requirements (amber), then
+ * optional details that are simply not recorded (grey, collapsed, since blanks there are normal).
+ */
+function ImportMissingDetails({ row }: { row: SpecimenImportPreviewRow }) {
+  if (!row.valid) return <span className="text-zinc-400">—</span>;
+  const missing = row.catalogReadiness?.missingRequirements ?? [];
+  const notRecorded = row.notRecorded;
+  if (!row.catalogReadiness && notRecorded.length === 0) return <span className="text-zinc-400">—</span>;
+
+  return (
+    <div className="space-y-1.5">
+      {row.catalogReadiness &&
+        (missing.length === 0 ? (
+          <span className="inline-flex items-center gap-1 font-medium text-forest-700">
+            <CheckIcon className="h-3.5 w-3.5" /> Ready to catalog
+          </span>
+        ) : (
+          <p className="text-amber-800">
+            <span className="font-semibold">Needed to catalog:</span>{" "}
+            {missing.map(shortRequirementLabel).join(", ")}
+          </p>
+        ))}
+      {notRecorded.length > 0 && (
+        <details className="text-zinc-500">
+          <summary className="cursor-pointer select-none hover:text-zinc-700">
+            {notRecorded.length} optional {notRecorded.length === 1 ? "detail" : "details"} not recorded
+          </summary>
+          <p className="mt-1 text-zinc-600">{notRecorded.join(", ")}</p>
+        </details>
       )}
     </div>
   );

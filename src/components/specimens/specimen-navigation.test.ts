@@ -30,6 +30,7 @@ const specimen: SpecimenSearchItem = {
   totalQuantity: 0,
   conditionClasses: [],
   storageUnits: [],
+  catalogProgress: null,
 };
 
 describe("catalog navigation without JavaScript", () => {
@@ -63,5 +64,40 @@ describe("catalog navigation without JavaScript", () => {
     expect(html).toContain('href="/specimens?selected=none"');
     expect(html).toContain('aria-label="Clear selection"');
     expect(html).toContain('id="selected-specimen"');
+  });
+});
+
+describe("catalog progress in the list (panel recommendation, 2026-11-28)", () => {
+  const render = (rows: SpecimenSearchItem[]) =>
+    renderToStaticMarkup(
+      createElement(SpecimenTable, {
+        specimens: rows,
+        selectedId: null,
+        onSelect: vi.fn(),
+        onOpen: vi.fn(),
+        previewHref: (id: string) => `/specimens?selected=${id}`,
+      }),
+    );
+
+  it("shows how far an uncataloged record is and links to Complete record", () => {
+    const html = render([
+      {
+        ...specimen,
+        catalogProgress: { passed: 5, total: 8, missing: ["Taxonomic kingdom is recorded", "Collection is assigned", "Future rule"] },
+      },
+    ]);
+    expect(html).toContain("5 of 8 ready");
+    expect(html).toContain(`href="/specimens/${specimen.id}/complete"`);
+    expect(html).toContain("Missing: Kingdom, Collection, Future rule");
+  });
+
+  it("says Ready to catalog when nothing is missing", () => {
+    expect(render([{ ...specimen, catalogProgress: { passed: 8, total: 8, missing: [] } }])).toContain("Ready to catalog");
+  });
+
+  it("shows nothing extra for cataloged records or older backends", () => {
+    const cataloged = render([{ ...specimen, status: "CATALOGED", catalogProgress: { passed: 8, total: 8, missing: [] } }]);
+    expect(cataloged).not.toContain("/complete");
+    expect(render([specimen])).not.toContain("/complete");
   });
 });

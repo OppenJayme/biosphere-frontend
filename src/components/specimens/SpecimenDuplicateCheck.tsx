@@ -89,11 +89,13 @@ export function SpecimenDuplicateCheck({ formRef, excludeSpecimenId }: SpecimenD
 
   return (
     <div aria-live="polite" className="rounded-xl border border-black/10 bg-white p-4 text-sm sm:p-5">
-      {checking && <p className="text-zinc-600">Checking for possible duplicates…</p>}
+      {checking && <p className="text-zinc-600">Checking for duplicates…</p>}
 
       {!checking && state.status === "clear" && (
+        // A definite result reads as one (panel, 2026-11-28); "possible" stays on actual matches only.
         <p className="text-emerald-800">
-          No possible duplicates were found for this accession number and name.
+          <span className="font-semibold">No duplicates found.</span>{" "}
+          <span className="text-emerald-700">Checked against active records with the same accession number or name.</span>
         </p>
       )}
 
@@ -115,8 +117,8 @@ export function SpecimenDuplicateCheck({ formRef, excludeSpecimenId }: SpecimenD
       {!checking && state.status === "unavailable" && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-950">
           <p>
-            The duplicate check could not run, so possible duplicates are unknown. You can still
-            save.
+            The duplicate check could not run, so it is not known yet whether this is a duplicate.
+            You can still save.
           </p>
           <button
             type="button"

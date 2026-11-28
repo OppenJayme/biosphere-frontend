@@ -36,6 +36,13 @@ export const specimenImportPreviewRowSchema = z.object({
   // Lots that will be created with the record, and lots left out (with a note why).
   lotsToImport: z.number().int().nonnegative().default(0),
   lotsSkipped: z.number().int().nonnegative().default(0),
+  // What the record will still need after import (panel recommendation, 2026-11-28). Older
+  // backends omit both; the review then shows nothing rather than guessing.
+  catalogReadiness: z
+    .object({ requirementsMet: z.boolean(), missingRequirements: z.array(z.string()) })
+    .nullable()
+    .default(null),
+  notRecorded: z.array(z.string()).default([]),
 });
 
 /** Lots read from a backup workbook's Lots sheet. */
@@ -103,6 +110,13 @@ export function validImportRowNumbers(preview: SpecimenImportPreview) {
   return preview.rows
     .filter((row) => row.valid && !row.archivedInSource)
     .map((row) => row.rowNumber);
+}
+
+/** Valid rows that could be cataloged right after import, and those that will need details first. */
+export function importReadinessCounts(preview: SpecimenImportPreview) {
+  const valid = preview.rows.filter((row) => row.valid && row.catalogReadiness);
+  const ready = valid.filter((row) => row.catalogReadiness?.requirementsMet).length;
+  return { ready, needDetails: valid.length - ready };
 }
 
 export function selectedWarningCount(

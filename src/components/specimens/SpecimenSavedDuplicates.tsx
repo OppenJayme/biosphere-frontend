@@ -48,7 +48,8 @@ export async function SpecimenSavedDuplicates({ specimenId, trigger }: SpecimenS
   if (outcome === "clear") {
     return (
       <p role="status" className="text-sm text-emerald-800">
-        No possible duplicates were found for this record.
+        <span className="font-semibold">No duplicates found.</span>{" "}
+        <span className="text-emerald-700">Checked against active records with the same accession number or name.</span>
       </p>
     );
   }
@@ -60,8 +61,8 @@ export async function SpecimenSavedDuplicates({ specimenId, trigger }: SpecimenS
       className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
     >
       <p>
-        {SAVED_LABEL[trigger]} The duplicate check could not run, so possible duplicates are
-        unknown.{trigger === "created" && " Do not create the record again."}
+        {SAVED_LABEL[trigger]} The duplicate check could not run, so it is not known yet
+        whether this is a duplicate.{trigger === "created" && " Do not create the record again."}
       </p>
       <DuplicateRecheckButton />
     </div>

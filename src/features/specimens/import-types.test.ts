@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  importReadinessCounts,
   selectedWarningCount,
   specimenImportCommitSchema,
   specimenImportPreviewSchema,
   validateImportFileMetadata,
   validImportRowNumbers,
 } from "./import-types";
+import { shortRequirementLabel } from "./lifecycle";
 
 const preview = {
   previewId: "11111111-1111-4111-8111-111111111111",
@@ -163,5 +165,34 @@ describe("specimen import contracts", () => {
         size: 5 * 1024 * 1024 + 1,
       }),
     ).toMatch(/5 MB/i);
+  });
+});
+
+describe("import missing details (panel recommendation, 2026-11-28)", () => {
+  const readiness = (requirementsMet: boolean, missingRequirements: string[]) => ({ requirementsMet, missingRequirements });
+
+  it("counts valid rows ready to catalog apart from those that need details", () => {
+    const parsed = specimenImportPreviewSchema.parse({
+      ...preview,
+      rows: [
+        { ...preview.rows[0], catalogReadiness: readiness(true, []), notRecorded: ["Collector"] },
+        { ...preview.rows[1], catalogReadiness: readiness(false, ["Taxonomic kingdom is recorded"]) },
+        { ...preview.rows[2], catalogReadiness: readiness(false, ["Common name is recorded"]) },
+      ],
+    });
+    expect(importReadinessCounts(parsed)).toEqual({ ready: 1, needDetails: 1 });
+    expect(parsed.rows[0].notRecorded).toEqual(["Collector"]);
+    expect(parsed.rows[1].notRecorded).toEqual([]);
+  });
+
+  it("shows nothing for an older backend that does not report readiness", () => {
+    const parsed = specimenImportPreviewSchema.parse(preview);
+    expect(parsed.rows[0].catalogReadiness).toBeNull();
+    expect(importReadinessCounts(parsed)).toEqual({ ready: 0, needDetails: 0 });
+  });
+
+  it("shortens checklist labels and passes unknown ones through", () => {
+    expect(shortRequirementLabel("A valid collection date on or before today is recorded")).toBe("Collection date");
+    expect(shortRequirementLabel("A future rule")).toBe("A future rule");
   });
 });
