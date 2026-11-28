@@ -37,4 +37,7 @@ export const PLACEHOLDER_IMAGES = {
 
   // About — "Through the Years"
   aboutHistory, // museum: display cabinets of preserved specimens
+
+  // Curator login showcase (not a public page)
+  authShowcase: unsplash("1583212292454-1fe6229603b7"), // stock: coral reef
 } as const;
