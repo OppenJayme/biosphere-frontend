@@ -47,7 +47,7 @@ export async function commitSpecimenImportAction(input: {
   previewId: string;
   rowNumbers: number[];
 }): Promise<ImportActionResult<SpecimenImportCommit>> {
-  if (!(await verifySession())) redirect("/login?from=/cataloging/import");
+  if (!(await verifySession())) redirect("/login?from=/specimens/import");
 
   const parsed = commitInputSchema.safeParse(input);
   if (!parsed.success) {
@@ -58,7 +58,6 @@ export async function commitSpecimenImportAction(input: {
   const rowNumbers = [...new Set(parsed.data.rowNumbers)].sort((a, b) => a - b);
   try {
     const data = await commitSpecimenImport(parsed.data.previewId, rowNumbers);
-    revalidatePath("/cataloging");
     revalidatePath("/specimens");
     return { ok: true, data };
   } catch (error) {

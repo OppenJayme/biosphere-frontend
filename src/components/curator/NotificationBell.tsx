@@ -309,7 +309,12 @@ export function NotificationBell({ ownerId }: { ownerId: string }) {
                   >
                     <Link
                       href={notificationHref(item)}
-                      onClick={() => setOpen(false)}
+                      onClick={() => {
+                        setOpen(false);
+                        // Opening an alert reads it, with no toast. The feed provider lives in the
+                        // workspace layout, so the update finishes after the page changes.
+                        if (unread) void changeState(item, "READ");
+                      }}
                       className={`flex gap-3 py-3 pl-4 text-sm focus-visible:outline-none ${
                         managed ? "pr-[4.5rem]" : "pr-4"
                       } ${tone}`}

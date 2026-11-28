@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { EyeIcon } from "@/components/icons";
+import { shortRequirementLabel } from "@/features/specimens/lifecycle";
 import type { SpecimenSearchItem, SpecimenSummary } from "@/features/specimens/types";
 
 const STATUS_STYLES: Record<SpecimenSummary["status"], string> = {
@@ -32,6 +33,42 @@ function StorageUnitsCell({ units }: { units: SpecimenSearchItem["storageUnits"]
       {first.label}
       {rest.length > 0 && <span className="ml-1 text-xs text-zinc-500">+{rest.length} more</span>}
     </span>
+  );
+}
+
+/**
+ * How close an Uncataloged record is to being cataloged, under its status badge. It links to
+ * Complete record, and the tooltip names what is missing.
+ */
+function CatalogProgress({ specimen }: { specimen: SpecimenSearchItem }) {
+  const progress = specimen.catalogProgress;
+  if (specimen.status !== "UNCATALOGED" || !progress) return null;
+  const ready = progress.passed === progress.total;
+  const missing = progress.missing.map(shortRequirementLabel).join(", ");
+
+  return (
+    <Link
+      href={`/specimens/${specimen.id}/complete`}
+      prefetch={false}
+      data-open-record
+      title={ready ? "Everything required is filled in. Open to catalog it." : `Missing: ${missing}`}
+      aria-label={
+        ready
+          ? `Ready to catalog. Complete the record for ${specimen.commonName ?? "this specimen"}`
+          : `${progress.passed} of ${progress.total} catalog requirements met. Missing: ${missing}`
+      }
+      className="mt-1.5 block w-24 rounded focus-visible:outline-2 focus-visible:outline-forest-700"
+    >
+      <span className={`block text-[0.6875rem] font-medium tabular-nums ${ready ? "text-forest-700" : "text-zinc-500 hover:text-forest-800"}`}>
+        {ready ? "Ready to catalog" : `${progress.passed} of ${progress.total} ready`}
+      </span>
+      <span aria-hidden className="mt-0.5 block h-1 overflow-hidden rounded-full bg-zinc-200">
+        <span
+          className={`block h-full rounded-full ${ready ? "bg-forest-600" : "bg-amber-500"}`}
+          style={{ width: `${(progress.passed / progress.total) * 100}%` }}
+        />
+      </span>
+    </Link>
   );
 }
 
@@ -129,6 +166,7 @@ export function SpecimenTable({
                   >
                     {statusLabel(specimen.status)}
                   </span>
+                  <CatalogProgress specimen={specimen} />
                 </td>
                 <td className="py-2.5 pr-3 text-right whitespace-nowrap tabular-nums text-zinc-700">
                   {specimen.totalQuantity.toLocaleString()}

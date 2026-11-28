@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SpecimenCoreForm } from "@/components/specimens/SpecimenCoreForm";
+import { SpecimenRecordForm } from "@/components/specimens/SpecimenRecordForm";
+import { listActiveStorageUnits } from "@/features/specimen-lots/api";
+import { buildAssignableStorageUnitOptions } from "@/features/specimen-lots/types";
 import { listCollections } from "@/features/specimens/api";
-import { EMPTY_SPECIMEN_FORM_VALUES } from "@/features/specimens/form";
+import { EMPTY_RECORD_FORM_VALUES } from "@/features/specimens/record-form";
 import { verifySession } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "New Specimen Draft",
+  title: "New Specimen",
 };
 
 export default async function NewSpecimenPage() {
   if (!(await verifySession())) redirect("/login?from=/specimens/new");
 
   let collections;
+  let storageUnits;
   try {
-    collections = await listCollections();
+    [collections, storageUnits] = await Promise.all([
+      listCollections(),
+      listActiveStorageUnits().then(buildAssignableStorageUnitOptions),
+    ]);
   } catch {
     return (
       <div className="space-y-5">
@@ -25,8 +31,8 @@ export default async function NewSpecimenPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-semibold">The specimen form could not be prepared.</p>
           <p className="mt-1 text-amber-900">
-            Collection data is unavailable, so no incomplete selection will be submitted. Check
-            your connection and try again.
+            Collections or storage locations are unavailable, so nothing was saved. Check your
+            connection and try again.
           </p>
           <Link
             href="/specimens/new"
@@ -45,17 +51,18 @@ export default async function NewSpecimenPage() {
         ← Back to specimen catalog
       </Link>
       <header>
-        <h1 className="font-serif text-2xl font-semibold text-forest-800">
-          Create specimen draft
-        </h1>
+        <h1 className="font-serif text-2xl font-semibold text-forest-800">New specimen</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Start an uncataloged core record. Catalog completion remains a separate controlled step.
+          Fill in what you have. Save it as a draft at any point, or catalog it in one step once
+          the checklist is complete.
         </p>
       </header>
-      <SpecimenCoreForm
+      <SpecimenRecordForm
         mode="create"
+        hasActiveLot={false}
         collections={collections}
-        initialValues={{ ...EMPTY_SPECIMEN_FORM_VALUES }}
+        storageUnits={storageUnits}
+        initialValues={{ ...EMPTY_RECORD_FORM_VALUES }}
       />
     </div>
   );
