@@ -9,14 +9,17 @@ function TreeNode({
   node,
   depth,
   selectedId,
+  expandedIds,
   onSelect,
 }: {
   node: StorageTreeNode;
   depth: number;
   selectedId: string;
+  expandedIds: ReadonlySet<string>;
   onSelect: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(depth < 1);
+  // Top-level rooms start open, and so does every location above the selected one.
+  const [expanded, setExpanded] = useState(depth < 1 || expandedIds.has(node.id));
   const hasChildren = node.children.length > 0;
   const selected = node.id === selectedId;
 
@@ -52,7 +55,7 @@ function TreeNode({
       {hasChildren && expanded && (
         <ul>
           {node.children.map((child) => (
-            <TreeNode key={child.id} node={child} depth={depth + 1} selectedId={selectedId} onSelect={onSelect} />
+            <TreeNode key={child.id} node={child} depth={depth + 1} selectedId={selectedId} expandedIds={expandedIds} onSelect={onSelect} />
           ))}
         </ul>
       )}
@@ -63,16 +66,18 @@ function TreeNode({
 export function LocationTree({
   nodes,
   selectedId,
+  expandedIds = new Set(),
   onSelect,
 }: {
   nodes: StorageTreeNode[];
   selectedId: string;
+  expandedIds?: ReadonlySet<string>;
   onSelect: (id: string) => void;
 }) {
   return (
     <ul className="space-y-0.5">
       {nodes.map((node) => (
-        <TreeNode key={node.id} node={node} depth={0} selectedId={selectedId} onSelect={onSelect} />
+        <TreeNode key={node.id} node={node} depth={0} selectedId={selectedId} expandedIds={expandedIds} onSelect={onSelect} />
       ))}
     </ul>
   );
