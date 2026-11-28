@@ -45,7 +45,7 @@ export function buildStats(summary: DashboardSummary): DashboardStat[] {
       note: specimens.addedThisMonth > 0 ? `+${specimens.addedThisMonth} this month` : "No new records this month",
       tone: "positive",
       icon: "specimen",
-      href: "/specimens",
+      href: "/specimens?status=all",
     },
     {
       key: "uncataloged",
@@ -125,7 +125,7 @@ export function buildAttention(summary: DashboardSummary): AttentionItem[] {
       count: specimens.byStatus.UNCATALOGED,
       text: countLabel(specimens.byStatus.UNCATALOGED, "specimen is", "specimens are") + " waiting to be cataloged",
       action: "Continue",
-      href: "/cataloging",
+      href: "/specimens?status=UNCATALOGED",
     },
     {
       key: "duplicates",

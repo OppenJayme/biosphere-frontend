@@ -144,7 +144,6 @@ export async function restoreSpecimenAction(
   }
 
   refreshSpecimenPaths(safeId.data);
-  revalidatePath("/cataloging");
   revalidatePath(`/specimens/${safeId.data}/history`);
   revalidatePath("/audit-logs");
   const notice = result.restored

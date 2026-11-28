@@ -12,7 +12,6 @@ import {
   CalendarIcon,
   HierarchyIcon,
   PawIcon,
-  DocumentTextIcon,
   MailIcon,
   MapPinIcon,
   CubeIcon,
@@ -43,7 +42,6 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
     label: "Collection",
     items: [
       { label: "Specimens", href: "/specimens", icon: PawIcon, accent: NAV_ACCENTS.specimens },
-      { label: "Cataloging", href: "/cataloging", icon: DocumentTextIcon, accent: NAV_ACCENTS.cataloging },
       { label: "Locations", href: "/storage", icon: MapPinIcon, accent: NAV_ACCENTS.locations },
     ],
   },

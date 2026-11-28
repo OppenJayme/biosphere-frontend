@@ -45,7 +45,7 @@ describe("dashboard summary mapping", () => {
     const stats = buildStats(summary());
 
     expect(stats.map((stat) => [stat.key, stat.value, stat.href])).toEqual([
-      ["total", "29", "/specimens"],
+      ["total", "29", "/specimens?status=all"],
       ["uncataloged", "13", "/specimens?status=UNCATALOGED"],
       ["cataloged", "14", "/specimens?status=CATALOGED"],
       ["archived", "2", "/specimens?status=ARCHIVED"],

@@ -11,7 +11,7 @@ import { duplicateRecheckTrigger } from "@/features/specimens/duplicates";
 import { ApiError } from "@/lib/api-client";
 import { verifySession } from "@/lib/session";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
-import { PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
+import { PAGE_ACTION_PRIMARY, PAGE_ACTION_SECONDARY } from "@/components/curator/PageHeader";
 
 const STATUS_LABELS = { UNCATALOGED: "Uncataloged", CATALOGED: "Cataloged", ARCHIVED: "Archived" } as const;
 const STATUS_TONES: Record<keyof typeof STATUS_LABELS, BadgeTone> = {
@@ -134,6 +134,12 @@ export default async function SpecimenDetailsPage({
         </div>
         {/* "Edit basic details" sits on the Basic details card itself (curator UAT, 2026-11-14). */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* One page fixes everything the checklist flags (panel recommendation, 2026-11-28). */}
+          {detail.specimen.status === "UNCATALOGED" && (
+            <Link href={`/specimens/${id}/complete`} className={PAGE_ACTION_PRIMARY}>
+              Complete record
+            </Link>
+          )}
           <Link href={`/specimens/${id}/history`} className={PAGE_ACTION_SECONDARY}>
             Change history
           </Link>

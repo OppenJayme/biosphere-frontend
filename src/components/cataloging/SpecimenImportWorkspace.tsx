@@ -102,7 +102,7 @@ export function SpecimenImportWorkspace() {
 
       const body: unknown = await response.json().catch(() => null);
       if (response.status === 401) {
-        router.push("/login?from=/cataloging/import");
+        router.push("/login?from=/specimens/import");
         return;
       }
       if (!response.ok) {
@@ -402,7 +402,7 @@ export function SpecimenImportWorkspace() {
                 </ul>
               )}
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link href="/cataloging" className="rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800">View cataloging queue</Link>
+                <Link href="/specimens?status=UNCATALOGED" className="rounded-lg bg-forest-700 px-3.5 py-2 text-sm font-semibold text-white hover:bg-forest-800">View uncataloged specimens</Link>
                 <Link href="/audit-logs?module=specimens&action=IMPORT_SPECIMEN" className="rounded-lg border border-forest-700 px-3.5 py-2 text-sm font-semibold text-forest-800 hover:bg-forest-100">View import audit records</Link>
               </div>
             </div>

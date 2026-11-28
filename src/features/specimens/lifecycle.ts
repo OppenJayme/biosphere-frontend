@@ -30,24 +30,6 @@ export function archiveBlockReason(status: SpecimenSummary["status"], activeLotC
   return null;
 }
 
-// The section of the one-page record form that fixes each catalog check (by backend key).
-const CATALOG_CHECK_SECTIONS: Record<string, string> = {
-  collection: "basic",
-  accessionNumber: "basic",
-  commonName: "basic",
-  kingdom: "taxonomy",
-  collectionDate: "provenance",
-  preservationType: "provenance",
-  preservationMethod: "provenance",
-  activeLot: "storage",
-};
-
-/** The record form at the section that fixes a failed check, or null for an unknown rule. */
-export function catalogCheckHref(specimenId: string, key: string) {
-  const section = CATALOG_CHECK_SECTIONS[key];
-  return section ? `/specimens/${specimenId}/complete#section-${section}` : null;
-}
-
 export const REOPEN_REASON_MAX = 500;
 
 /**

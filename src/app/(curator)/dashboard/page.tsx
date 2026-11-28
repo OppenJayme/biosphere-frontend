@@ -173,7 +173,7 @@ export default async function DashboardPage() {
         </Panel>
       </div>
 
-      <Panel title="Recently updated specimens" viewAllHref="/specimens" collapseKey="recent-specimens">
+      <Panel title="Recently updated specimens" viewAllHref="/specimens?status=all" collapseKey="recent-specimens">
         {data.recentSpecimens.status === "ok" ? (
           data.recentSpecimens.data.length > 0 ? (
             <RecentSpecimensTable rows={data.recentSpecimens.data} />

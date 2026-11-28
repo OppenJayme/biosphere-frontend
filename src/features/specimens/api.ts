@@ -156,6 +156,8 @@ export async function searchSpecimens(query: SpecimenListQuery) {
     params.set("storageUnitId", query.storageUnitId);
     if (query.includeDescendantUnits === false) params.set("includeDescendantUnits", "false");
   }
+  if (query.minQuantity != null) params.set("minQuantity", String(query.minQuantity));
+  if (query.maxQuantity != null) params.set("maxQuantity", String(query.maxQuantity));
   const created = specimenCreatedBounds(query);
   if (created.from) params.set("createdFrom", created.from);
   if (created.to) params.set("createdTo", created.to);

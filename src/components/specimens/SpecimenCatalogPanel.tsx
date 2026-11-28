@@ -1,13 +1,12 @@
 /**
- * Catalog-completion controls. Uncataloged: the backend's readiness checks (pass/fail, each
- * failed one linked to its edit page) and the complete-cataloging action. Cataloged: an
+ * Catalog-completion controls. Uncataloged: the backend's readiness checks (pass/fail; the page
+ * header's "Complete record" fixes the failed ones) and the complete-cataloging action. Cataloged: an
  * audited "Reopen cataloging" action that needs a reason.
  * The backend re-validates every rule, so a stale page can never catalog incomplete data.
  */
 
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { PendingOverlay } from "@/components/ui/LoadingOverlay";
@@ -17,7 +16,7 @@ import {
   type CatalogActionState,
   type ReopenActionState,
 } from "@/features/specimens/lifecycle-actions";
-import { catalogCheckHref, REOPEN_REASON_MAX } from "@/features/specimens/lifecycle";
+import { REOPEN_REASON_MAX } from "@/features/specimens/lifecycle";
 import type { CatalogReadiness, SpecimenStatus } from "@/features/specimens/types";
 import { InfoTip } from "@/components/ui/InfoTip";
 
@@ -74,19 +73,12 @@ function CompleteCataloging({
               ? "The checklist could not be loaded. You can still try; every requirement is checked when you confirm."
               : readiness.canComplete
                 ? "Everything required is filled in. You can catalog this specimen now."
-                : "Finish the items marked below first."}
+                : "Finish the items marked below first. Complete record, at the top of the page, opens them all on one form."}
           </p>
         </div>
 
-        {blocked ? (
-          // Everything that is missing is fixed on one page (panel recommendation, 2026-11-28).
-          <Link
-            href={`/specimens/${specimenId}/complete`}
-            className="rounded-lg bg-forest-700 px-4 py-2 text-xs font-semibold text-white hover:bg-forest-800"
-          >
-            Complete the record
-          </Link>
-        ) : (
+        {/* While blocked, the header's "Complete record" is the way forward (panel, 2026-11-28). */}
+        {!blocked && (
         <form action={formAction}>
           <ConfirmButton
             label="Catalog specimen"
@@ -123,7 +115,6 @@ function CompleteCataloging({
           </p>
           <ul className="mt-2 divide-y divide-black/5 rounded-lg border border-black/10">
             {readiness.checks.map((check) => {
-              const href = check.passed ? null : catalogCheckHref(specimenId, check.key);
               return (
                 <li key={check.key} className="flex items-center gap-3 px-3.5 py-2.5 text-sm">
                   <span
@@ -138,11 +129,6 @@ function CompleteCataloging({
                     {check.label}
                     <span className="sr-only">{check.passed ? " (met)" : " (missing)"}</span>
                   </span>
-                  {href && (
-                    <Link href={href} className="shrink-0 text-xs font-semibold text-forest-800 hover:underline">
-                      Fix →
-                    </Link>
-                  )}
                 </li>
               );
             })}

@@ -99,7 +99,6 @@ export async function saveSpecimenRecordAction(
   }
 
   revalidatePath("/specimens");
-  revalidatePath("/cataloging");
   revalidatePath("/dashboard");
   revalidatePath(`/specimens/${specimenId}`);
   // created=1 / updated=1 also start the details page's duplicate re-check, as the old forms did.

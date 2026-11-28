@@ -5,7 +5,6 @@
 import { describe, expect, it } from "vitest";
 import {
   archiveBlockReason,
-  catalogCheckHref,
   catalogedEditGuardMessage,
   publicDisplayCommand,
 } from "./lifecycle";
@@ -29,21 +28,6 @@ describe("specimen lifecycle presentation rules", () => {
     expect(archiveBlockReason("CATALOGED", 1)).toContain("1 active specimen lot must");
     expect(archiveBlockReason("UNCATALOGED", 2)).toContain("2 active specimen lots must");
     expect(archiveBlockReason("CATALOGED", 0)).toBeNull();
-  });
-});
-
-describe("catalog readiness checklist", () => {
-  const id = "0b8f5f8e-3f7e-4d3a-9d1a-2c6a1f0e9b11";
-
-  it("links each backend check to its section of the one-page record form", () => {
-    expect(catalogCheckHref(id, "commonName")).toBe(`/specimens/${id}/complete#section-basic`);
-    expect(catalogCheckHref(id, "kingdom")).toBe(`/specimens/${id}/complete#section-taxonomy`);
-    expect(catalogCheckHref(id, "preservationMethod")).toBe(`/specimens/${id}/complete#section-provenance`);
-    expect(catalogCheckHref(id, "activeLot")).toBe(`/specimens/${id}/complete#section-storage`);
-  });
-
-  it("returns no link for a rule the UI does not know yet", () => {
-    expect(catalogCheckHref(id, "futureRule")).toBeNull();
   });
 });
 
