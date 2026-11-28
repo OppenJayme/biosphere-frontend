@@ -85,6 +85,53 @@ const duplicateCheckFields = {
   duplicateCheckAvailable: z.boolean(),
 };
 
+const nullableText = z.string().nullable();
+
+/** GET /specimens/possible-duplicates: active records that match another, grouped for review. */
+export const duplicateReviewSchema = z.object({
+  recordCount: z.number().int().nonnegative(),
+  groupCount: z.number().int().nonnegative(),
+  groups: z.array(
+    z.object({
+      records: z
+        .array(
+          z.object({
+            specimenId: z.uuid(),
+            accessionNumber: nullableText,
+            commonName: nullableText,
+            scientificName: nullableText,
+            specimenCategory: nullableText,
+            status: z.enum(SPECIMEN_STATUSES),
+            collectionName: nullableText,
+            collector: nullableText,
+            donor: nullableText,
+            collectionLocation: nullableText,
+            collectionDate: nullableText,
+            activeLotCount: z.number().int().nonnegative(),
+            updatedAt: z.string(),
+          }),
+        )
+        .min(2),
+      matches: z
+        .array(
+          z.object({
+            firstSpecimenId: z.uuid(),
+            secondSpecimenId: z.uuid(),
+            confidence: z.enum(DUPLICATE_CONFIDENCES),
+            matchedFields: z.array(z.enum(DUPLICATE_MATCH_FIELDS)),
+            differingFields: z.array(z.enum(DUPLICATE_MATCH_FIELDS)),
+            message: z.string(),
+          }),
+        )
+        .min(1),
+    }),
+  ),
+});
+
+export type DuplicateReview = z.infer<typeof duplicateReviewSchema>;
+export type DuplicateReviewGroup = DuplicateReview["groups"][number];
+export type DuplicateReviewRecord = DuplicateReviewGroup["records"][number];
+
 /** POST /specimens/duplicate-check and GET /specimens/:id/possible-duplicates. */
 export const specimenDuplicateCheckResultSchema = z.object(duplicateCheckFields);
 
@@ -97,6 +144,16 @@ export const specimenSearchItemSchema = specimenSummarySchema.extend({
   collector: z.string().nullable(),
   totalQuantity: z.number().int().nonnegative(),
   conditionClasses: z.array(z.string()),
+  // Catalog checklist progress for the list (panel recommendation, 2026-11-28). Older backends
+  // omit it, and the list then shows the status alone.
+  catalogProgress: z
+    .object({
+      passed: z.number().int().nonnegative(),
+      total: z.number().int().positive(),
+      missing: z.array(z.string()),
+    })
+    .nullable()
+    .default(null),
   storageUnits: z.array(
     z.object({
       id: z.uuid(),
@@ -328,7 +385,24 @@ export type SpecimenAdvancedFilters = {
   /** Inclusive museum-time dates, YYYY-MM-DD. */
   createdFrom: string;
   createdTo: string;
+  /** Inclusive bounds on the total quantity across active lots; null when unset. */
+  minQuantity: number | null;
+  maxQuantity: number | null;
 };
+
+/**
+ * The list opens on Uncataloged records (panel recommendation, 2026-11-28), so
+ * "every active record" needs its own URL value instead of an empty status.
+ */
+export const DEFAULT_SPECIMEN_STATUS: SpecimenStatus = "UNCATALOGED";
+export const ALL_ACTIVE_STATUS_PARAM = "all";
+const QUANTITY_FILTER_MAX = 1_000_000;
+
+function parseQuantity(value: string | undefined) {
+  if (!value || !/^\d+$/.test(value.trim())) return null;
+  const quantity = Number(value.trim());
+  return quantity <= QUANTITY_FILTER_MAX ? quantity : null;
+}
 
 export const SPECIMEN_TEXT_FILTERS = [
   "classificationStatus",
@@ -388,7 +462,9 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
       ? "ARCHIVED"
       : SPECIMEN_STATUSES.includes(rawStatus as SpecimenStatus)
         ? (rawStatus as SpecimenStatus)
-        : null;
+        : rawStatus === ALL_ACTIVE_STATUS_PARAM
+          ? null
+          : DEFAULT_SPECIMEN_STATUS;
   const rawCollectionId = firstValue(searchParams.collectionId);
   const collectionId = z.uuid().safeParse(rawCollectionId).success
     ? (rawCollectionId ?? null)
@@ -443,6 +519,8 @@ export function parseSpecimenListQuery(searchParams: SearchParams): SpecimenList
     includeDescendantUnits: firstValue(searchParams.includeDescendantUnits) !== "false",
     createdFrom: dateOnly(firstValue(searchParams.createdFrom)),
     createdTo: dateOnly(firstValue(searchParams.createdTo)),
+    minQuantity: parseQuantity(firstValue(searchParams.minQuantity)),
+    maxQuantity: parseQuantity(firstValue(searchParams.maxQuantity)),
   };
 }
 
@@ -452,14 +530,20 @@ export function hasAdvancedSpecimenFilters(query: SpecimenListQuery) {
     SPECIMEN_TEXT_FILTERS.some((key) => Boolean(query[key])) ||
     Boolean(query.storageUnitId) ||
     Boolean(query.createdFrom) ||
-    Boolean(query.createdTo)
+    Boolean(query.createdTo) ||
+    query.minQuantity != null ||
+    query.maxQuantity != null
   );
 }
 
 export function specimenDateRangeError(query: SpecimenListQuery) {
-  return query.createdFrom && query.createdTo && query.createdFrom > query.createdTo
-    ? "The Date added start must not be after its end."
-    : null;
+  if (query.createdFrom && query.createdTo && query.createdFrom > query.createdTo) {
+    return "The Date added start must not be after its end.";
+  }
+  if (query.minQuantity != null && query.maxQuantity != null && query.minQuantity > query.maxQuantity) {
+    return "The minimum quantity must not be more than the maximum.";
+  }
+  return null;
 }
 
 /** Museum-time day bounds for the backend's ISO 8601 date-added filters. */
@@ -473,7 +557,8 @@ export function specimenCreatedBounds(query: Pick<SpecimenListQuery, "createdFro
 export function specimenListHref(query: SpecimenListQuery, page = query.page) {
   const params = new URLSearchParams();
   if (query.search) params.set("search", query.search);
-  if (query.status) params.set("status", query.status);
+  if (query.status === null) params.set("status", ALL_ACTIVE_STATUS_PARAM);
+  else if (query.status !== DEFAULT_SPECIMEN_STATUS) params.set("status", query.status);
   if (query.collectionId) params.set("collectionId", query.collectionId);
   if (query.specimenCategory) params.set("specimenCategory", query.specimenCategory);
   if (query.gender) params.set("gender", query.gender);
@@ -490,6 +575,8 @@ export function specimenListHref(query: SpecimenListQuery, page = query.page) {
   }
   if (query.createdFrom) params.set("createdFrom", query.createdFrom);
   if (query.createdTo) params.set("createdTo", query.createdTo);
+  if (query.minQuantity != null) params.set("minQuantity", String(query.minQuantity));
+  if (query.maxQuantity != null) params.set("maxQuantity", String(query.maxQuantity));
   if (query.sortBy !== "updatedAt") params.set("sortBy", query.sortBy);
   if (query.sortDirection !== "desc") params.set("sortDirection", query.sortDirection);
   if (query.limit && query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE) params.set("limit", String(query.limit));

@@ -8,6 +8,7 @@ import {
   fetchFaqSuggestions,
   isFaqFollowup,
   normalizeVisitorQuestion,
+  sameQuestion,
 } from "./assistant";
 
 const ENTRY_ID = "11111111-1111-4111-8111-111111111111";
@@ -205,5 +206,10 @@ describe("FAQ assistant client", () => {
     expect(normalizeVisitorQuestion("  When   is it open?  ")).toBe("When is it open?");
     expect(normalizeVisitorQuestion("   ")).toBeNull();
     expect(normalizeVisitorQuestion("x".repeat(501))).toBeNull();
+  });
+
+  it("treats questions that differ only in case, spacing or punctuation as the same", () => {
+    expect(sameQuestion("What are the Saturday opening hours?", "what are the saturday  opening hours")).toBe(true);
+    expect(sameQuestion("Saturday hours?", "What are the Saturday opening hours?")).toBe(false);
   });
 });

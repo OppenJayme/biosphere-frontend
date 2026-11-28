@@ -1,0 +1,2 @@
+# PDFs can look like text but rely on exact byte offsets; never convert their line endings.
+*.pdf binary

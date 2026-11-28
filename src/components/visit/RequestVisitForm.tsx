@@ -1,10 +1,19 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { Field, FieldError, FieldGroupLabel, fieldClasses, fieldErrorId, fieldErrorProps } from "@/components/ui/Field";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { FieldError, fieldErrorId, fieldErrorProps } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { ArrowRightIcon, PlusIcon, CloseIcon } from "@/components/icons";
+import { ArrowRightIcon, ChevronLeftIcon, PlusIcon, CloseIcon } from "@/components/icons";
 import { FormAlert, PrivacyConsent, SubmissionSuccess, focusFirstInvalid } from "@/components/public-forms/FormParts";
+import { FormSteps } from "@/components/public-forms/FormSteps";
+import { InfoTip } from "@/components/public-forms/InfoTip";
+import {
+  FormHint,
+  PublicField,
+  publicFieldClasses,
+  publicInputClasses,
+  publicRowInputClasses,
+} from "@/components/public-forms/PublicField";
 import type { FieldErrors } from "@/features/public-submissions/form-fields";
 import {
   MAX_PREFERRED_SCHEDULES,
@@ -37,8 +46,17 @@ import {
   type VehicleField,
   type VisitFormField,
 } from "@/features/visit-requests/form";
+import {
+  LAST_VISIT_STEP,
+  VISITORS_STEP,
+  VISIT_FORM_STEPS,
+  errorsForStep,
+  firstStepWithErrors,
+  stepHasErrors,
+  type VisitFormFailure,
+} from "@/features/visit-requests/form-steps";
 import type { VisitorName } from "@/features/visit-requests/names-file";
-import { ScheduleDayHint } from "./ScheduleDayHint";
+import { ScheduleDayHint, scheduleDayHintShown } from "./ScheduleDayHint";
 import { VisitorNamesFile } from "./VisitorNamesFile";
 import { ScheduleTimeSelect } from "./ScheduleTimeSelect";
 import { useVisitAvailability } from "./useVisitAvailability";
@@ -57,10 +75,19 @@ function newScheduleRow(): ScheduleRow {
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Beyond this many visitors the name list scrolls inside its own box instead of stretching the form. */
+const NAME_LIST_SCROLL_AFTER = 6;
+/** Vehicle rows are taller on phones (two lines), so their list starts scrolling sooner. */
+const VEHICLE_LIST_SCROLL_AFTER = 4;
+
+/** #, plate, then brand and type (a second line on phones), then remove. */
+const vehicleGridClasses =
+  "grid-cols-[1.5rem_minmax(0,1fr)_2.25rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,2fr)_2.25rem]";
+
 /**
  * The hours, closed day, passed time, and booked time problems for one finished row, shown while
- * the visitor is still filling it in. Missing fields wait for Submit, so a half typed row is not
- * flagged.
+ * the visitor is still filling it in. Missing fields wait for Next or Submit, so a half typed row
+ * is not flagged.
  */
 function liveScheduleError(row: ScheduleRow, rules: ScheduleRules) {
   const schedule = { date: row.date, startTime: normalizeTime(row.startTime), endTime: normalizeTime(row.endTime) };
@@ -74,6 +101,28 @@ function liveScheduleError(row: ScheduleRow, rules: ScheduleRules) {
 const segmentClasses =
   "cursor-pointer rounded-full px-4 py-1.5 text-ink-muted transition-colors hover:text-brand has-checked:bg-brand-solid has-checked:text-white has-focus-visible:ring-2 has-focus-visible:ring-brand has-focus-visible:ring-offset-2";
 
+const rowCardClasses = "rounded-xl border border-forest-900/10 bg-surface p-4 shadow-[0_1px_2px_rgb(20_42_31/0.04)]";
+
+/** A step's title, focused when the step opens, with its guidance behind an (i) beside it. */
+function StepHeading({ step, title, children }: { step: number; title: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <h3 id={`visit-step-${step}`} tabIndex={-1} className="font-display text-xl font-semibold tracking-tight text-ink outline-none">
+        {title}
+      </h3>
+      <InfoTip label={`About ${title}`}>{children}</InfoTip>
+    </div>
+  );
+}
+
+const linkButtonClasses =
+  "inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline";
+
+/**
+ * The public visit request, asked in four short steps (panel feedback: the single long form was
+ * too much at once). All steps live in one <form> and stay mounted while hidden, so typed values
+ * survive Back and Next and the final submit sends everything. Next checks only the step on screen.
+ */
 export function RequestVisitForm({
   onCancel,
   onSubmitted,
@@ -82,6 +131,9 @@ export function RequestVisitForm({
   onSubmitted?: () => void;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [step, setStep] = useState(0);
+  // Set when the visitor moves between steps, so focus follows; not on first open.
+  const stepMoved = useRef(false);
   const [today] = useState(museumToday);
   const { availability, status: availabilityStatus, ensureDate, reload: reloadAvailability } = useVisitAvailability(today);
   // Hours come from the availability response once it loads; the shared copy covers the moment before.
@@ -113,6 +165,15 @@ export function RequestVisitForm({
   const [retryAllowed, setRetryAllowed] = useState(false);
   const retryBlocked = failure?.outcome === "unknown" && !retryAllowed;
   const [formKey, setFormKey] = useState(0);
+  const lastStep = step === LAST_VISIT_STEP;
+
+  // Bring the new step's heading to the top and read it out, so a long step never opens mid-way.
+  useEffect(() => {
+    if (!stepMoved.current) return;
+    stepMoved.current = false;
+    formRef.current?.scrollIntoView({ block: "start" });
+    formRef.current?.querySelector<HTMLElement>(`#visit-step-${step}`)?.focus({ preventScroll: true });
+  }, [step]);
 
   if (receipt) {
     return (
@@ -122,6 +183,7 @@ export function RequestVisitForm({
         onDone={onSubmitted}
         onAnother={() => {
           setReceipt(null);
+          setStep(0);
           setScheduleRows([newScheduleRow()]);
           setVisitorRows([nextRowId()]);
           setVisitorDefaults({});
@@ -152,11 +214,48 @@ export function RequestVisitForm({
     );
   }
 
+  function showErrors(shown: VisitFormFailure) {
+    setErrors(shown.errors);
+    setScheduleErrors(shown.scheduleErrors);
+    setVehicleErrors(shown.vehicleErrors);
+    setVisitorErrors(shown.visitorErrors);
+  }
+
+  function clearErrors() {
+    showErrors({ errors: {}, scheduleErrors: [], vehicleErrors: [], visitorErrors: [] });
+  }
+
+  function goToStep(next: number) {
+    stepMoved.current = true;
+    setStep(next);
+  }
+
+  /** Checks the step on screen; later steps' problems (like the unticked consent) wait their turn. */
+  function goNext(form: HTMLFormElement) {
+    if (step === VISITORS_STEP && excessVisitorRows) {
+      form.querySelector<HTMLInputElement>('[name="visitorCount"]')?.focus();
+      return;
+    }
+    const parsed = readVisitRequestForm(new FormData(form), museumClock(), scheduleRules);
+    if (!parsed.success && stepHasErrors(step, parsed)) {
+      showErrors(errorsForStep(step, parsed));
+      focusFirstInvalid(form);
+      return;
+    }
+    clearErrors();
+    goToStep(step + 1);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Enter in a field, or the Next button, moves on a step until the last one.
+    if (!lastStep) {
+      goNext(event.currentTarget);
+      return;
+    }
     if (submitting || retryBlocked) return;
     if (excessVisitorRows) {
-      formRef.current?.querySelector<HTMLInputElement>('[name="visitorCount"]')?.focus();
+      goToStep(VISITORS_STEP);
       return;
     }
 
@@ -164,18 +263,15 @@ export function RequestVisitForm({
     const parsed = readVisitRequestForm(new FormData(event.currentTarget), museumClock(), scheduleRules);
     setFailure(null);
     if (!parsed.success) {
-      setErrors(parsed.errors);
-      setScheduleErrors(parsed.scheduleErrors);
-      setVehicleErrors(parsed.vehicleErrors);
-      setVisitorErrors(parsed.visitorErrors);
+      // Every problem is marked, and the form returns to the earliest step that has one.
+      showErrors(parsed);
+      const target = firstStepWithErrors(parsed);
+      if (target !== step) goToStep(target);
       focusFirstInvalid(formRef.current);
       return;
     }
 
-    setErrors({});
-    setScheduleErrors([]);
-    setVehicleErrors([]);
-    setVisitorErrors([]);
+    clearErrors();
     setRetryAllowed(false);
     setSubmitting(true);
     const result = await postPublicSubmission("/visit-requests", parsed.data);
@@ -232,269 +328,300 @@ export function RequestVisitForm({
 
   function updateScheduleRow(rowId: number, index: number, change: Partial<ScheduleInput>) {
     setScheduleRows((rows) => rows.map((row) => (row.id === rowId ? { ...row, ...change } : row)));
-    // The row changed, so its message from the last submit no longer applies.
+    // The row changed, so its message from the last check no longer applies.
     setScheduleErrors((current) => current.map((error, position) => (position === index ? undefined : error)));
     if (change.date && DATE_PATTERN.test(change.date)) ensureDate(change.date);
   }
 
   return (
-    <form key={formKey} ref={formRef} noValidate className="space-y-8" onSubmit={handleSubmit}>
-      {/* Desktop: contact and notes (left) beside schedule, visitors and vehicle (right), so the
-          form fits about one screen in the wide modal. The right column spans both rows and the
-          spare height goes to row 2, so the notes sit right under the contact details. Below lg
-          everything stacks in the original order. */}
-      <div className="grid gap-8 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <FieldGroupLabel>Contact Details</FieldGroupLabel>
+    <form key={formKey} ref={formRef} noValidate className="scroll-mt-10 space-y-6" onSubmit={handleSubmit}>
+      <FormSteps steps={VISIT_FORM_STEPS} current={step} onBack={goToStep} />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Contact Person Name" htmlFor="visit-name" error={errors.name}>
-                <input
-                  id="visit-name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Juan Dela Cruz"
-                  required
-                  maxLength={100}
-                  className={fieldClasses}
-                  {...fieldErrorProps("visit-name", errors.name)}
-                />
-              </Field>
-              <Field label="Email Address" htmlFor="visit-email" error={errors.email}>
-                <input
-                  id="visit-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@school.edu.ph"
-                  required
-                  maxLength={100}
-                  className={fieldClasses}
-                  {...fieldErrorProps("visit-email", errors.email)}
-                />
-              </Field>
-              <Field label="Contact Number" htmlFor="visit-phone" error={errors.phone}>
-                <input
-                  id="visit-phone"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="0917 123 4567"
-                  required
-                  maxLength={20}
-                  className={fieldClasses}
-                  {...fieldErrorProps("visit-phone", errors.phone)}
-                />
-              </Field>
-              <Field label="Organization / School" htmlFor="visit-org" error={errors.organization}>
-                <input
-                  id="visit-org"
-                  name="organization"
-                  type="text"
-                  autoComplete="organization"
-                  placeholder="University of San Carlos"
-                  required
-                  maxLength={255}
-                  className={fieldClasses}
-                  {...fieldErrorProps("visit-org", errors.organization)}
-                />
-              </Field>
-            </div>
+      {/* Step 1: who is asking. */}
+      <section hidden={step !== 0} aria-labelledby="visit-step-0" className="space-y-5">
+        <StepHeading step={0} title="Your details">
+          Who the museum should contact about this visit. A curator replies to this email address.
+        </StepHeading>
 
-            <Field label="Address" htmlFor="visit-address" optional error={errors.address}>
-              <input
-                id="visit-address"
-                name="address"
-                type="text"
-                autoComplete="street-address"
-                placeholder="Street, City, Province"
-                maxLength={255}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-address", errors.address)}
-              />
-            </Field>
-
-            <Field label="Purpose of Visit" htmlFor="visit-purpose" error={errors.purpose}>
-              <textarea
-                id="visit-purpose"
-                name="purpose"
-                rows={3}
-                placeholder="Field trip, research, class requirement, etc."
-                required
-                maxLength={1000}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-purpose", errors.purpose)}
-              />
-            </Field>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PublicField label="Contact Person Name" htmlFor="visit-name" error={errors.name}>
+            <input
+              id="visit-name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              placeholder="Juan Dela Cruz"
+              required
+              maxLength={100}
+              className={publicFieldClasses}
+              {...fieldErrorProps("visit-name", errors.name)}
+            />
+          </PublicField>
+          <PublicField label="Email Address" htmlFor="visit-email" error={errors.email}>
+            <input
+              id="visit-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="name@school.edu.ph"
+              required
+              maxLength={100}
+              className={publicFieldClasses}
+              {...fieldErrorProps("visit-email", errors.email)}
+            />
+          </PublicField>
+          <PublicField label="Contact Number" htmlFor="visit-phone" error={errors.phone}>
+            <input
+              id="visit-phone"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="0917 123 4567"
+              required
+              maxLength={20}
+              className={publicFieldClasses}
+              {...fieldErrorProps("visit-phone", errors.phone)}
+            />
+          </PublicField>
+          <PublicField label="Organization / School" htmlFor="visit-org" error={errors.organization}>
+            <input
+              id="visit-org"
+              name="organization"
+              type="text"
+              autoComplete="organization"
+              placeholder="University of San Carlos"
+              required
+              maxLength={255}
+              className={publicFieldClasses}
+              {...fieldErrorProps("visit-org", errors.organization)}
+            />
+          </PublicField>
         </div>
 
-        <div className="min-w-0 space-y-8 lg:row-span-2">
-          <fieldset className="min-w-0 space-y-4" aria-describedby="visit-schedule-hint">
-            <legend className="contents">
-              <FieldGroupLabel>Preferred Schedules</FieldGroupLabel>
-            </legend>
-            <div id="visit-schedule-hint" className="space-y-1 text-sm text-ink-muted">
-              <p>
-                List up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
-              </p>
-              <p>
-                Each option must fit inside the museum&apos;s visiting hours:{" "}
-                {summarizeOpeningHours(availability?.openingHours ?? MUSEUM_OPENING_HOURS)}
-              </p>
-            </div>
+        <PublicField label="Address" htmlFor="visit-address" optional error={errors.address}>
+          <input
+            id="visit-address"
+            name="address"
+            type="text"
+            autoComplete="street-address"
+            placeholder="Street, City, Province"
+            maxLength={255}
+            className={publicFieldClasses}
+            {...fieldErrorProps("visit-address", errors.address)}
+          />
+        </PublicField>
 
-            <ol className="space-y-3">
-              {scheduleRows.map((row, index) => {
-                const rowId = row.id;
-                const rowError = scheduleErrors[index] ?? liveScheduleError(row, scheduleRules);
-                const errorId = `schedule-${rowId}-error`;
-                const dayHintId = `schedule-${rowId}-day`;
-                const showDayHint = DATE_PATTERN.test(row.date) && row.date >= today;
-                const windows = showDayHint
-                  ? openingWindowsFor(row.date, availability?.openingHours ?? MUSEUM_OPENING_HOURS)
-                  : [];
-                const describedBy = [rowError && errorId, showDayHint && !(windows.length === 0 && rowError) && dayHintId].filter(Boolean).join(" ");
-                const invalid = {
-                  ...(rowError && { "aria-invalid": true as const }),
-                  ...(describedBy && { "aria-describedby": describedBy }),
-                };
-                // Every weekly time before a date is chosen; that day's bookable times after.
-                const options = scheduleRowOptions(row, today, scheduleRules);
-                return (
-                  <li key={rowId} className="rounded-xl border border-line p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold text-ink">Option {index + 1}</p>
-                      {scheduleRows.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setScheduleRows((rows) => rows.filter((item) => item.id !== rowId));
-                            setScheduleErrors([]);
-                          }}
-                          aria-label={`Remove option ${index + 1}`}
-                          className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
-                        >
-                          <CloseIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="mt-2 grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                      <Field label="Date" htmlFor={`schedule-date-${rowId}`}>
-                        <input
-                          id={`schedule-date-${rowId}`}
-                          name="scheduleDate"
-                          type="date"
-                          min={today}
-                          required
-                          value={row.date}
-                          // Keep picked times the new date still offers; clear the rest.
-                          onChange={(event) => {
-                            const date = event.target.value;
-                            const startTime = keepIfOffered(row.startTime, scheduleRowOptions({ date, startTime: "" }, today, scheduleRules).start);
-                            const endTime = keepIfOffered(row.endTime, scheduleRowOptions({ date, startTime }, today, scheduleRules).end);
-                            updateScheduleRow(rowId, index, { date, startTime, endTime });
-                          }}
-                          className={fieldClasses}
-                          {...invalid}
-                        />
-                      </Field>
-                      <Field label="Start Time" htmlFor={`schedule-start-${rowId}`}>
-                        <ScheduleTimeSelect
-                          id={`schedule-start-${rowId}`}
-                          name="scheduleStart"
-                          required
-                          options={options.start}
-                          value={row.startTime}
-                          onChange={(event) => {
-                            const startTime = event.target.value;
-                            const end = scheduleRowOptions({ date: row.date, startTime }, today, scheduleRules).end;
-                            updateScheduleRow(rowId, index, { startTime, endTime: keepIfOffered(row.endTime, end) });
-                          }}
-                          className={fieldClasses}
-                          {...invalid}
-                        />
-                      </Field>
-                      <Field label="End Time" htmlFor={`schedule-end-${rowId}`}>
-                        <ScheduleTimeSelect
-                          id={`schedule-end-${rowId}`}
-                          name="scheduleEnd"
-                          required
-                          options={options.end}
-                          value={row.endTime}
-                          onChange={(event) => updateScheduleRow(rowId, index, { endTime: event.target.value })}
-                          className={fieldClasses}
-                          {...invalid}
-                        />
-                      </Field>
-                    </div>
-                    {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
-                    {showDayHint && !(windows.length === 0 && rowError) && (
-                      <ScheduleDayHint
-                        id={dayHintId}
-                        date={row.date}
-                        availability={availability}
-                        status={availabilityStatus}
-                      />
+        <PublicField label="Purpose of Visit" htmlFor="visit-purpose" error={errors.purpose}>
+          <textarea
+            id="visit-purpose"
+            name="purpose"
+            rows={3}
+            placeholder="Field trip, research, class requirement, etc."
+            required
+            maxLength={1000}
+            className={publicFieldClasses}
+            {...fieldErrorProps("visit-purpose", errors.purpose)}
+          />
+        </PublicField>
+      </section>
+
+      {/* Step 2: when. */}
+      <section hidden={step !== 1} aria-labelledby="visit-step-1" className="space-y-5">
+        <StepHeading step={1} title="Preferred dates">
+          Give up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
+        </StepHeading>
+
+        <fieldset className="min-w-0 space-y-4" aria-describedby="visit-schedule-hint">
+          <legend className="sr-only">Preferred schedules</legend>
+          <FormHint id="visit-schedule-hint">
+            <p>
+              <span className="font-medium">Visiting hours:</span>{" "}
+              {summarizeOpeningHours(availability?.openingHours ?? MUSEUM_OPENING_HOURS)}
+            </p>
+            {availabilityStatus === "error" && (
+              <p className="text-ink-muted">
+                Booked times could not be checked just now. You can still send your request; the museum will confirm
+                the time with you.
+              </p>
+            )}
+          </FormHint>
+
+          <ol className="space-y-3">
+            {scheduleRows.map((row, index) => {
+              const rowId = row.id;
+              const rowError = scheduleErrors[index] ?? liveScheduleError(row, scheduleRules);
+              const errorId = `schedule-${rowId}-error`;
+              const dayHintId = `schedule-${rowId}-day`;
+              const dateChosen = DATE_PATTERN.test(row.date) && row.date >= today;
+              const closedDay =
+                dateChosen && openingWindowsFor(row.date, availability?.openingHours ?? MUSEUM_OPENING_HOURS).length === 0;
+              // Only a closed day or that day's booked times; a closed day already shown as an error is not repeated.
+              const showDayHint = dateChosen && scheduleDayHintShown(row.date, availability) && !(closedDay && rowError);
+              const describedBy = [rowError && errorId, showDayHint && dayHintId].filter(Boolean).join(" ");
+              const invalid = {
+                ...(rowError && { "aria-invalid": true as const }),
+                ...(describedBy && { "aria-describedby": describedBy }),
+              };
+              // Every weekly time before a date is chosen; that day's bookable times after.
+              const options = scheduleRowOptions(row, today, scheduleRules);
+              return (
+                <li key={rowId} className={rowCardClasses}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-ink">
+                      Option {index + 1}
+                      {index === 0 && <span className="ml-1.5 font-normal text-ink-muted">(most preferred)</span>}
+                    </p>
+                    {scheduleRows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScheduleRows((rows) => rows.filter((item) => item.id !== rowId));
+                          setScheduleErrors([]);
+                        }}
+                        aria-label={`Remove option ${index + 1}`}
+                        className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
+                      >
+                        <CloseIcon className="h-4 w-4" />
+                      </button>
                     )}
-                  </li>
-                );
-              })}
-            </ol>
-            {errors.schedules && <FieldError id="visit-schedules-error">{errors.schedules}</FieldError>}
+                  </div>
+                  <div className="mt-2 grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                    <PublicField label="Date" htmlFor={`schedule-date-${rowId}`}>
+                      <input
+                        id={`schedule-date-${rowId}`}
+                        name="scheduleDate"
+                        type="date"
+                        min={today}
+                        required
+                        value={row.date}
+                        // Keep picked times the new date still offers; clear the rest.
+                        onChange={(event) => {
+                          const date = event.target.value;
+                          const startTime = keepIfOffered(row.startTime, scheduleRowOptions({ date, startTime: "" }, today, scheduleRules).start);
+                          const endTime = keepIfOffered(row.endTime, scheduleRowOptions({ date, startTime }, today, scheduleRules).end);
+                          updateScheduleRow(rowId, index, { date, startTime, endTime });
+                        }}
+                        className={publicFieldClasses}
+                        {...invalid}
+                      />
+                    </PublicField>
+                    <PublicField label="Start Time" htmlFor={`schedule-start-${rowId}`}>
+                      <ScheduleTimeSelect
+                        id={`schedule-start-${rowId}`}
+                        name="scheduleStart"
+                        required
+                        options={options.start}
+                        value={row.startTime}
+                        onChange={(event) => {
+                          const startTime = event.target.value;
+                          const end = scheduleRowOptions({ date: row.date, startTime }, today, scheduleRules).end;
+                          updateScheduleRow(rowId, index, { startTime, endTime: keepIfOffered(row.endTime, end) });
+                        }}
+                        className={publicFieldClasses}
+                        {...invalid}
+                      />
+                    </PublicField>
+                    <PublicField label="End Time" htmlFor={`schedule-end-${rowId}`}>
+                      <ScheduleTimeSelect
+                        id={`schedule-end-${rowId}`}
+                        name="scheduleEnd"
+                        required
+                        options={options.end}
+                        value={row.endTime}
+                        onChange={(event) => updateScheduleRow(rowId, index, { endTime: event.target.value })}
+                        className={publicFieldClasses}
+                        {...invalid}
+                      />
+                    </PublicField>
+                  </div>
+                  {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
+                  {showDayHint && <ScheduleDayHint id={dayHintId} date={row.date} availability={availability} />}
+                </li>
+              );
+            })}
+          </ol>
+          {errors.schedules && <FieldError id="visit-schedules-error">{errors.schedules}</FieldError>}
 
-            {scheduleRows.length < MAX_PREFERRED_SCHEDULES && (
-              <button
-                type="button"
-                onClick={() => setScheduleRows((rows) => rows.length < MAX_PREFERRED_SCHEDULES ? [...rows, newScheduleRow()] : rows)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add another option
-              </button>
-            )}
-            {scheduleRows.length === MAX_PREFERRED_SCHEDULES && (
-              <p role="status" className="text-sm text-ink-muted">Maximum of {MAX_PREFERRED_SCHEDULES} preferred schedules reached. Remove an option to add another.</p>
-            )}
-          </fieldset>
+          {scheduleRows.length < MAX_PREFERRED_SCHEDULES && (
+            <button
+              type="button"
+              onClick={() => setScheduleRows((rows) => rows.length < MAX_PREFERRED_SCHEDULES ? [...rows, newScheduleRow()] : rows)}
+              className={linkButtonClasses}
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add another option
+            </button>
+          )}
+          {scheduleRows.length === MAX_PREFERRED_SCHEDULES && (
+            <p role="status" className="text-sm text-ink-muted">Maximum of {MAX_PREFERRED_SCHEDULES} preferred schedules reached. Remove an option to add another.</p>
+          )}
+        </fieldset>
+      </section>
 
-          <div className="space-y-4">
-            <FieldGroupLabel>Visitors</FieldGroupLabel>
-            <div className="sm:max-w-[16rem]">
-              <Field label="Number of Visitors" htmlFor="visit-count" error={visitorCountError ?? errors.visitorCount}>
-                <input
-                  id="visit-count"
-                  name="visitorCount"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={MAX_VISITOR_COUNT}
-                  step={1}
-                  value={visitorCount}
-                  onChange={(event) => {
-                    setVisitorCount(event.target.value);
-                    setErrors((current) => ({ ...current, visitorCount: undefined, visitors: undefined }));
-                  }}
-                  required
-                  className={fieldClasses}
-                  {...fieldErrorProps("visit-count", visitorCountError ?? errors.visitorCount)}
-                />
-              </Field>
+      {/* Step 3: who is coming, and how. */}
+      <section hidden={step !== VISITORS_STEP} aria-labelledby="visit-step-2" className="space-y-6">
+        <StepHeading step={VISITORS_STEP} title="Visitors">
+          The university needs the full name of every visitor for campus entry. To upload a list, use one name
+          per line in a .txt, .docx or .pdf. The file stays on your device.
+        </StepHeading>
+
+        <div className="space-y-2">
+          {/* Label and a short number box on one line: the count is a single small number. */}
+          <div className="flex items-center gap-3">
+            <label htmlFor="visit-count" className="text-sm font-medium text-ink">
+              Number of Visitors
+            </label>
+            <input
+              id="visit-count"
+              name="visitorCount"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={MAX_VISITOR_COUNT}
+              step={1}
+              value={visitorCount}
+              onChange={(event) => {
+                setVisitorCount(event.target.value);
+                setErrors((current) => ({ ...current, visitorCount: undefined, visitors: undefined }));
+              }}
+              required
+              className={`${publicInputClasses} w-28 py-2.5`}
+              {...fieldErrorProps("visit-count", visitorCountError ?? errors.visitorCount)}
+            />
+          </div>
+          {(visitorCountError ?? errors.visitorCount) && (
+            <FieldError id={fieldErrorId("visit-count")}>{visitorCountError ?? errors.visitorCount}</FieldError>
+          )}
+          <p className="text-sm text-ink-muted">
+            Everyone attending, including accompanying adults. Up to {MAX_VISITOR_COUNT} per request.
+          </p>
+          {visitorCountError && <p role="alert" className="sr-only">{visitorCountError}</p>}
+          {visitorLimit === MAX_VISITOR_COUNT && (
+            <p role="status" className="text-sm text-ink-muted">Maximum request size reached ({MAX_VISITOR_COUNT} visitors).</p>
+          )}
+        </div>
+
+        <fieldset className="min-w-0 space-y-3" aria-describedby="visit-name-limit">
+          <legend className="text-sm font-medium text-ink">Visitor names</legend>
+          <VisitorNamesFile onNames={addNamesFromFile} />
+
+          {/* One header for the whole list instead of a label on every row keeps a long list short;
+              each input still has its own accessible name. Long lists scroll inside this box. */}
+          <div
+            className={`rounded-xl border border-forest-900/10 bg-surface ${
+              visitorRows.length > NAME_LIST_SCROLL_AFTER ? "max-h-80 overflow-y-auto overscroll-contain" : ""
+            }`}
+          >
+            <div
+              aria-hidden="true"
+              className="sticky top-0 z-10 grid grid-cols-[2rem_1fr_1fr_2.25rem] gap-2 border-b border-forest-900/10 bg-sage-50 px-3 py-2 text-xs font-semibold text-ink-muted"
+            >
+              <span>#</span>
+              <span>First name</span>
+              <span>Last name</span>
+              <span />
             </div>
-            <p className="text-sm text-ink-muted">Enter the total number attending, including accompanying adults. Up to {MAX_VISITOR_COUNT} visitors per request.</p>
-            {visitorCountError && <p role="alert" className="sr-only">{visitorCountError}</p>}
-            {visitorLimit === MAX_VISITOR_COUNT && (
-              <p role="status" className="text-sm text-ink-muted">Maximum request size reached ({MAX_VISITOR_COUNT} visitors).</p>
-            )}
-
-            <fieldset className="min-w-0 space-y-3" aria-describedby="visit-name-limit">
-              <legend className="text-xs font-medium text-ink-muted">Visitor names</legend>
-              <p className="text-sm text-ink-muted">
-                Enter the first and last name of every visitor. The university needs the full list for campus entry.
-              </p>
-              <VisitorNamesFile onNames={addNamesFromFile} />
+            <ol className="divide-y divide-forest-900/5">
               {visitorRows.map((rowId, index) => {
                 const rowError = visitorErrors[index];
                 const errorId = `visitor-${rowId}-error`;
@@ -509,38 +636,35 @@ export function RequestVisitForm({
                   ...(describedBy && { "aria-describedby": describedBy }),
                 };
                 return (
-                  <div key={rowId}>
-                    <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
-                      <Field label="First Name" htmlFor={`visitor-first-${rowId}`}>
-                        <input
-                          id={`visitor-first-${rowId}`}
-                          name="visitorFirstName"
-                          type="text"
-                          autoComplete="off"
-                          placeholder="Juan"
-                          defaultValue={visitorDefaults[rowId]?.firstName}
-                          required
-                          maxLength={FIRST_NAME_MAX}
-                          aria-label={`Visitor ${index + 1} first name`}
-                          className={fieldClasses}
-                          {...invalid}
-                        />
-                      </Field>
-                      <Field label="Last Name" htmlFor={`visitor-last-${rowId}`}>
-                        <input
-                          id={`visitor-last-${rowId}`}
-                          name="visitorLastName"
-                          type="text"
-                          autoComplete="off"
-                          placeholder="Dela Cruz"
-                          defaultValue={visitorDefaults[rowId]?.lastName}
-                          required
-                          maxLength={LAST_NAME_MAX}
-                          aria-label={`Visitor ${index + 1} last name`}
-                          className={fieldClasses}
-                          {...invalid}
-                        />
-                      </Field>
+                  <li key={rowId} className="px-3 py-2">
+                    <div className="grid grid-cols-[2rem_1fr_1fr_2.25rem] items-center gap-2">
+                      <span aria-hidden="true" className="text-xs tabular-nums text-ink-muted">{index + 1}</span>
+                      <input
+                        id={`visitor-first-${rowId}`}
+                        name="visitorFirstName"
+                        type="text"
+                        autoComplete="off"
+                        placeholder="Juan"
+                        defaultValue={visitorDefaults[rowId]?.firstName}
+                        required
+                        maxLength={FIRST_NAME_MAX}
+                        aria-label={`Visitor ${index + 1} first name`}
+                        className={publicRowInputClasses}
+                        {...invalid}
+                      />
+                      <input
+                        id={`visitor-last-${rowId}`}
+                        name="visitorLastName"
+                        type="text"
+                        autoComplete="off"
+                        placeholder="Dela Cruz"
+                        defaultValue={visitorDefaults[rowId]?.lastName}
+                        required
+                        maxLength={LAST_NAME_MAX}
+                        aria-label={`Visitor ${index + 1} last name`}
+                        className={publicRowInputClasses}
+                        {...invalid}
+                      />
                       <button
                         type="button"
                         disabled={visitorRows.length === 1}
@@ -550,177 +674,217 @@ export function RequestVisitForm({
                           setErrors((current) => ({ ...current, visitors: undefined }));
                         }}
                         aria-label={`Remove visitor ${index + 1}`}
-                        className="rounded-lg p-2.5 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible"
+                        className="rounded-lg p-2 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible"
                       >
                         <CloseIcon className="h-4 w-4" />
                       </button>
                     </div>
                     {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
-                  </div>
+                  </li>
                 );
               })}
-              {errors.visitors && <FieldError id={fieldErrorId("visit-visitors")}>{errors.visitors}</FieldError>}
-            </fieldset>
+            </ol>
+          </div>
+          {errors.visitors && <FieldError id={fieldErrorId("visit-visitors")}>{errors.visitors}</FieldError>}
 
-            <p id="visit-name-limit" role={excessVisitorRows ? "alert" : "status"} className={excessVisitorRows ? "text-sm font-medium text-red-700" : "text-sm text-ink-muted"}>
-              {visitorRowsError ?? (visitorLimit === 0
-                ? "Enter a valid Number of Visitors before adding names."
-                : visitorRows.length === visitorLimit
-                  ? `Visitor name limit reached (${visitorLimit}): one name for each visitor. Increase Number of Visitors to add another.`
-                  : `${visitorRows.length} of ${visitorLimit} visitor names. Add a name for each visitor.`)}
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <button
               type="button"
               disabled={visitorLimit === 0 || visitorRows.length >= visitorLimit}
               aria-describedby="visit-name-limit"
               onClick={() => setVisitorRows((rows) => rows.length < visitorLimit ? [...rows, nextRowId()] : rows)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline"
+              className={linkButtonClasses}
             >
               <PlusIcon className="h-4 w-4" />
               Add a visitor name
             </button>
+            <p
+              id="visit-name-limit"
+              role={excessVisitorRows ? "alert" : "status"}
+              className={excessVisitorRows ? "text-sm font-medium text-red-700" : "text-sm text-ink-muted"}
+            >
+              {visitorRowsError ?? (visitorLimit === 0
+                ? "Enter a valid Number of Visitors before adding names."
+                : `${visitorRows.length} of ${visitorLimit} name${visitorLimit === 1 ? "" : "s"}${
+                    visitorRows.length === visitorLimit ? ". Raise Number of Visitors to add more." : ""
+                  }`)}
+            </p>
+          </div>
+        </fieldset>
+
+        <fieldset className="min-w-0 space-y-3">
+          <legend className="text-sm font-medium text-ink">Are you bringing a vehicle to campus?</legend>
+          <div className="inline-flex rounded-full border border-forest-900/15 bg-sage-50 p-1 text-sm font-medium">
+            <label className={segmentClasses}>
+              <input
+                type="radio"
+                name="bringingVehicle"
+                value="false"
+                checked={!bringingVehicle}
+                onChange={() => setBringingVehicle(false)}
+                className="sr-only"
+              />
+              No vehicle
+            </label>
+            <label className={segmentClasses}>
+              <input
+                type="radio"
+                name="bringingVehicle"
+                value="true"
+                checked={bringingVehicle}
+                onChange={() => setBringingVehicle(true)}
+                className="sr-only"
+              />
+              Yes, bringing a vehicle
+            </label>
           </div>
 
-          <fieldset className="min-w-0 space-y-4">
-            <legend className="contents">
-              <FieldGroupLabel>Vehicle</FieldGroupLabel>
-            </legend>
-            <div className="inline-flex rounded-full border border-line p-1 text-sm font-medium">
-              <label className={segmentClasses}>
-                <input
-                  type="radio"
-                  name="bringingVehicle"
-                  value="true"
-                  checked={bringingVehicle}
-                  onChange={() => setBringingVehicle(true)}
-                  className="sr-only"
-                />
-                Yes, bringing a vehicle
-              </label>
-              <label className={segmentClasses}>
-                <input
-                  type="radio"
-                  name="bringingVehicle"
-                  value="false"
-                  checked={!bringingVehicle}
-                  onChange={() => setBringingVehicle(false)}
-                  className="sr-only"
-                />
-                No vehicle
-              </label>
-            </div>
-
-            {bringingVehicle && (
-              <>
-                <p className="text-sm text-ink-muted">List each vehicle coming to campus, up to {MAX_VEHICLES}.</p>
-                <ol className="space-y-3">
+          {bringingVehicle && (
+            <>
+              <p className="text-sm text-ink-muted">List each vehicle coming to campus, up to {MAX_VEHICLES}.</p>
+              {/* Same compact list as the names: one header on wider screens, numbered rows, and a box
+                  that scrolls once the list is long. Phones put brand and type on a second line. */}
+              <div
+                className={`rounded-xl border border-forest-900/10 bg-surface ${
+                  vehicleRows.length > VEHICLE_LIST_SCROLL_AFTER ? "max-h-80 overflow-y-auto overscroll-contain" : ""
+                }`}
+              >
+                <div
+                  aria-hidden="true"
+                  className={`sticky top-0 z-10 hidden gap-2 border-b border-forest-900/10 bg-sage-50 px-3 py-2 text-xs font-semibold text-ink-muted sm:grid ${vehicleGridClasses}`}
+                >
+                  <span>#</span>
+                  <span>Plate number</span>
+                  <span className="grid grid-cols-2 gap-2">
+                    <span>
+                      Car brand <span className="font-normal">(optional)</span>
+                    </span>
+                    <span>
+                      Car type <span className="font-normal">(optional)</span>
+                    </span>
+                  </span>
+                  <span />
+                </div>
+                <ol className="divide-y divide-forest-900/5">
                   {vehicleRows.map((rowId, index) => {
                     const rowErrors = vehicleErrors[index];
+                    const fields = [
+                      { name: "plateNumber", id: `visit-plate-${rowId}`, error: rowErrors?.plateNumber },
+                      { name: "carBrand", id: `visit-car-brand-${rowId}`, error: rowErrors?.carBrand },
+                      { name: "carType", id: `visit-car-type-${rowId}`, error: rowErrors?.carType },
+                    ] as const;
                     return (
-                      <li key={rowId} className="rounded-xl border border-line p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-xs font-semibold text-ink">Vehicle {index + 1}</p>
-                          {vehicleRows.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setVehicleRows((rows) => rows.filter((id) => id !== rowId));
-                                setVehicleErrors([]);
-                              }}
-                              aria-label={`Remove vehicle ${index + 1}`}
-                              className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
-                            >
-                              <CloseIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                        <div className="mt-2 grid gap-4 sm:grid-cols-3">
-                          <Field label="Plate Number" htmlFor={`visit-plate-${rowId}`} error={rowErrors?.plateNumber}>
+                      <li key={rowId} className="px-3 py-2">
+                        <div className={`grid items-center gap-2 ${vehicleGridClasses}`}>
+                          <span aria-hidden="true" className="text-xs tabular-nums text-ink-muted">{index + 1}</span>
+                          <input
+                            id={fields[0].id}
+                            name="plateNumber"
+                            type="text"
+                            placeholder="Plate, e.g. ABC 1234"
+                            required
+                            maxLength={PLATE_NUMBER_MAX}
+                            aria-label={`Vehicle ${index + 1} plate number`}
+                            className={publicRowInputClasses}
+                            {...fieldErrorProps(fields[0].id, fields[0].error)}
+                          />
+                          <div className="col-start-2 row-start-2 grid grid-cols-2 gap-2 sm:col-start-3 sm:row-start-1">
                             <input
-                              id={`visit-plate-${rowId}`}
-                              name="plateNumber"
-                              type="text"
-                              placeholder="ABC 1234"
-                              required
-                              maxLength={PLATE_NUMBER_MAX}
-                              className={fieldClasses}
-                              {...fieldErrorProps(`visit-plate-${rowId}`, rowErrors?.plateNumber)}
-                            />
-                          </Field>
-                          <Field label="Car Brand" htmlFor={`visit-car-brand-${rowId}`} optional error={rowErrors?.carBrand}>
-                            <input
-                              id={`visit-car-brand-${rowId}`}
+                              id={fields[1].id}
                               name="carBrand"
                               type="text"
-                              placeholder="Toyota"
+                              placeholder="Brand, e.g. Toyota"
                               maxLength={VEHICLE_TEXT_MAX}
-                              className={fieldClasses}
-                              {...fieldErrorProps(`visit-car-brand-${rowId}`, rowErrors?.carBrand)}
+                              aria-label={`Vehicle ${index + 1} car brand (optional)`}
+                              className={publicRowInputClasses}
+                              {...fieldErrorProps(fields[1].id, fields[1].error)}
                             />
-                          </Field>
-                          <Field label="Car Type" htmlFor={`visit-car-type-${rowId}`} optional error={rowErrors?.carType}>
                             <input
-                              id={`visit-car-type-${rowId}`}
+                              id={fields[2].id}
                               name="carType"
                               type="text"
-                              placeholder="Van, Sedan, School Bus"
+                              placeholder="Type, e.g. Van"
                               maxLength={VEHICLE_TEXT_MAX}
-                              className={fieldClasses}
-                              {...fieldErrorProps(`visit-car-type-${rowId}`, rowErrors?.carType)}
+                              aria-label={`Vehicle ${index + 1} car type (optional)`}
+                              className={publicRowInputClasses}
+                              {...fieldErrorProps(fields[2].id, fields[2].error)}
                             />
-                          </Field>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={vehicleRows.length === 1}
+                            onClick={() => {
+                              setVehicleRows((rows) => rows.filter((id) => id !== rowId));
+                              setVehicleErrors([]);
+                            }}
+                            aria-label={`Remove vehicle ${index + 1}`}
+                            className="col-start-3 row-start-1 rounded-lg p-2 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible sm:col-start-4"
+                          >
+                            <CloseIcon className="h-4 w-4" />
+                          </button>
                         </div>
+                        {fields.map((field) =>
+                          field.error ? (
+                            <FieldError key={field.name} id={fieldErrorId(field.id)}>
+                              {field.error}
+                            </FieldError>
+                          ) : null,
+                        )}
                       </li>
                     );
                   })}
                 </ol>
+              </div>
 
-                {vehicleRows.length < MAX_VEHICLES && (
-                  <button
-                    type="button"
-                    onClick={() => setVehicleRows((rows) => rows.length < MAX_VEHICLES ? [...rows, nextRowId()] : rows)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Add another vehicle
-                  </button>
-                )}
-                {vehicleRows.length === MAX_VEHICLES && (
-                  <p role="status" className="text-sm text-ink-muted">Maximum of {MAX_VEHICLES} vehicles reached. Remove a vehicle to add another.</p>
-                )}
-              </>
-            )}
-          </fieldset>
-        </div>
+              {vehicleRows.length < MAX_VEHICLES && (
+                <button
+                  type="button"
+                  onClick={() => setVehicleRows((rows) => rows.length < MAX_VEHICLES ? [...rows, nextRowId()] : rows)}
+                  className={linkButtonClasses}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Add another vehicle
+                </button>
+              )}
+              {vehicleRows.length === MAX_VEHICLES && (
+                <p role="status" className="text-sm text-ink-muted">Maximum of {MAX_VEHICLES} vehicles reached. Remove a vehicle to add another.</p>
+              )}
+            </>
+          )}
+        </fieldset>
+      </section>
 
-        <div>
-          <div className="space-y-4">
-            <FieldGroupLabel>Additional Info</FieldGroupLabel>
-            <Field label="Equipment to Bring" htmlFor="visit-equipment" optional error={errors.equipment}>
-              <input
-                id="visit-equipment"
-                name="equipment"
-                type="text"
-                placeholder="Cameras, notebooks, recording gear"
-                maxLength={500}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-equipment", errors.equipment)}
-              />
-            </Field>
-            <Field label="Additional Notes" htmlFor="visit-notes" optional error={errors.notes}>
-              <textarea
-                id="visit-notes"
-                name="notes"
-                rows={3}
-                placeholder="Anything else we should know"
-                maxLength={1000}
-                className={fieldClasses}
-                {...fieldErrorProps("visit-notes", errors.notes)}
-              />
-            </Field>
-          </div>
+      {/* Step 4: anything else, then consent and send. */}
+      <section hidden={step !== LAST_VISIT_STEP} aria-labelledby="visit-step-3" className="space-y-5">
+        <StepHeading step={LAST_VISIT_STEP} title="Final details">
+          Both fields are optional. Add anything that helps us prepare, then agree to the privacy notice and send.
+        </StepHeading>
+        <div className="space-y-4">
+          <PublicField label="Equipment to Bring" htmlFor="visit-equipment" optional error={errors.equipment}>
+            <input
+              id="visit-equipment"
+              name="equipment"
+              type="text"
+              placeholder="Cameras, notebooks, recording gear"
+              maxLength={500}
+              className={publicFieldClasses}
+              {...fieldErrorProps("visit-equipment", errors.equipment)}
+            />
+          </PublicField>
+          <PublicField label="Additional Notes" htmlFor="visit-notes" optional error={errors.notes}>
+            <textarea
+              id="visit-notes"
+              name="notes"
+              rows={3}
+              placeholder="Anything else we should know"
+              maxLength={1000}
+              className={publicFieldClasses}
+              {...fieldErrorProps("visit-notes", errors.notes)}
+            />
+          </PublicField>
         </div>
-      </div>
+        <PrivacyConsent id="visit-consent" purpose="this visit request" error={errors.consent} />
+      </section>
 
       {failure && (
         <FormAlert
@@ -731,22 +895,30 @@ export function RequestVisitForm({
         />
       )}
 
-      {/* Desktop: consent beside the buttons to save a row; phones keep them stacked. */}
-      <div className="space-y-6 border-t border-line pt-6 lg:flex lg:items-center lg:gap-8 lg:space-y-0">
-        <div className="lg:flex-1">
-          <PrivacyConsent id="visit-consent" purpose="this visit request" error={errors.consent} />
-        </div>
-        <div className="flex shrink-0 justify-end gap-3">
-          {onCancel && (
-            <Button type="button" variant="outline-forest" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+        {step > 0 ? (
+          <Button type="button" variant="outline-forest" onClick={() => goToStep(step - 1)}>
+            <ChevronLeftIcon className="h-4 w-4" />
+            Back
+          </Button>
+        ) : onCancel ? (
+          <Button type="button" variant="outline-forest" onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : (
+          <span />
+        )}
+        {lastStep ? (
           <Button type="submit" variant="solid-forest" disabled={submitting || retryBlocked || excessVisitorRows} aria-busy={submitting || undefined}>
             {submitting ? "Sending…" : "Submit Request"}
             {!submitting && <ArrowRightIcon className="h-4 w-4" />}
           </Button>
-        </div>
+        ) : (
+          <Button type="submit" variant="solid-forest">
+            Next: {VISIT_FORM_STEPS[step + 1]?.title}
+            <ArrowRightIcon className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </form>
   );

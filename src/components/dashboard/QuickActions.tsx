@@ -15,7 +15,7 @@ const ACTIONS = [
     href: "/specimens#offline-records-heading",
     accent: NAV_ACCENTS.specimens,
   },
-  { label: "Continue cataloging", icon: PencilIcon, href: "/cataloging", accent: NAV_ACCENTS.cataloging },
+  { label: "Continue cataloging", icon: PencilIcon, href: "/specimens?status=UNCATALOGED", accent: NAV_ACCENTS.cataloging },
   { label: "Create exhibit", icon: GridIcon, href: "/exhibits?create=1", accent: NAV_ACCENTS.exhibits },
 ] as const;
 

@@ -139,3 +139,9 @@ export function normalizeVisitorQuestion(value: string): string | null {
   if (!question || question.length > FAQ_QUESTION_MAX_LENGTH) return null;
   return question;
 }
+
+/** True when two questions differ only in case, spacing or punctuation, e.g. a picked suggestion. */
+export function sameQuestion(a: string, b: string): boolean {
+  const key = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  return key(a) === key(b);
+}

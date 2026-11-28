@@ -65,6 +65,17 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
     detail;
 
   const zeroReason = lotOverview.zeroQuantityReason;
+  // An Uncataloged record is finished on the one-page form, so each card opens its section there
+  // (panel follow-up, 2026-11-28). Cataloged records edit in place, in a dialog over this page.
+  const editHref = (section: "basic" | "taxonomy" | "provenance", path: string) =>
+    specimen.status === "UNCATALOGED"
+      ? `/specimens/${specimen.id}/complete#section-${section}`
+      : `/specimens/${specimen.id}/${path}`;
+  // The form records only a first lot; further lots are inventory work on the lots page.
+  const addLotHref =
+    specimen.status === "UNCATALOGED" && lotOverview.activeLotCount === 0
+      ? `/specimens/${specimen.id}/complete#section-storage`
+      : `/specimens/${specimen.id}/lots/new`;
 
   return (
     <div className="space-y-4">
@@ -100,7 +111,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         action={
           specimen.status !== "ARCHIVED" ? (
             <Link
-              href={`/specimens/${specimen.id}/edit`}
+              href={editHref("basic", "edit")}
               className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
             >
               Edit basic details
@@ -140,7 +151,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         action={
           specimen.status !== "ARCHIVED" ? (
             <Link
-              href={`/specimens/${specimen.id}/taxonomy`}
+              href={editHref("taxonomy", "taxonomy")}
               className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
             >
               {taxonomy ? "Edit taxonomy" : "Add taxonomy"}
@@ -173,7 +184,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
         action={
           specimen.status !== "ARCHIVED" ? (
             <Link
-              href={`/specimens/${specimen.id}/provenance`}
+              href={editHref("provenance", "provenance")}
               className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
             >
               {provenance ? "Edit provenance" : "Add provenance"}
@@ -209,7 +220,7 @@ export function SpecimenFullDetails({ detail }: { detail: SpecimenDetail }) {
             </Link>
             {specimen.status !== "ARCHIVED" && (
               <Link
-                href={`/specimens/${specimen.id}/lots/new`}
+                href={addLotHref}
                 className="rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
               >
                 Add lot

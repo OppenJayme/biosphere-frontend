@@ -121,6 +121,36 @@ export async function archiveSpecimenAction(
 }
 
 /** Restore is a command, not a status form: the server revalidates current requirements. */
+/**
+ * The same archive request, started from the duplicate review page: the curator returns to the
+ * review list, where the archived record no longer appears. Lots are never changed here; the
+ * backend still refuses while any are active.
+ */
+export async function archiveFromDuplicateReviewAction(
+  specimenId: string,
+  _previousState: LifecycleActionState,
+  _formData: FormData,
+): Promise<LifecycleActionState> {
+  void _previousState;
+  void _formData;
+  if (!(await verifySession())) redirect("/login?from=/specimens/duplicates");
+
+  const safeId = z.uuid().safeParse(specimenId);
+  if (!safeId.success) {
+    return { message: "The specimen identifier is invalid. Reload the review list and try again." };
+  }
+
+  try {
+    await archiveSpecimen(safeId.data);
+  } catch (error) {
+    return { message: lifecycleError(error, "archive") };
+  }
+
+  refreshSpecimenPaths(safeId.data);
+  revalidatePath("/specimens/duplicates");
+  redirect("/specimens/duplicates?archived=1");
+}
+
 export async function restoreSpecimenAction(
   specimenId: string,
   _previousState: LifecycleActionState,
@@ -144,7 +174,6 @@ export async function restoreSpecimenAction(
   }
 
   refreshSpecimenPaths(safeId.data);
-  revalidatePath("/cataloging");
   revalidatePath(`/specimens/${safeId.data}/history`);
   revalidatePath("/audit-logs");
   const notice = result.restored

@@ -14,6 +14,7 @@ import {
   specimenCreateResultSchema,
   specimenDetailSchema,
   specimenDuplicateCheckResultSchema,
+  duplicateReviewSchema,
   specimenListSchema,
   specimenPageSchema,
   specimenProvenanceSchema,
@@ -39,6 +40,7 @@ import {
   type SpecimenRevisionQuery,
 } from "./revision-history";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
+import type { SpecimenRecordInput } from "./record-form";
 import type { AttachSpecimenTagInput } from "./tag-form";
 import type { SpecimenMediaMetadataInput } from "./media-form";
 import type {
@@ -155,6 +157,8 @@ export async function searchSpecimens(query: SpecimenListQuery) {
     params.set("storageUnitId", query.storageUnitId);
     if (query.includeDescendantUnits === false) params.set("includeDescendantUnits", "false");
   }
+  if (query.minQuantity != null) params.set("minQuantity", String(query.minQuantity));
+  if (query.maxQuantity != null) params.set("maxQuantity", String(query.maxQuantity));
   const created = specimenCreatedBounds(query);
   if (created.from) params.set("createdFrom", created.from);
   if (created.to) params.set("createdTo", created.to);
@@ -474,6 +478,39 @@ export async function createSpecimen(input: SpecimenMutationInput) {
   return result.data;
 }
 
+/**
+ * One-page catalog form: create a specimen with its taxonomy, provenance and first lot in one
+ * backend transaction, cataloging it too when `catalog` is set.
+ */
+export async function createSpecimenRecord(input: SpecimenRecordInput & { catalog: boolean }) {
+  const response = await apiFetch<unknown>("/specimens/record", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const result = specimenCreateResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid created specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Save every section of an existing draft, and catalog it when `catalog` is set. */
+export async function saveSpecimenRecord(id: string, input: SpecimenRecordInput & { catalog: boolean }) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}/record`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid saved specimen response.");
+  }
+
+  return result.data;
+}
+
 /** Warn about possible duplicates of unsaved values; nothing is saved (REQ-4.4-21). */
 export async function checkSpecimenDuplicates(input: DuplicateCheckInput) {
   const response = await apiFetch<unknown>("/specimens/duplicate-check", {
@@ -484,6 +521,21 @@ export async function checkSpecimenDuplicates(input: DuplicateCheckInput) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid duplicate-check response.");
+  }
+
+  return result.data;
+}
+
+/** Every active record that matches another, grouped for the duplicate review page. */
+export async function getDuplicateReview() {
+  const response = await apiFetch<unknown>("/specimens/possible-duplicates", {
+    method: "GET",
+    cache: "no-store",
+  });
+  const result = duplicateReviewSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid duplicate review response.");
   }
 
   return result.data;

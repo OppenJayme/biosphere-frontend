@@ -43,15 +43,36 @@ function basicDetailsSection(html: string) {
 // Curator UAT 2026-11-14: the edit button belongs on the card it edits, not in the page header.
 describe("SpecimenFullDetails basic details card", () => {
   it("puts Edit basic details on the Basic details card", () => {
-    const html = renderToStaticMarkup(createElement(SpecimenFullDetails, { detail: detail("UNCATALOGED") }));
+    const html = renderToStaticMarkup(createElement(SpecimenFullDetails, { detail: detail("CATALOGED") }));
     const section = basicDetailsSection(html);
     expect(section).toContain(`href="/specimens/${specimenId}/edit"`);
     expect(section).toContain("Edit basic details");
   });
 
-  it("keeps the button for cataloged specimens", () => {
+  // Panel follow-up 2026-11-28: an Uncataloged record is finished on the one-page form.
+  it("sends each card of an uncataloged specimen to its section of Complete record", () => {
+    const html = renderToStaticMarkup(createElement(SpecimenFullDetails, { detail: detail("UNCATALOGED") }));
+    expect(basicDetailsSection(html)).toContain(`href="/specimens/${specimenId}/complete#section-basic"`);
+    expect(html).toContain(`href="/specimens/${specimenId}/complete#section-taxonomy"`);
+    expect(html).toContain(`href="/specimens/${specimenId}/complete#section-provenance"`);
+    expect(html).toContain(`href="/specimens/${specimenId}/complete#section-storage"`);
+    expect(html).not.toContain(`/specimens/${specimenId}/taxonomy"`);
+  });
+
+  it("keeps Add lot on the lots page once an uncataloged specimen has a lot", () => {
+    const withLot = detail("UNCATALOGED");
+    withLot.lotOverview = { ...withLot.lotOverview, activeLotCount: 1 };
+    const html = renderToStaticMarkup(createElement(SpecimenFullDetails, { detail: withLot }));
+    expect(html).toContain(`href="/specimens/${specimenId}/lots/new"`);
+    expect(html).not.toContain("#section-storage");
+  });
+
+  it("edits cataloged specimens in place, not on the record form", () => {
     const html = renderToStaticMarkup(createElement(SpecimenFullDetails, { detail: detail("CATALOGED") }));
-    expect(basicDetailsSection(html)).toContain("Edit basic details");
+    expect(html).toContain(`href="/specimens/${specimenId}/taxonomy"`);
+    expect(html).toContain(`href="/specimens/${specimenId}/provenance"`);
+    expect(html).toContain(`href="/specimens/${specimenId}/lots/new"`);
+    expect(html).not.toContain("/complete");
   });
 
   it("hides it on archived specimens, as before", () => {

@@ -331,13 +331,3 @@ html:has(> body.site) {
     transform: translateX(-24px);
   }
 }
-
-/* Skeleton sweep shown until a photo has loaded. */
-@keyframes viewer-shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(100%);
-  }
-}

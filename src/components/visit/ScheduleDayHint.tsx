@@ -1,37 +1,33 @@
 "use client";
 
 /**
- * Under each preferred schedule option on the public form: that day's opening hours and the times
- * approved visits already hold (backend spec 0001 AC-10). It never shows who booked a time; the
- * availability endpoint does not return that.
+ * Under a preferred schedule option on the public form, only what is particular to that row's
+ * date: a closed day, or times approved visits already hold that day (backend spec 0001 AC-10).
+ * The week's opening hours, and a failed booked-times check, are shown once above the options
+ * instead of under every row. It never shows who booked a time; the endpoint does not return that.
  */
 
 import { ClockIcon } from "@/components/icons";
 import { availabilityCovers, bookedOn, type VisitAvailability } from "@/features/visit-requests/availability";
-import {
-  MUSEUM_OPENING_HOURS,
-  dayName,
-  describeWindows,
-  formatTimeRange,
-  openingWindowsFor,
-} from "@/features/public-submissions/schedule";
-import type { AvailabilityStatus } from "./useVisitAvailability";
+import { MUSEUM_OPENING_HOURS, dayName, formatTimeRange, openingWindowsFor } from "@/features/public-submissions/schedule";
+
+/** Whether the row for `date` has a closed day or booked times to point out. */
+export function scheduleDayHintShown(date: string, availability: VisitAvailability | null) {
+  const closed = openingWindowsFor(date, availability?.openingHours ?? MUSEUM_OPENING_HOURS).length === 0;
+  return closed || (availabilityCovers(availability, date) && bookedOn(availability, date).length > 0);
+}
 
 export function ScheduleDayHint({
   id,
   date,
   availability,
-  status,
 }: {
   id: string;
-  /** A real YYYY-MM-DD date on or after today; the caller skips empty and past dates. */
+  /** A real YYYY-MM-DD date on or after today, for which scheduleDayHintShown is true. */
   date: string;
   availability: VisitAvailability | null;
-  status: AvailabilityStatus;
 }) {
   const windows = openingWindowsFor(date, availability?.openingHours ?? MUSEUM_OPENING_HOURS);
-  const loaded = availabilityCovers(availability, date);
-  const booked = bookedOn(availability, date);
 
   if (windows.length === 0) {
     return (
@@ -41,23 +37,15 @@ export function ScheduleDayHint({
     );
   }
 
+  const booked = bookedOn(availability, date);
   return (
-    <div id={id} aria-live="polite" className="mt-3 space-y-1 rounded-lg bg-brand-soft px-3 py-2 text-sm text-ink">
-      <p className="flex items-start gap-1.5">
-        <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-        <span>
-          <span className="font-medium">Open {dayName(date)},</span> {describeWindows(windows)}.
-        </span>
-      </p>
-      <p className="pl-5.5 text-ink-muted">
-        {loaded
-          ? booked.length > 0
-            ? `Already booked that day: ${booked.map((range) => formatTimeRange(range.startTime, range.endTime)).join(", ")}. Choose a time that does not overlap.`
-            : "No visits are booked yet that day."
-          : status === "error"
-            ? "We could not check booked times right now. You can still send your request; the museum will confirm the time with you."
-            : "Checking which times are already booked…"}
-      </p>
-    </div>
+    <p id={id} aria-live="polite" className="mt-3 flex items-start gap-1.5 rounded-lg bg-brand-soft px-3 py-2 text-sm text-ink">
+      <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+      <span>
+        <span className="font-medium">Already booked that day:</span>{" "}
+        {booked.map((range) => formatTimeRange(range.startTime, range.endTime)).join(", ")}. Choose a time that does not
+        overlap.
+      </span>
+    </p>
   );
 }

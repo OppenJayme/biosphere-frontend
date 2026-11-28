@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   NAMES_FILE_MAX_BYTES,
   docxText,
@@ -228,5 +229,22 @@ describe("readNamesFile", () => {
   it("reports a damaged .docx instead of throwing", async () => {
     const broken = file("broken.docx", new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]));
     expect(await readNamesFile(broken)).toEqual({ ok: false, message: expect.stringContaining("could not be read") });
+  });
+});
+
+describe("downloadable sample lists", () => {
+  // public/templates holds the samples the visit form offers. They must keep reading cleanly:
+  // the title and "Prepared by" lines are skipped, and suffixes and particles stay in surnames.
+  it.each(["txt", "docx"])("reads all 50 names from visitor-names-sample.%s", async (extension) => {
+    const bytes = new Uint8Array(readFileSync(`public/templates/visitor-names-sample.${extension}`));
+    const result = await readNamesFile(file(`visitor-names-sample.${extension}`, bytes));
+    expect(result).toMatchObject({ ok: true, skipped: 2 });
+    if (!result.ok) return;
+    expect(result.names).toHaveLength(50);
+    expect(result.names[0]).toEqual({ firstName: "Juan", lastName: "Dela Cruz" });
+    expect(result.names[8]).toEqual({ firstName: "Carlo", lastName: "De los Santos" });
+    expect(result.names[30]).toEqual({ firstName: "Lorenzo", lastName: "Rizal Jr." });
+    expect(result.names[45]).toEqual({ firstName: "Isidro", lastName: "Macaraeg III" });
+    expect(result.names[46]).toEqual({ firstName: "Rosalinda", lastName: "Sta. Maria" });
   });
 });

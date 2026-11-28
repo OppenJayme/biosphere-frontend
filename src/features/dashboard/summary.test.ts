@@ -45,12 +45,12 @@ describe("dashboard summary mapping", () => {
     const stats = buildStats(summary());
 
     expect(stats.map((stat) => [stat.key, stat.value, stat.href])).toEqual([
-      ["total", "29", "/specimens"],
+      ["total", "29", "/specimens?status=all"],
       ["uncataloged", "13", "/specimens?status=UNCATALOGED"],
       ["cataloged", "14", "/specimens?status=CATALOGED"],
       ["archived", "2", "/specimens?status=ARCHIVED"],
       ["pending", "3", "/public-website?status=PENDING"],
-      ["duplicates", "2", "/specimens?sortBy=scientificName&sortDirection=asc"],
+      ["duplicates", "2", "/specimens/duplicates"],
     ]);
     expect(stats[0].note).toBe("+3 this month");
     expect(stats[4].note).toBe("2 inquiries · 1 visit request");

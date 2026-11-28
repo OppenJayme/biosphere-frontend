@@ -30,22 +30,23 @@ export function archiveBlockReason(status: SpecimenSummary["status"], activeLotC
   return null;
 }
 
-// Where each catalog-completion check (by backend key) is fixed.
-const CATALOG_CHECK_PATHS: Record<string, string> = {
-  collection: "edit",
-  accessionNumber: "edit",
-  commonName: "edit",
-  kingdom: "taxonomy",
-  collectionDate: "provenance",
-  preservationType: "provenance",
-  preservationMethod: "provenance",
-  activeLot: "lots/new",
+/**
+ * Short labels for missing catalog requirements, matching the one-page form's checklist wording
+ * closely enough to recognise; unknown labels pass through unchanged.
+ */
+const SHORT_REQUIREMENT_LABELS: Record<string, string> = {
+  "Collection is assigned": "Collection",
+  "Accession number is assigned": "Accession number",
+  "Common name is recorded": "Common name",
+  "Taxonomic kingdom is recorded": "Kingdom",
+  "A valid collection date on or before today is recorded": "Collection date",
+  "Preservation type is recorded": "Preservation type",
+  "Preservation method is recorded": "Preservation method",
+  "An active lot has positive quantity in a specimen-holding storage location": "Storage lot",
 };
 
-/** Edit page for a failed readiness check, or null for a rule this UI doesn't know yet. */
-export function catalogCheckHref(specimenId: string, key: string) {
-  const path = CATALOG_CHECK_PATHS[key];
-  return path ? `/specimens/${specimenId}/${path}` : null;
+export function shortRequirementLabel(label: string) {
+  return SHORT_REQUIREMENT_LABELS[label] ?? label;
 }
 
 export const REOPEN_REASON_MAX = 500;

@@ -5,7 +5,9 @@ import { InfoTip } from "@/components/ui/InfoTip";
 import { ClearSpecimenFiltersLink } from "./ClearSpecimenFiltersLink";
 import { ConditionField } from "./ConditionField";
 import {
+  ALL_ACTIVE_STATUS_PARAM,
   DEFAULT_SPECIMEN_PAGE_SIZE,
+  DEFAULT_SPECIMEN_STATUS,
   hasAdvancedSpecimenFilters,
   SORT_DIRECTIONS,
   SPECIMEN_GENDERS,
@@ -49,7 +51,7 @@ function enumLabel(value: string) {
 function hasNonDefaultFilters(query: SpecimenListQuery) {
   return (
     query.search.length > 0 ||
-    query.status !== null ||
+    query.status !== DEFAULT_SPECIMEN_STATUS ||
     query.collectionId !== null ||
     query.specimenCategory.length > 0 ||
     query.gender !== null ||
@@ -110,9 +112,9 @@ export function SpecimenToolbar({
       <FilterChips
         label="Filter by catalog status"
         chips={[
-          statusChip("All active", null, statusCounts ? statusCounts.UNCATALOGED + statusCounts.CATALOGED : undefined),
           statusChip("Uncataloged", "UNCATALOGED", statusCounts?.UNCATALOGED),
           statusChip("Cataloged", "CATALOGED", statusCounts?.CATALOGED),
+          statusChip("All active", null, statusCounts ? statusCounts.UNCATALOGED + statusCounts.CATALOGED : undefined),
           statusChip("Archived", "ARCHIVED", statusCounts?.ARCHIVED),
         ]}
       />
@@ -124,7 +126,7 @@ export function SpecimenToolbar({
         action="/specimens"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <input type="hidden" name="status" defaultValue={query.status ?? ""} />
+        <input type="hidden" name="status" defaultValue={query.status ?? ALL_ACTIVE_STATUS_PARAM} />
         {query.limit !== DEFAULT_SPECIMEN_PAGE_SIZE && (
           <input type="hidden" name="limit" defaultValue={query.limit} />
         )}
@@ -197,7 +199,7 @@ export function SpecimenToolbar({
               <FilterToggleContent>
                 More filters
                 <InfoTip label="More filters" align="start">
-                  Category, gender, public display, condition, storage location, tag, date added and taxonomy. Text
+                  Category, gender, public display, quantity, condition, storage location, tag, date added and taxonomy. Text
                   filters must match the whole value (capital letters don&apos;t matter). Dates use Philippine time.
                 </InfoTip>
               </FilterToggleContent>
@@ -268,6 +270,38 @@ export function SpecimenToolbar({
                   className={controlClasses}
                 />
               </label>
+
+              <fieldset className="grid grid-cols-2 gap-2">
+                <legend className="sr-only">Total quantity in active lots</legend>
+                <label className="text-xs font-medium text-zinc-600">
+                  Quantity from
+                  <input
+                    type="number"
+                    name="minQuantity"
+                    min={0}
+                    max={1000000}
+                    step={1}
+                    inputMode="numeric"
+                    defaultValue={query.minQuantity ?? ""}
+                    placeholder="0"
+                    className={controlClasses}
+                  />
+                </label>
+                <label className="text-xs font-medium text-zinc-600">
+                  Quantity to
+                  <input
+                    type="number"
+                    name="maxQuantity"
+                    min={0}
+                    max={1000000}
+                    step={1}
+                    inputMode="numeric"
+                    defaultValue={query.maxQuantity ?? ""}
+                    placeholder="Any"
+                    className={controlClasses}
+                  />
+                </label>
+              </fieldset>
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="text-xs font-medium text-zinc-600">

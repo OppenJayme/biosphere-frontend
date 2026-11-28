@@ -53,6 +53,7 @@ export function CuratorTopbar({
 
       {/* Global search (SRS 3.1.3 "search access"): a plain GET form, so it works without JavaScript. */}
       <form action="/specimens" role="search" className="relative hidden w-full max-w-md md:block">
+        <input type="hidden" name="status" value="all" />
         <label htmlFor="global-search" className="sr-only">
           Search specimens
         </label>

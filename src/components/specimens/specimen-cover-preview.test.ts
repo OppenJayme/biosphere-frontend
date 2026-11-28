@@ -2,6 +2,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@/features/specimens/cover-preview-action", () => ({ getSpecimenCoverPreview: vi.fn() }));
+// The photo loader shows the logo through next/image; Vitest turns its static PNG import into a
+// bare path without the width/height Next adds at build time, so the logo is stubbed out here.
+vi.mock("@/components/layout/LogoMark", () => ({ LogoMark: () => null }));
 import { CoverPreviewContent } from "./SpecimenCoverPreview";
 import type { CoverPreviewResult } from "../../features/specimens/cover-preview-action";
 

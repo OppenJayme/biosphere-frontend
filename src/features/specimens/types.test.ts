@@ -24,6 +24,8 @@ const NO_ADVANCED_FILTERS = {
   includeDescendantUnits: true,
   createdFrom: "",
   createdTo: "",
+  minQuantity: null,
+  maxQuantity: null,
 };
 const UNIT_ID = "d0000000-0000-4000-8000-000000000001";
 
@@ -139,7 +141,8 @@ describe("specimen catalog query handling", () => {
       }),
     ).toEqual({
       search: "x".repeat(100),
-      status: null,
+      // An unknown status falls back to the default Uncataloged view.
+      status: "UNCATALOGED",
       collectionId: null,
       specimenCategory: "",
       gender: null,
@@ -167,7 +170,33 @@ describe("specimen catalog query handling", () => {
         { ...defaultQuery, search: "frog", status: "UNCATALOGED", page: 2 },
         1,
       ),
-    ).toBe("/specimens?search=frog&status=UNCATALOGED");
+    ).toBe("/specimens?search=frog");
+  });
+
+  it("opens on Uncataloged records and keeps All active in its own URL value", () => {
+    expect(parseSpecimenListQuery({}).status).toBe("UNCATALOGED");
+    expect(parseSpecimenListQuery({ status: "" }).status).toBe("UNCATALOGED");
+    const allActive = parseSpecimenListQuery({ status: "all" });
+    expect(allActive.status).toBeNull();
+    expect(specimenListHref(allActive)).toBe("/specimens?status=all");
+    expect(specimenListHref({ ...allActive, status: "CATALOGED" })).toBe("/specimens?status=CATALOGED");
+  });
+
+  it("filters by a total quantity range and rejects a reversed one", () => {
+    const query = parseSpecimenListQuery({ minQuantity: " 2 ", maxQuantity: "10" });
+    expect(query).toMatchObject({ minQuantity: 2, maxQuantity: 10 });
+    expect(hasAdvancedSpecimenFilters(query)).toBe(true);
+    expect(specimenListHref(query)).toBe("/specimens?minQuantity=2&maxQuantity=10");
+    expect(specimenDateRangeError(query)).toBeNull();
+
+    expect(parseSpecimenListQuery({ minQuantity: "-1", maxQuantity: "1.5" })).toMatchObject({
+      minQuantity: null,
+      maxQuantity: null,
+    });
+    expect(parseSpecimenListQuery({ maxQuantity: "0" }).maxQuantity).toBe(0);
+    expect(specimenDateRangeError(parseSpecimenListQuery({ minQuantity: "5", maxQuantity: "2" }))).toBe(
+      "The minimum quantity must not be more than the maximum.",
+    );
   });
 });
 

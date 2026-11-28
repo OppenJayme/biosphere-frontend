@@ -45,7 +45,7 @@ export function buildStats(summary: DashboardSummary): DashboardStat[] {
       note: specimens.addedThisMonth > 0 ? `+${specimens.addedThisMonth} this month` : "No new records this month",
       tone: "positive",
       icon: "specimen",
-      href: "/specimens",
+      href: "/specimens?status=all",
     },
     {
       key: "uncataloged",
@@ -90,11 +90,10 @@ export function buildStats(summary: DashboardSummary): DashboardStat[] {
       key: "duplicates",
       label: "Possible Duplicates",
       value: specimens.possibleDuplicates.toLocaleString(),
-      note: "Same scientific name & category",
+      note: "Records needing review",
       tone: specimens.possibleDuplicates > 0 ? "danger" : "positive",
       icon: "lock",
-      // Sorting by name puts matching records next to each other.
-      href: "/specimens?sortBy=scientificName&sortDirection=asc",
+      href: "/specimens/duplicates",
     },
   ];
 }
@@ -125,17 +124,19 @@ export function buildAttention(summary: DashboardSummary): AttentionItem[] {
       count: specimens.byStatus.UNCATALOGED,
       text: countLabel(specimens.byStatus.UNCATALOGED, "specimen is", "specimens are") + " waiting to be cataloged",
       action: "Continue",
-      href: "/cataloging",
+      href: "/specimens?status=UNCATALOGED",
     },
     {
       key: "duplicates",
       count: specimens.possibleDuplicates,
       text:
-        countLabel(specimens.possibleDuplicates, "record looks", "records look") +
-        " like a possible duplicate (same scientific name and category)",
-      action: "Check",
-      // Sorting by name puts matching records next to each other.
-      href: "/specimens?sortBy=scientificName&sortDirection=asc",
+        countLabel(
+          specimens.possibleDuplicates,
+          "record matches another record and needs",
+          "records match another record and need",
+        ) + " a duplicate review",
+      action: "Review",
+      href: "/specimens/duplicates",
     },
     {
       key: "qr",

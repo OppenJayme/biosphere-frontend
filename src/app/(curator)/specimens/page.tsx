@@ -57,8 +57,11 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
             <Link href="/specimens/collections" className={PAGE_ACTION_SECONDARY}>
               Manage collections
             </Link>
+            <Link href="/specimens/import" className={PAGE_ACTION_SECONDARY}>
+              Import from Excel
+            </Link>
             <Link href="/specimens/new" className={PAGE_ACTION_PRIMARY}>
-              Add specimen draft
+              Add specimen
             </Link>
           </>
         }
