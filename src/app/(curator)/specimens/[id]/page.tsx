@@ -47,6 +47,11 @@ function specimenNotice(params: Record<string, string | string[] | undefined>) {
   if (lifecycle === "reopened") {
     return "Cataloging was reopened. The specimen is Uncataloged again and public display is off.";
   }
+  if (firstValue(params.record) === "saved") {
+    return firstValue(params.created) === "1"
+      ? "The specimen was saved as an Uncataloged draft."
+      : "The specimen record was saved. It stays Uncataloged until you catalog it.";
+  }
   if (firstValue(params.created) === "1") return "The uncataloged specimen draft was created.";
   if (firstValue(params.updated) === "1") return "The specimen core record was updated.";
   if (firstValue(params.taxonomy) === "created") return "The specimen taxonomy record was created.";

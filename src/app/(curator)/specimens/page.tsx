@@ -58,7 +58,7 @@ export default async function SpecimensPage({ searchParams }: SpecimensPageProps
               Manage collections
             </Link>
             <Link href="/specimens/new" className={PAGE_ACTION_PRIMARY}>
-              Add specimen draft
+              Add specimen
             </Link>
           </>
         }

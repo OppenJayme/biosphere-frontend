@@ -69,7 +69,7 @@ export default async function CatalogingPage({ searchParams }: CatalogingPagePro
               Full specimen catalog
             </Link>
             <Link href="/specimens/new" className={PAGE_ACTION_PRIMARY}>
-              Add specimen draft
+              Add specimen
             </Link>
           </>
         }

@@ -35,11 +35,11 @@ describe("specimen lifecycle presentation rules", () => {
 describe("catalog readiness checklist", () => {
   const id = "0b8f5f8e-3f7e-4d3a-9d1a-2c6a1f0e9b11";
 
-  it("links each backend check to the page that fixes it", () => {
-    expect(catalogCheckHref(id, "commonName")).toBe(`/specimens/${id}/edit`);
-    expect(catalogCheckHref(id, "kingdom")).toBe(`/specimens/${id}/taxonomy`);
-    expect(catalogCheckHref(id, "preservationMethod")).toBe(`/specimens/${id}/provenance`);
-    expect(catalogCheckHref(id, "activeLot")).toBe(`/specimens/${id}/lots/new`);
+  it("links each backend check to its section of the one-page record form", () => {
+    expect(catalogCheckHref(id, "commonName")).toBe(`/specimens/${id}/complete#section-basic`);
+    expect(catalogCheckHref(id, "kingdom")).toBe(`/specimens/${id}/complete#section-taxonomy`);
+    expect(catalogCheckHref(id, "preservationMethod")).toBe(`/specimens/${id}/complete#section-provenance`);
+    expect(catalogCheckHref(id, "activeLot")).toBe(`/specimens/${id}/complete#section-storage`);
   });
 
   it("returns no link for a rule the UI does not know yet", () => {

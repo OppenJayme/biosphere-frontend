@@ -78,6 +78,15 @@ function CompleteCataloging({
           </p>
         </div>
 
+        {blocked ? (
+          // Everything that is missing is fixed on one page (panel recommendation, 2026-11-28).
+          <Link
+            href={`/specimens/${specimenId}/complete`}
+            className="rounded-lg bg-forest-700 px-4 py-2 text-xs font-semibold text-white hover:bg-forest-800"
+          >
+            Complete the record
+          </Link>
+        ) : (
         <form action={formAction}>
           <ConfirmButton
             label="Catalog specimen"
@@ -91,6 +100,7 @@ function CompleteCataloging({
             className="rounded-lg bg-forest-700 px-4 py-2 text-xs font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
           />
         </form>
+        )}
       </div>
 
       {state.message && (

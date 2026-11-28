@@ -55,7 +55,7 @@ export default async function DashboardPage() {
         description="What needs your attention today, and how the collection is doing."
         actions={
           <Link href="/specimens/new" className={PAGE_ACTION_PRIMARY}>
-            Add specimen draft
+            Add specimen
           </Link>
         }
       />

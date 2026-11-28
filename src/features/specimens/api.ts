@@ -39,6 +39,7 @@ import {
   type SpecimenRevisionQuery,
 } from "./revision-history";
 import type { TaxonomyMutationInput } from "./taxonomy-form";
+import type { SpecimenRecordInput } from "./record-form";
 import type { AttachSpecimenTagInput } from "./tag-form";
 import type { SpecimenMediaMetadataInput } from "./media-form";
 import type {
@@ -469,6 +470,39 @@ export async function createSpecimen(input: SpecimenMutationInput) {
 
   if (!result.success) {
     throw new Error("The backend returned an invalid created specimen response.");
+  }
+
+  return result.data;
+}
+
+/**
+ * One-page catalog form: create a specimen with its taxonomy, provenance and first lot in one
+ * backend transaction, cataloging it too when `catalog` is set.
+ */
+export async function createSpecimenRecord(input: SpecimenRecordInput & { catalog: boolean }) {
+  const response = await apiFetch<unknown>("/specimens/record", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const result = specimenCreateResultSchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid created specimen response.");
+  }
+
+  return result.data;
+}
+
+/** Save every section of an existing draft, and catalog it when `catalog` is set. */
+export async function saveSpecimenRecord(id: string, input: SpecimenRecordInput & { catalog: boolean }) {
+  const response = await apiFetch<unknown>(`/specimens/${encodeURIComponent(id)}/record`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  const result = specimenSummarySchema.safeParse(response);
+
+  if (!result.success) {
+    throw new Error("The backend returned an invalid saved specimen response.");
   }
 
   return result.data;

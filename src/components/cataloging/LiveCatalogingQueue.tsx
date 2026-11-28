@@ -135,7 +135,7 @@ export function LiveCatalogingQueue({
                   </td>
                   <td className="py-2.5 pr-0 text-right">
                     <Link
-                      href={`/specimens/${specimen.id}`}
+                      href={`/specimens/${specimen.id}/complete`}
                       className="inline-flex rounded-lg border border-forest-700 px-3 py-2 text-xs font-semibold text-forest-800 hover:bg-forest-50"
                     >
                       Continue cataloging

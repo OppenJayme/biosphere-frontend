@@ -30,22 +30,22 @@ export function archiveBlockReason(status: SpecimenSummary["status"], activeLotC
   return null;
 }
 
-// Where each catalog-completion check (by backend key) is fixed.
-const CATALOG_CHECK_PATHS: Record<string, string> = {
-  collection: "edit",
-  accessionNumber: "edit",
-  commonName: "edit",
+// The section of the one-page record form that fixes each catalog check (by backend key).
+const CATALOG_CHECK_SECTIONS: Record<string, string> = {
+  collection: "basic",
+  accessionNumber: "basic",
+  commonName: "basic",
   kingdom: "taxonomy",
   collectionDate: "provenance",
   preservationType: "provenance",
   preservationMethod: "provenance",
-  activeLot: "lots/new",
+  activeLot: "storage",
 };
 
-/** Edit page for a failed readiness check, or null for a rule this UI doesn't know yet. */
+/** The record form at the section that fixes a failed check, or null for an unknown rule. */
 export function catalogCheckHref(specimenId: string, key: string) {
-  const path = CATALOG_CHECK_PATHS[key];
-  return path ? `/specimens/${specimenId}/${path}` : null;
+  const section = CATALOG_CHECK_SECTIONS[key];
+  return section ? `/specimens/${specimenId}/complete#section-${section}` : null;
 }
 
 export const REOPEN_REASON_MAX = 500;
