@@ -704,3 +704,31 @@ export function PlayIcon(props: IconProps) {
     </svg>
   );
 }
+
+const FILE_TYPE_COLORS = { txt: "#4d5c52", docx: "#2b579a", pdf: "#c5221f" } as const;
+
+/**
+ * A page with a coloured band naming its file type (TXT, DOCX or PDF), in the colours people
+ * associate with each, so a sample can be picked at a glance.
+ */
+export function FileTypeIcon({ type, ...props }: IconProps & { type: keyof typeof FILE_TYPE_COLORS }) {
+  return (
+    <svg {...base} viewBox="0 0 24 28" {...props}>
+      <path d="M5 2.5h9.5L19.5 7.5v18H5Z" fill="white" />
+      <path d="M14.3 2.5v5.2h5.2" />
+      <rect x="1.5" y="13" width="18" height="8" rx="1.5" fill={FILE_TYPE_COLORS[type]} stroke="none" />
+      <text
+        x="10.5"
+        y="19.2"
+        textAnchor="middle"
+        fill="white"
+        stroke="none"
+        fontSize={type === "docx" ? 5.4 : 6}
+        fontWeight={700}
+        fontFamily="ui-sans-serif, system-ui, sans-serif"
+      >
+        {type.toUpperCase()}
+      </text>
+    </svg>
+  );
+}

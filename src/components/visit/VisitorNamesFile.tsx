@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type ChangeEvent } from "react";
-import { UploadIcon } from "@/components/icons";
+import { FileTypeIcon, UploadIcon } from "@/components/icons";
 import {
   NAMES_FILE_ACCEPT,
   readNamesFile,
@@ -74,25 +74,23 @@ export function VisitorNamesFile({
           {!reading && <span className="sr-only"> a list of visitor names</span>}
         </button>
         <span className="text-sm text-ink-muted">Have a list already? (optional)</span>
-      </div>
-      <p className="text-sm text-ink-muted">One name per line in a .txt, .docx or .pdf. The file stays on your device.</p>
-      {/* Sample lists in public/templates; names-file.test.ts checks that they keep reading cleanly. */}
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
-        <span>See a sample:</span>
-        {SAMPLE_FORMATS.map((format, index) => (
-          <span key={format} className="inline-flex items-center gap-x-2">
-            {index > 0 && <span aria-hidden="true">·</span>}
+        {/* Sample lists in public/templates; names-file.test.ts checks that they keep reading cleanly. */}
+        <span className="flex items-center gap-1.5 text-sm text-ink-muted">
+          See a sample:
+          {SAMPLE_FORMATS.map((format) => (
             <a
+              key={format}
               href={`/templates/visitor-names-sample.${format}`}
               download
-              aria-label={`Download the sample visitor list as .${format}`}
-              className="font-semibold text-brand underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              aria-label={`Download a sample visitor list (.${format})`}
+              title={`Sample .${format}`}
+              className="rounded-md p-0.5 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand motion-reduce:transition-none"
             >
-              .{format}
+              <FileTypeIcon type={format} className="h-8 w-7 text-ink-muted" />
             </a>
-          </span>
-        ))}
-      </p>
+          ))}
+        </span>
+      </div>
       <p
         id={statusId}
         role={status?.tone === "error" ? "alert" : "status"}

@@ -1,9 +1,9 @@
 import { CheckIcon } from "@/components/icons";
 
 /**
- * Where the visitor is in a multi-step form. Finished steps can be clicked to go back; later steps
- * open only through Next, which checks the current step first. Phones show the current step's
- * name only, with the bar showing progress.
+ * Where the visitor is in a multi-step form: numbered circles, each centred over its step name in
+ * an equal column, joined by lines. Finished steps can be clicked to go back; later steps open only
+ * through Next, which checks the current step first.
  */
 export function FormSteps({
   steps,
@@ -16,50 +16,60 @@ export function FormSteps({
 }) {
   return (
     <nav aria-label="Form progress">
-      <p className="text-xs font-medium text-ink-muted sm:sr-only">
-        Step {current + 1} of {steps.length}: <span className="text-ink">{steps[current]?.title}</span>
+      <p className="sr-only">
+        Step {current + 1} of {steps.length}: {steps[current]?.title}
       </p>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-brand-soft sm:hidden" aria-hidden="true">
-        <div
-          className="h-full rounded-full bg-brand-solid transition-[width] duration-300 motion-reduce:transition-none"
-          style={{ width: `${((current + 1) / steps.length) * 100}%` }}
-        />
-      </div>
-      <ol className="hidden items-center gap-2 sm:flex">
+      <ol className="grid" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
         {steps.map((step, index) => {
           const done = index < current;
           const active = index === current;
-          const marker = (
+          const content = (
             <>
               <span
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                   active
-                    ? "bg-brand-solid text-white"
+                    ? "bg-brand-solid text-white ring-4 ring-brand-soft"
                     : done
                       ? "bg-brand-soft text-brand"
-                      : "border border-forest-900/20 text-ink-muted"
+                      : "border border-forest-900/20 bg-surface text-ink-muted"
                 }`}
               >
-                {done ? <CheckIcon className="h-3.5 w-3.5" aria-hidden="true" /> : index + 1}
+                {done ? <CheckIcon className="h-4 w-4" aria-hidden="true" /> : index + 1}
               </span>
-              <span className={`text-sm ${active ? "font-semibold text-ink" : "text-ink-muted"}`}>{step.title}</span>
+              <span
+                className={`mt-1.5 text-xs leading-tight group-hover:underline sm:text-sm ${active ? "font-semibold text-ink" : "text-ink-muted"}`}
+              >
+                {step.title}
+              </span>
             </>
           );
           return (
-            <li key={step.title} className="flex min-w-0 flex-1 items-center gap-2" aria-current={active ? "step" : undefined}>
+            <li
+              key={step.title}
+              className="relative flex flex-col items-center px-1 text-center"
+              aria-current={active ? "step" : undefined}
+            >
+              {/* The line from the previous circle's centre to this one's; the circles cover its ends. */}
+              {index > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={`absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 ${
+                    index <= current ? "bg-brand-solid/40" : "bg-forest-900/10"
+                  }`}
+                />
+              )}
               {done ? (
                 <button
                   type="button"
                   onClick={() => onBack(index)}
                   aria-label={`Back to step ${index + 1}: ${step.title}`}
-                  className="flex items-center gap-2 rounded-full pr-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  className="group flex flex-col items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 >
-                  {marker}
+                  {content}
                 </button>
               ) : (
-                <span className="flex items-center gap-2">{marker}</span>
+                content
               )}
-              {index < steps.length - 1 && <span aria-hidden="true" className="h-px flex-1 bg-forest-900/15" />}
             </li>
           );
         })}

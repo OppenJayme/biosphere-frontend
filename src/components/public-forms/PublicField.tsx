@@ -8,8 +8,18 @@ import type { ReactNode } from "react";
 import { FieldError, fieldErrorId } from "@/components/ui/Field";
 import { InfoIcon } from "@/components/icons";
 
-export const publicFieldClasses =
-  "mt-1.5 w-full rounded-xl border border-forest-900/15 bg-sage-50 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/60 transition-colors hover:border-forest-900/30 focus:border-brand focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 aria-invalid:border-red-600 aria-invalid:bg-red-50/50 aria-invalid:focus:ring-red-600/20";
+/**
+ * The look of a public form input without its size or spacing, so each variant sets those once
+ * (adding mt-0 or w-28 on top of a full class list would leave two conflicting utilities).
+ */
+export const publicInputClasses =
+  "rounded-xl border border-forest-900/15 bg-sage-50 px-3.5 text-sm text-ink placeholder:text-ink-muted/60 transition-colors hover:border-forest-900/30 focus:border-brand focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 aria-invalid:border-red-600 aria-invalid:bg-red-50/50 aria-invalid:focus:ring-red-600/20";
+
+/** A full-width input under its label. */
+export const publicFieldClasses = `${publicInputClasses} mt-1.5 w-full py-2.5`;
+
+/** A full-width input in a compact list row (visitor names, vehicles), labelled by the list header. */
+export const publicRowInputClasses = `${publicInputClasses} w-full py-2`;
 
 export function PublicField({
   label,

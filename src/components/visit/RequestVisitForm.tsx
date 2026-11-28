@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { FieldError, fieldErrorId, fieldErrorProps } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon, ChevronLeftIcon, PlusIcon, CloseIcon } from "@/components/icons";
 import { FormAlert, PrivacyConsent, SubmissionSuccess, focusFirstInvalid } from "@/components/public-forms/FormParts";
 import { FormSteps } from "@/components/public-forms/FormSteps";
-import { FormHint, PublicField, publicFieldClasses } from "@/components/public-forms/PublicField";
+import { InfoTip } from "@/components/public-forms/InfoTip";
+import {
+  FormHint,
+  PublicField,
+  publicFieldClasses,
+  publicInputClasses,
+  publicRowInputClasses,
+} from "@/components/public-forms/PublicField";
 import type { FieldErrors } from "@/features/public-submissions/form-fields";
 import {
   MAX_PREFERRED_SCHEDULES,
@@ -49,7 +56,7 @@ import {
   type VisitFormFailure,
 } from "@/features/visit-requests/form-steps";
 import type { VisitorName } from "@/features/visit-requests/names-file";
-import { ScheduleDayHint } from "./ScheduleDayHint";
+import { ScheduleDayHint, scheduleDayHintShown } from "./ScheduleDayHint";
 import { VisitorNamesFile } from "./VisitorNamesFile";
 import { ScheduleTimeSelect } from "./ScheduleTimeSelect";
 import { useVisitAvailability } from "./useVisitAvailability";
@@ -70,6 +77,12 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Beyond this many visitors the name list scrolls inside its own box instead of stretching the form. */
 const NAME_LIST_SCROLL_AFTER = 6;
+/** Vehicle rows are taller on phones (two lines), so their list starts scrolling sooner. */
+const VEHICLE_LIST_SCROLL_AFTER = 4;
+
+/** #, plate, then brand and type (a second line on phones), then remove. */
+const vehicleGridClasses =
+  "grid-cols-[1.5rem_minmax(0,1fr)_2.25rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,2fr)_2.25rem]";
 
 /**
  * The hours, closed day, passed time, and booked time problems for one finished row, shown while
@@ -90,7 +103,17 @@ const segmentClasses =
 
 const rowCardClasses = "rounded-xl border border-forest-900/10 bg-surface p-4 shadow-[0_1px_2px_rgb(20_42_31/0.04)]";
 
-const stepHeadingClasses = "font-display text-xl font-semibold tracking-tight text-ink outline-none";
+/** A step's title, focused when the step opens, with its guidance behind an (i) beside it. */
+function StepHeading({ step, title, children }: { step: number; title: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <h3 id={`visit-step-${step}`} tabIndex={-1} className="font-display text-xl font-semibold tracking-tight text-ink outline-none">
+        {title}
+      </h3>
+      <InfoTip label={`About ${title}`}>{children}</InfoTip>
+    </div>
+  );
+}
 
 const linkButtonClasses =
   "inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline";
@@ -316,10 +339,9 @@ export function RequestVisitForm({
 
       {/* Step 1: who is asking. */}
       <section hidden={step !== 0} aria-labelledby="visit-step-0" className="space-y-5">
-        <div>
-          <h3 id="visit-step-0" tabIndex={-1} className={stepHeadingClasses}>Your details</h3>
-          <p className="mt-1 text-sm text-ink-muted">Who should the museum contact about this visit?</p>
-        </div>
+        <StepHeading step={0} title="Your details">
+          Who the museum should contact about this visit. A curator replies to this email address.
+        </StepHeading>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <PublicField label="Contact Person Name" htmlFor="visit-name" error={errors.name}>
@@ -405,12 +427,9 @@ export function RequestVisitForm({
 
       {/* Step 2: when. */}
       <section hidden={step !== 1} aria-labelledby="visit-step-1" className="space-y-5">
-        <div>
-          <h3 id="visit-step-1" tabIndex={-1} className={stepHeadingClasses}>Preferred dates</h3>
-          <p className="mt-1 text-sm text-ink-muted">
-            Give up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
-          </p>
-        </div>
+        <StepHeading step={1} title="Preferred dates">
+          Give up to {MAX_PREFERRED_SCHEDULES} options, most preferred first. A curator will approve one of them.
+        </StepHeading>
 
         <fieldset className="min-w-0 space-y-4" aria-describedby="visit-schedule-hint">
           <legend className="sr-only">Preferred schedules</legend>
@@ -419,6 +438,12 @@ export function RequestVisitForm({
               <span className="font-medium">Visiting hours:</span>{" "}
               {summarizeOpeningHours(availability?.openingHours ?? MUSEUM_OPENING_HOURS)}
             </p>
+            {availabilityStatus === "error" && (
+              <p className="text-ink-muted">
+                Booked times could not be checked just now. You can still send your request; the museum will confirm
+                the time with you.
+              </p>
+            )}
           </FormHint>
 
           <ol className="space-y-3">
@@ -427,11 +452,12 @@ export function RequestVisitForm({
               const rowError = scheduleErrors[index] ?? liveScheduleError(row, scheduleRules);
               const errorId = `schedule-${rowId}-error`;
               const dayHintId = `schedule-${rowId}-day`;
-              const showDayHint = DATE_PATTERN.test(row.date) && row.date >= today;
-              const windows = showDayHint
-                ? openingWindowsFor(row.date, availability?.openingHours ?? MUSEUM_OPENING_HOURS)
-                : [];
-              const describedBy = [rowError && errorId, showDayHint && !(windows.length === 0 && rowError) && dayHintId].filter(Boolean).join(" ");
+              const dateChosen = DATE_PATTERN.test(row.date) && row.date >= today;
+              const closedDay =
+                dateChosen && openingWindowsFor(row.date, availability?.openingHours ?? MUSEUM_OPENING_HOURS).length === 0;
+              // Only a closed day or that day's booked times; a closed day already shown as an error is not repeated.
+              const showDayHint = dateChosen && scheduleDayHintShown(row.date, availability) && !(closedDay && rowError);
+              const describedBy = [rowError && errorId, showDayHint && dayHintId].filter(Boolean).join(" ");
               const invalid = {
                 ...(rowError && { "aria-invalid": true as const }),
                 ...(describedBy && { "aria-describedby": describedBy }),
@@ -509,14 +535,7 @@ export function RequestVisitForm({
                     </PublicField>
                   </div>
                   {rowError && <FieldError id={errorId}>{rowError}</FieldError>}
-                  {showDayHint && !(windows.length === 0 && rowError) && (
-                    <ScheduleDayHint
-                      id={dayHintId}
-                      date={row.date}
-                      availability={availability}
-                      status={availabilityStatus}
-                    />
-                  )}
+                  {showDayHint && <ScheduleDayHint id={dayHintId} date={row.date} availability={availability} />}
                 </li>
               );
             })}
@@ -541,35 +560,38 @@ export function RequestVisitForm({
 
       {/* Step 3: who is coming, and how. */}
       <section hidden={step !== VISITORS_STEP} aria-labelledby="visit-step-2" className="space-y-6">
-        <div>
-          <h3 id="visit-step-2" tabIndex={-1} className={stepHeadingClasses}>Visitors</h3>
-          <p className="mt-1 text-sm text-ink-muted">
-            The university needs the full name of every visitor for campus entry.
-          </p>
-        </div>
+        <StepHeading step={VISITORS_STEP} title="Visitors">
+          The university needs the full name of every visitor for campus entry. To upload a list, use one name
+          per line in a .txt, .docx or .pdf. The file stays on your device.
+        </StepHeading>
 
         <div className="space-y-2">
-          <div className="sm:max-w-[16rem]">
-            <PublicField label="Number of Visitors" htmlFor="visit-count" error={visitorCountError ?? errors.visitorCount}>
-              <input
-                id="visit-count"
-                name="visitorCount"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={MAX_VISITOR_COUNT}
-                step={1}
-                value={visitorCount}
-                onChange={(event) => {
-                  setVisitorCount(event.target.value);
-                  setErrors((current) => ({ ...current, visitorCount: undefined, visitors: undefined }));
-                }}
-                required
-                className={publicFieldClasses}
-                {...fieldErrorProps("visit-count", visitorCountError ?? errors.visitorCount)}
-              />
-            </PublicField>
+          {/* Label and a short number box on one line: the count is a single small number. */}
+          <div className="flex items-center gap-3">
+            <label htmlFor="visit-count" className="text-sm font-medium text-ink">
+              Number of Visitors
+            </label>
+            <input
+              id="visit-count"
+              name="visitorCount"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={MAX_VISITOR_COUNT}
+              step={1}
+              value={visitorCount}
+              onChange={(event) => {
+                setVisitorCount(event.target.value);
+                setErrors((current) => ({ ...current, visitorCount: undefined, visitors: undefined }));
+              }}
+              required
+              className={`${publicInputClasses} w-28 py-2.5`}
+              {...fieldErrorProps("visit-count", visitorCountError ?? errors.visitorCount)}
+            />
           </div>
+          {(visitorCountError ?? errors.visitorCount) && (
+            <FieldError id={fieldErrorId("visit-count")}>{visitorCountError ?? errors.visitorCount}</FieldError>
+          )}
           <p className="text-sm text-ink-muted">
             Everyone attending, including accompanying adults. Up to {MAX_VISITOR_COUNT} per request.
           </p>
@@ -627,7 +649,7 @@ export function RequestVisitForm({
                         required
                         maxLength={FIRST_NAME_MAX}
                         aria-label={`Visitor ${index + 1} first name`}
-                        className={`${publicFieldClasses} mt-0 py-2`}
+                        className={publicRowInputClasses}
                         {...invalid}
                       />
                       <input
@@ -640,7 +662,7 @@ export function RequestVisitForm({
                         required
                         maxLength={LAST_NAME_MAX}
                         aria-label={`Visitor ${index + 1} last name`}
-                        className={`${publicFieldClasses} mt-0 py-2`}
+                        className={publicRowInputClasses}
                         {...invalid}
                       />
                       <button
@@ -720,67 +742,99 @@ export function RequestVisitForm({
           {bringingVehicle && (
             <>
               <p className="text-sm text-ink-muted">List each vehicle coming to campus, up to {MAX_VEHICLES}.</p>
-              <ol className="space-y-3">
-                {vehicleRows.map((rowId, index) => {
-                  const rowErrors = vehicleErrors[index];
-                  return (
-                    <li key={rowId} className={rowCardClasses}>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-ink">Vehicle {index + 1}</p>
-                        {vehicleRows.length > 1 && (
+              {/* Same compact list as the names: one header on wider screens, numbered rows, and a box
+                  that scrolls once the list is long. Phones put brand and type on a second line. */}
+              <div
+                className={`rounded-xl border border-forest-900/10 bg-surface ${
+                  vehicleRows.length > VEHICLE_LIST_SCROLL_AFTER ? "max-h-80 overflow-y-auto overscroll-contain" : ""
+                }`}
+              >
+                <div
+                  aria-hidden="true"
+                  className={`sticky top-0 z-10 hidden gap-2 border-b border-forest-900/10 bg-sage-50 px-3 py-2 text-xs font-semibold text-ink-muted sm:grid ${vehicleGridClasses}`}
+                >
+                  <span>#</span>
+                  <span>Plate number</span>
+                  <span className="grid grid-cols-2 gap-2">
+                    <span>
+                      Car brand <span className="font-normal">(optional)</span>
+                    </span>
+                    <span>
+                      Car type <span className="font-normal">(optional)</span>
+                    </span>
+                  </span>
+                  <span />
+                </div>
+                <ol className="divide-y divide-forest-900/5">
+                  {vehicleRows.map((rowId, index) => {
+                    const rowErrors = vehicleErrors[index];
+                    const fields = [
+                      { name: "plateNumber", id: `visit-plate-${rowId}`, error: rowErrors?.plateNumber },
+                      { name: "carBrand", id: `visit-car-brand-${rowId}`, error: rowErrors?.carBrand },
+                      { name: "carType", id: `visit-car-type-${rowId}`, error: rowErrors?.carType },
+                    ] as const;
+                    return (
+                      <li key={rowId} className="px-3 py-2">
+                        <div className={`grid items-center gap-2 ${vehicleGridClasses}`}>
+                          <span aria-hidden="true" className="text-xs tabular-nums text-ink-muted">{index + 1}</span>
+                          <input
+                            id={fields[0].id}
+                            name="plateNumber"
+                            type="text"
+                            placeholder="Plate, e.g. ABC 1234"
+                            required
+                            maxLength={PLATE_NUMBER_MAX}
+                            aria-label={`Vehicle ${index + 1} plate number`}
+                            className={publicRowInputClasses}
+                            {...fieldErrorProps(fields[0].id, fields[0].error)}
+                          />
+                          <div className="col-start-2 row-start-2 grid grid-cols-2 gap-2 sm:col-start-3 sm:row-start-1">
+                            <input
+                              id={fields[1].id}
+                              name="carBrand"
+                              type="text"
+                              placeholder="Brand, e.g. Toyota"
+                              maxLength={VEHICLE_TEXT_MAX}
+                              aria-label={`Vehicle ${index + 1} car brand (optional)`}
+                              className={publicRowInputClasses}
+                              {...fieldErrorProps(fields[1].id, fields[1].error)}
+                            />
+                            <input
+                              id={fields[2].id}
+                              name="carType"
+                              type="text"
+                              placeholder="Type, e.g. Van"
+                              maxLength={VEHICLE_TEXT_MAX}
+                              aria-label={`Vehicle ${index + 1} car type (optional)`}
+                              className={publicRowInputClasses}
+                              {...fieldErrorProps(fields[2].id, fields[2].error)}
+                            />
+                          </div>
                           <button
                             type="button"
+                            disabled={vehicleRows.length === 1}
                             onClick={() => {
                               setVehicleRows((rows) => rows.filter((id) => id !== rowId));
                               setVehicleErrors([]);
                             }}
                             aria-label={`Remove vehicle ${index + 1}`}
-                            className="rounded-lg p-1.5 text-ink-muted hover:bg-brand-soft hover:text-brand"
+                            className="col-start-3 row-start-1 rounded-lg p-2 text-ink-muted hover:bg-brand-soft hover:text-brand disabled:invisible sm:col-start-4"
                           >
                             <CloseIcon className="h-4 w-4" />
                           </button>
+                        </div>
+                        {fields.map((field) =>
+                          field.error ? (
+                            <FieldError key={field.name} id={fieldErrorId(field.id)}>
+                              {field.error}
+                            </FieldError>
+                          ) : null,
                         )}
-                      </div>
-                      <div className="mt-2 grid gap-4 sm:grid-cols-3">
-                        <PublicField label="Plate Number" htmlFor={`visit-plate-${rowId}`} error={rowErrors?.plateNumber}>
-                          <input
-                            id={`visit-plate-${rowId}`}
-                            name="plateNumber"
-                            type="text"
-                            placeholder="ABC 1234"
-                            required
-                            maxLength={PLATE_NUMBER_MAX}
-                            className={publicFieldClasses}
-                            {...fieldErrorProps(`visit-plate-${rowId}`, rowErrors?.plateNumber)}
-                          />
-                        </PublicField>
-                        <PublicField label="Car Brand" htmlFor={`visit-car-brand-${rowId}`} optional error={rowErrors?.carBrand}>
-                          <input
-                            id={`visit-car-brand-${rowId}`}
-                            name="carBrand"
-                            type="text"
-                            placeholder="Toyota"
-                            maxLength={VEHICLE_TEXT_MAX}
-                            className={publicFieldClasses}
-                            {...fieldErrorProps(`visit-car-brand-${rowId}`, rowErrors?.carBrand)}
-                          />
-                        </PublicField>
-                        <PublicField label="Car Type" htmlFor={`visit-car-type-${rowId}`} optional error={rowErrors?.carType}>
-                          <input
-                            id={`visit-car-type-${rowId}`}
-                            name="carType"
-                            type="text"
-                            placeholder="Van, Sedan, School Bus"
-                            maxLength={VEHICLE_TEXT_MAX}
-                            className={publicFieldClasses}
-                            {...fieldErrorProps(`visit-car-type-${rowId}`, rowErrors?.carType)}
-                          />
-                        </PublicField>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
 
               {vehicleRows.length < MAX_VEHICLES && (
                 <button
@@ -802,10 +856,9 @@ export function RequestVisitForm({
 
       {/* Step 4: anything else, then consent and send. */}
       <section hidden={step !== LAST_VISIT_STEP} aria-labelledby="visit-step-3" className="space-y-5">
-        <div>
-          <h3 id="visit-step-3" tabIndex={-1} className={stepHeadingClasses}>Final details</h3>
-          <p className="mt-1 text-sm text-ink-muted">Both fields are optional. Add anything that helps us prepare.</p>
-        </div>
+        <StepHeading step={LAST_VISIT_STEP} title="Final details">
+          Both fields are optional. Add anything that helps us prepare, then agree to the privacy notice and send.
+        </StepHeading>
         <div className="space-y-4">
           <PublicField label="Equipment to Bring" htmlFor="visit-equipment" optional error={errors.equipment}>
             <input
