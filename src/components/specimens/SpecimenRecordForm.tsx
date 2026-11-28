@@ -408,7 +408,7 @@ export function SpecimenRecordForm({
         </div>
 
         {state.message && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <div id="record-alert" role="alert" className="scroll-mt-24 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
             <p className="font-medium">{state.message}</p>
             {state.missingRequirements && (
               <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
@@ -421,27 +421,30 @@ export function SpecimenRecordForm({
         )}
 
         <div className="space-y-2">
-          <button
-            type="submit"
-            name="intent"
-            value="catalog"
-            disabled={!ready || pending}
-            aria-describedby="catalog-button-hint"
-            onClick={() => setIntent("catalog")}
-            className="w-full rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
-          >
-            {pending && intent === "catalog" ? "Saving and cataloging…" : "Save and catalog"}
-          </button>
-          <button
-            type="submit"
-            name="intent"
-            value="draft"
-            disabled={pending}
-            onClick={() => setIntent("draft")}
-            className="w-full rounded-lg border border-black/15 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {pending && intent === "draft" ? "Saving draft…" : "Save as draft"}
-          </button>
+          {/* On phones the sticky bar below carries the save buttons instead. */}
+          <div className="hidden space-y-2 lg:block">
+            <button
+              type="submit"
+              name="intent"
+              value="catalog"
+              disabled={!ready || pending}
+              aria-describedby="catalog-button-hint"
+              onClick={() => setIntent("catalog")}
+              className="w-full rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
+            >
+              {pending && intent === "catalog" ? "Saving and cataloging…" : "Save and catalog"}
+            </button>
+            <button
+              type="submit"
+              name="intent"
+              value="draft"
+              disabled={pending}
+              onClick={() => setIntent("draft")}
+              className="w-full rounded-lg border border-black/15 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending && intent === "draft" ? "Saving draft…" : "Save as draft"}
+            </button>
+          </div>
           <p id="catalog-button-hint" className="text-xs text-zinc-500">
             {ready
               ? "Everything required is filled in. Cataloging can be reopened later if something needs fixing."
@@ -452,6 +455,54 @@ export function SpecimenRecordForm({
           </Link>
         </div>
       </aside>
+
+      {/* Phones: the checklist sits below the form, so a bar stays at the bottom of the screen
+          with the progress, a jump to what is missing, and both save buttons. */}
+      {/* -mx-5/px-5 match the curator <main>'s p-5 below lg, so the bar runs edge to edge. */}
+      <div className="sticky bottom-0 z-20 -mx-5 -mb-5 border-t border-black/10 bg-white/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="font-medium text-zinc-900 tabular-nums">
+            {ready ? "Ready to catalog" : `${done} of ${checks.length} ready`}
+          </span>
+          {state.message ? (
+            <a href="#record-alert" className="text-xs font-semibold text-red-700 hover:underline">
+              Not saved. See why
+            </a>
+          ) : (
+            !ready && (
+              <a href="#record-checklist" className="text-xs font-semibold text-amber-900 hover:underline">
+                What&apos;s missing
+              </a>
+            )
+          )}
+        </div>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-zinc-100" aria-hidden>
+          <div className="h-full rounded-full bg-forest-700 transition-[width]" style={{ width: `${(done / checks.length) * 100}%` }} />
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="submit"
+            name="intent"
+            value="draft"
+            disabled={pending}
+            onClick={() => setIntent("draft")}
+            className="rounded-lg border border-black/15 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {pending && intent === "draft" ? "Saving…" : "Save as draft"}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="catalog"
+            disabled={!ready || pending}
+            aria-describedby="catalog-button-hint"
+            onClick={() => setIntent("catalog")}
+            className="rounded-lg bg-forest-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
+          >
+            {pending && intent === "catalog" ? "Cataloging…" : "Save and catalog"}
+          </button>
+        </div>
+      </div>
     </form>
   );
 }
