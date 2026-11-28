@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { Field, FieldGroupLabel, fieldClasses, fieldErrorId, fieldErrorProps } from "@/components/ui/Field";
+import { fieldErrorId, fieldErrorProps } from "@/components/ui/Field";
+import { FormSection, PublicField, publicFieldClasses } from "@/components/public-forms/PublicField";
 import { Button } from "@/components/ui/Button";
 import { ArrowRightIcon } from "@/components/icons";
 import { FormAlert, PrivacyConsent, SubmissionSuccess, focusFirstInvalid } from "@/components/public-forms/FormParts";
@@ -80,11 +81,10 @@ export function InquiryForm({
       {/* Two columns only when the form itself is wide (the desktop modal); the /inquiry page
           card is narrower, so it keeps one column like phones. */}
       <div className="grid gap-6 @3xl:grid-cols-2 @3xl:items-start @3xl:gap-x-10">
-        <div className="space-y-4">
-          <FieldGroupLabel>Contact Details</FieldGroupLabel>
+        <FormSection title="Your details" description="So a curator can reply to you.">
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Your Name" htmlFor="inquiry-name" error={errors.name}>
+            <PublicField label="Your Name" htmlFor="inquiry-name" error={errors.name}>
               <input
                 id="inquiry-name"
                 name="name"
@@ -93,11 +93,11 @@ export function InquiryForm({
                 placeholder="Juan Dela Cruz"
                 required
                 maxLength={100}
-                className={fieldClasses}
+                className={publicFieldClasses}
                 {...fieldErrorProps("inquiry-name", errors.name)}
               />
-            </Field>
-            <Field label="Email Address" htmlFor="inquiry-email" error={errors.email}>
+            </PublicField>
+            <PublicField label="Email Address" htmlFor="inquiry-email" error={errors.email}>
               <input
                 id="inquiry-email"
                 name="email"
@@ -106,11 +106,11 @@ export function InquiryForm({
                 placeholder="name@school.edu.ph"
                 required
                 maxLength={100}
-                className={fieldClasses}
+                className={publicFieldClasses}
                 {...fieldErrorProps("inquiry-email", errors.email)}
               />
-            </Field>
-            <Field label="Contact Number" htmlFor="inquiry-phone" optional error={errors.phone}>
+            </PublicField>
+            <PublicField label="Contact Number" htmlFor="inquiry-phone" optional error={errors.phone}>
               <input
                 id="inquiry-phone"
                 name="phone"
@@ -118,11 +118,11 @@ export function InquiryForm({
                 autoComplete="tel"
                 placeholder="0917 123 4567"
                 maxLength={20}
-                className={fieldClasses}
+                className={publicFieldClasses}
                 {...fieldErrorProps("inquiry-phone", errors.phone)}
               />
-            </Field>
-            <Field label="Organization / School" htmlFor="inquiry-org" optional error={errors.organization}>
+            </PublicField>
+            <PublicField label="Organization / School" htmlFor="inquiry-org" optional error={errors.organization}>
               <input
                 id="inquiry-org"
                 name="organization"
@@ -130,22 +130,21 @@ export function InquiryForm({
                 autoComplete="organization"
                 placeholder="University of San Carlos"
                 maxLength={100}
-                className={fieldClasses}
+                className={publicFieldClasses}
                 {...fieldErrorProps("inquiry-org", errors.organization)}
               />
-            </Field>
+            </PublicField>
           </div>
-        </div>
+        </FormSection>
 
-        <div className="space-y-4">
-          <FieldGroupLabel>Inquiry</FieldGroupLabel>
-          <Field label="Topic" htmlFor="inquiry-type" error={errors.inquiryType}>
+        <FormSection title="Your question" description="Pick the closest topic so it reaches the right person.">
+          <PublicField label="Topic" htmlFor="inquiry-type" error={errors.inquiryType}>
             <select
               id="inquiry-type"
               name="inquiryType"
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
-              className={fieldClasses}
+              className={publicFieldClasses}
               {...fieldErrorProps("inquiry-type", errors.inquiryType)}
             >
               {INQUIRY_TYPES.map((type) => (
@@ -154,9 +153,9 @@ export function InquiryForm({
                 </option>
               ))}
             </select>
-          </Field>
+          </PublicField>
           {visitFollowUp && (
-            <Field
+            <PublicField
               label="Visit Request Reference Number"
               htmlFor="inquiry-visit-reference"
               optional
@@ -169,7 +168,7 @@ export function InquiryForm({
                 autoComplete="off"
                 placeholder="e.g. 9A81836F"
                 maxLength={8}
-                className={`${fieldClasses} font-mono uppercase`}
+                className={`${publicFieldClasses} font-mono uppercase`}
                 {...fieldErrorProps("inquiry-visit-reference", errors.visitReferenceCode)}
                 aria-describedby={[
                   "inquiry-visit-reference-hint",
@@ -181,9 +180,9 @@ export function InquiryForm({
               <p id="inquiry-visit-reference-hint" className="mt-1.5 text-xs text-ink-muted">
                 Found in your visit request email and on the confirmation screen.
               </p>
-            </Field>
+            </PublicField>
           )}
-          <Field label="Message" htmlFor="inquiry-message" error={errors.message}>
+          <PublicField label="Message" htmlFor="inquiry-message" error={errors.message}>
             <textarea
               id="inquiry-message"
               name="message"
@@ -195,11 +194,11 @@ export function InquiryForm({
               }
               required
               maxLength={2000}
-              className={fieldClasses}
+              className={publicFieldClasses}
               {...fieldErrorProps("inquiry-message", errors.message)}
             />
-          </Field>
-        </div>
+          </PublicField>
+        </FormSection>
       </div>
 
       {failure && (

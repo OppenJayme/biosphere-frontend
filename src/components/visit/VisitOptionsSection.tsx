@@ -6,6 +6,10 @@ import { Modal } from "@/components/visit/Modal";
 import { RequestVisitForm } from "@/components/visit/RequestVisitForm";
 import { InquiryForm } from "@/components/inquiry/InquiryForm";
 import { ArrowRightIcon, CalendarIcon, CheckIcon, MailIcon } from "@/components/icons";
+import { MUSEUM_PHONES } from "@/lib/museum-contact";
+
+const phoneLinkClasses =
+  "whitespace-nowrap font-semibold text-brand underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 const REQUEST_VISIT_POINTS = [
   "Guided tours",
@@ -82,8 +86,21 @@ export function VisitOptionsSection() {
       {openModal === "visit" && (
         <Modal
           title="Request a Visit"
-          description="Tell us about your planned visit to the museum."
-          size="wide"
+          description="Four short steps. A curator will email you once a date is approved."
+          help={
+            <>
+              Need help booking? Call{" "}
+              <a href={MUSEUM_PHONES.landline.href} className={phoneLinkClasses}>
+                {MUSEUM_PHONES.landline.label}
+              </a>{" "}
+              or{" "}
+              <a href={MUSEUM_PHONES.mobile.href} className={phoneLinkClasses}>
+                {MUSEUM_PHONES.mobile.label}
+              </a>
+              .
+            </>
+          }
+          size="medium"
           onClose={() => setOpenModal(null)}
         >
           <RequestVisitForm onCancel={() => setOpenModal(null)} onSubmitted={() => setOpenModal(null)} />

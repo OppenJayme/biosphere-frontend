@@ -6,16 +6,22 @@ import { CloseIcon } from "@/components/icons";
 export function Modal({
   title,
   description,
+  help,
   onClose,
   children,
   size = "default",
 }: {
   title: string;
   description?: string;
+  /** A short line under the description, e.g. who to call for help. */
+  help?: ReactNode;
   onClose: () => void;
   children: ReactNode;
-  /** "wide" gives long forms room for two columns on desktop; phones are unchanged. */
-  size?: "default" | "wide";
+  /**
+   * "wide" gives long forms room for two columns on desktop; "medium" suits a form shown one step
+   * at a time. Phones are unchanged.
+   */
+  size?: "default" | "medium" | "wide";
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -75,7 +81,7 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className={`w-full ${size === "wide" ? "max-w-lg lg:max-w-5xl" : "max-w-lg"} rounded-2xl border border-line bg-surface p-6 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] outline-none sm:p-8`}>
+      <div className={`w-full ${size === "wide" ? "max-w-lg lg:max-w-5xl" : size === "medium" ? "max-w-lg sm:max-w-2xl" : "max-w-lg"} rounded-2xl border border-line bg-surface p-6 shadow-[0_24px_60px_-20px_rgb(20_42_31/0.45)] outline-none sm:p-8`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -87,6 +93,7 @@ export function Modal({
             {description && (
               <p className="mt-1 text-sm text-ink-muted">{description}</p>
             )}
+            {help && <p className="mt-1.5 text-sm text-ink-muted">{help}</p>}
           </div>
           <button
             type="button"

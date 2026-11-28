@@ -8,6 +8,8 @@ import {
   type VisitorName,
 } from "@/features/visit-requests/names-file";
 
+const SAMPLE_FORMATS = ["txt", "docx", "pdf"] as const;
+
 /**
  * Optional shortcut on the visit request form: reads a .txt, .docx or .pdf list in the browser and
  * hands the names to the form, which adds them as name rows to review. Nothing is uploaded.
@@ -48,7 +50,7 @@ export function VisitorNamesFile({
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-dashed border-line p-4">
+    <div className="space-y-2 rounded-xl border border-dashed border-forest-900/20 bg-sage-50 p-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <input
           ref={input}
@@ -65,18 +67,31 @@ export function VisitorNamesFile({
           disabled={disabled || reading}
           aria-describedby={statusId}
           onClick={() => input.current?.click()}
-          className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-brand transition-colors hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full bg-brand-solid px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-solid-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
         >
           <UploadIcon className="h-4 w-4" aria-hidden="true" />
-          {reading ? "Reading the file…" : "Fill names from a file"}
+          {reading ? "Reading the file…" : "Upload"}
+          {!reading && <span className="sr-only"> a list of visitor names</span>}
         </button>
-        <span className="text-xs text-ink-muted">Optional</span>
+        <span className="text-sm text-ink-muted">Have a list already? (optional)</span>
       </div>
-      <p className="text-sm text-ink-muted">
-        Have a list already? Choose a .txt, .docx or .pdf file with one name per line, such as{" "}
-        <span className="whitespace-nowrap">&ldquo;Juan Dela Cruz&rdquo;</span> or{" "}
-        <span className="whitespace-nowrap">&ldquo;Dela Cruz, Juan&rdquo;</span>. The names are added below for
-        you to check. The file stays on your device.
+      <p className="text-sm text-ink-muted">One name per line in a .txt, .docx or .pdf. The file stays on your device.</p>
+      {/* Sample lists in public/templates; names-file.test.ts checks that they keep reading cleanly. */}
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+        <span>See a sample:</span>
+        {SAMPLE_FORMATS.map((format, index) => (
+          <span key={format} className="inline-flex items-center gap-x-2">
+            {index > 0 && <span aria-hidden="true">·</span>}
+            <a
+              href={`/templates/visitor-names-sample.${format}`}
+              download
+              aria-label={`Download the sample visitor list as .${format}`}
+              className="font-semibold text-brand underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            >
+              .{format}
+            </a>
+          </span>
+        ))}
       </p>
       <p
         id={statusId}
